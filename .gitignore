@@ -32,4 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 
-application-api2d.yml
+src/main/resources/application-api2d.yaml
