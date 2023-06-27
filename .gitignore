@@ -11,3 +11,5 @@ target/
 
 ### VS Code ###
 .vscode/
+
+src/main/resources/application-api2d.yaml
