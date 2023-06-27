@@ -1,4 +1,4 @@
-package yzggy.yucong;
+package yzggy.yucong.config;
 
 import com.unfbx.chatgpt.function.KeyStrategyFunction;
 
@@ -8,8 +8,9 @@ public class FirstKeyStrategy implements KeyStrategyFunction<List<String>, Strin
 
     /**
      * 总是使用第一个
-     * @param keys
-     * @return
+     *
+     * @param keys 所有key
+     * @return 使用的key
      */
     @Override
     public String apply(List<String> keys) {
