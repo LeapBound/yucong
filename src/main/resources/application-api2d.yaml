@@ -1,0 +1,5 @@
+api2d:
+  api:
+    base: https://openai.api2d.net/
+#    base: https://oa.api2d.net/
+    key: fk206636-nQpZFfhl65GplHaVtyKfZ0zeePcLZAeV
