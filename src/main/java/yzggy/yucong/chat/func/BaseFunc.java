@@ -1,4 +1,8 @@
 package yzggy.yucong.chat.func;
 
-public class BaseFunc {
+import com.unfbx.chatgpt.entity.chat.Functions;
+
+public interface BaseFunc {
+
+    Functions get();
 }

@@ -1,4 +1,8 @@
 package yzggy.yucong.service;
 
-public class GptService {
+import yzggy.yucong.model.SingleChatModel;
+
+public interface GptService {
+
+    void chat(SingleChatModel singleChatModel);
 }

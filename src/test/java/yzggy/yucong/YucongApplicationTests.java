@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import yzggy.yucong.model.SingleChatModel;
+import yzggy.yucong.service.GptService;
 
 import java.util.List;
 
@@ -17,6 +19,8 @@ class YucongApplicationTests {
 
     @Autowired
     private OpenAiClient openAiClient;
+    @Autowired
+    private GptService gptService;
 
     @Test
     void boost() {
@@ -27,5 +31,20 @@ class YucongApplicationTests {
         chatCompletionResponse.getChoices().forEach(e -> {
             log.info("{}", e.getMessage());
         });
+    }
+
+    @Test
+    void newArrival() {
+        // 用户询问上新时间
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setUserId("test001");
+        singleChatModel.setConversationId("c001");
+        singleChatModel.setContent("请问什么时候上新");
+        log.info("singleChatModel: {}", singleChatModel);
+        this.gptService.chat(singleChatModel);
+
+        // 解析出查询上新时间的func
+
+        // 执行func返回用户
     }
 }
