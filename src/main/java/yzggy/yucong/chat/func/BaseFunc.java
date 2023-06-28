@@ -9,9 +9,14 @@ import java.util.List;
 public abstract class BaseFunc {
 
     protected String name;
+    protected String auth;
 
     public String getName() {
         return this.name;
+    }
+
+    public String getAuth() {
+        return this.auth;
     }
 
     public abstract Functions getDefinition();

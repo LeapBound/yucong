@@ -28,10 +28,30 @@ class YucongApplicationTests {
     }
 
     @Test
-    void newArrival() {
-        // 用户询问上新时间
-        String userId = "test001";
+    void setNewArrival() {
+        String userId = "admin001";
+        String botId = "bot001";
+
+        // 设置上新时间
         SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setUserId(userId);
+        singleChatModel.setContent("设置一下上新时间");
+        this.gptService.chat(singleChatModel);
+
+        this.conversationService.getByUserId(userId).getMessageList().forEach(message ->
+                log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
+        );
+    }
+
+    @Test
+    void newArrival() {
+        String userId = "test001";
+        String botId = "bot001";
+
+        // 用户询问上新时间
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
         singleChatModel.setUserId(userId);
         singleChatModel.setContent("请问什么时候上新");
         this.gptService.chat(singleChatModel);

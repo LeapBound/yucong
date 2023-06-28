@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface FuncService {
 
-    List<Functions> getListByBotId(String botId);
+    List<Functions> getListByUserIdAndBotId(String userId, String botId);
 
     void invokeFunc(String userId, FunctionCall functionCall);
 }

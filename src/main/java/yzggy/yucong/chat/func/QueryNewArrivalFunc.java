@@ -16,11 +16,12 @@ public class QueryNewArrivalFunc extends BaseFunc {
 
     public QueryNewArrivalFunc() {
         this.name = "queryNewArrival";
+        this.auth = "AUTH_USER";
     }
 
     @Override
     public Functions getDefinition() {
-        // 属性一
+        // 属性
         JSONObject brand = new JSONObject();
         brand.putOpt("brand", "string");
         brand.putOpt("description", "品牌");
@@ -46,7 +47,7 @@ public class QueryNewArrivalFunc extends BaseFunc {
         QueryNewArrivalParam param = JSONUtil.toBean(functionCall.getArguments(), QueryNewArrivalParam.class);
         String newArrivalTime = "2023-07-01";
 
-        Message message1 = Message.builder().role(Message.Role.ASSISTANT).content("方法参数").functionCall(functionCall).build();
+        Message message1 = Message.builder().role(Message.Role.ASSISTANT).content("").functionCall(functionCall).build();
         String content = "{" +
                 "\"newArrivalTime\": \"" + newArrivalTime + "\"" +
                 "}";

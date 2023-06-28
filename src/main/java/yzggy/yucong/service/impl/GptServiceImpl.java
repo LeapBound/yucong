@@ -59,7 +59,7 @@ public class GptServiceImpl implements GptService {
     private ChatChoice sendToChatServer(String botId, String userId) {
         ChatCompletion chatCompletion = ChatCompletion.builder()
                 .messages(this.conversationService.getByUserId(userId).getMessageList())
-                .functions(this.funcService.getListByBotId(botId))
+                .functions(this.funcService.getListByUserIdAndBotId(userId, botId))
                 .functionCall("auto")
                 .model(ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
                 .build();
