@@ -1,7 +1,7 @@
-<p align="center">yucong</p>
-=
-<p align="center"><font color="blue">An Epoch-marking Intelligent Order Service System</font></p>
--
+# <p align="center">yucong</p>
+
+## <p align="center"><font color="blue">An Epoch-marking Intelligent Order Service System</font></p>
+
 ***
 Features
 -
