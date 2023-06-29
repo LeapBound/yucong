@@ -1,10 +1,12 @@
-# <p align="center">yucong</p>
+# yucong
 
-## <p align="center"><font color="blue">An Epoch-marking Intelligent Order Service System</font></p>
+### *An Epoch-marking Intelligent Order Service System*
 
-***
+****
+
 Features
 -
+
 - chatgpt
 - order
 - service
@@ -13,6 +15,7 @@ Features
 
 Quick Start
 -
+
 - 1. develop required (JAVA)
 
 springboot + mybatisplus + jdk17
@@ -20,6 +23,8 @@ springboot + mybatisplus + jdk17
 spring-boot version = 3.1.1
 
 mybatisplus version = 3.5.3.1
+
+
 
 - 2. project structure
 
