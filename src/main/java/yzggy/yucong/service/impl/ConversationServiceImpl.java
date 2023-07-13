@@ -1,8 +1,12 @@
 package yzggy.yucong.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.unfbx.chatgpt.entity.chat.Message;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import yzggy.yucong.chat.dialog.Conversation;
+import yzggy.yucong.entities.BotEntity;
+import yzggy.yucong.mapper.BotMapper;
 import yzggy.yucong.service.ConversationService;
 
 import java.util.HashMap;
@@ -10,8 +14,10 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
 
+    private final BotMapper botMapper;
     private final Map<String, Conversation> conversationMap = new HashMap<>();
 
     @Override
@@ -20,14 +26,18 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public Conversation start(String userId) {
+    public Conversation start(String botId, String userId) {
         Conversation conversation = new Conversation();
         this.conversationMap.put(userId, conversation);
 
         // 系统消息，指定助理角色
+        LambdaQueryWrapper<BotEntity> botLQW = new LambdaQueryWrapper<BotEntity>()
+                .eq(BotEntity::getBotId, botId)
+                .last("limit 1");
+        BotEntity botEntity = this.botMapper.selectOne(botLQW);
         Message systemMsg = Message.builder()
                 .role(Message.Role.SYSTEM)
-                .content("你现在是一个客服人员")
+                .content(botEntity.getInitRoleContent())
                 .build();
         addMessage(userId, systemMsg);
 

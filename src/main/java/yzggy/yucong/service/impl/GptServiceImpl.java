@@ -30,7 +30,7 @@ public class GptServiceImpl implements GptService {
 
         Conversation conversation = this.conversationService.getByUserId(userId);
         if (conversation == null) {
-            this.conversationService.start(userId);
+            this.conversationService.start(botId, userId);
         }
 
         // 客户消息

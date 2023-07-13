@@ -1,3 +1,8 @@
 spring:
   profiles:
     active: api2d,db
+
+yucong:
+  action:
+    rest:
+      url: http://192.168.8.12:8180

@@ -9,7 +9,7 @@ public interface ConversationService {
 
     Conversation getByUserId(String userId);
 
-    Conversation start(String userId);
+    Conversation start(String botId, String userId);
 
     void addMessage(String userId, Message... messages);
 

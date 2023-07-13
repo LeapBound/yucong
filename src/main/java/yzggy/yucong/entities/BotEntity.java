@@ -11,5 +11,6 @@ public class BotEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-
+    private String botId;
+    private String initRoleContent;
 }
