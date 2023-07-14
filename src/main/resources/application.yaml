@@ -1,8 +1,26 @@
+server:
+  # 启用 gzip 压缩
+  compression:
+    mime-types: application/javascript,text/css,application/json,application/xml,text/html,text/xml,text/plain
+    enabled: true
+  error:
+    includeException: true
+    includeStacktrace: ALWAYS
+    includeMessage: ALWAYS
+  servlet:
+    context-path: /yucong
+
+#actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+      base-path: /metrics
+  endpoint:
+    health:
+      show-details: always
+
 spring:
   profiles:
-    active: api2d,db
-
-yucong:
-  action:
-    rest:
-      url: http://192.168.8.12:8180
+    active: api2d,db,apollo

@@ -14,7 +14,7 @@ public class ServiceTests {
 
     @Autowired
     private FuncService funcService;
-    private final String botId = "bot001";
+    private final String botId = "bot002";
     private final String userId = "user001";
 
     @Test

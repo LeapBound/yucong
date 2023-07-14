@@ -4,5 +4,5 @@ import yzggy.yucong.model.SingleChatModel;
 
 public interface GptService {
 
-    void chat(SingleChatModel singleChatModel);
+    String chat(SingleChatModel singleChatModel);
 }

@@ -24,7 +24,7 @@ public class GptServiceImpl implements GptService {
     private final FuncService funcService;
 
     @Override
-    public void chat(SingleChatModel singleChatModel) {
+    public String chat(SingleChatModel singleChatModel) {
         String botId = singleChatModel.getBotId();
         String userId = singleChatModel.getUserId();
 
@@ -54,6 +54,8 @@ public class GptServiceImpl implements GptService {
                 .content(chatChoice.getMessage().getContent())
                 .build();
         this.conversationService.addMessage(userId, assistantMsg);
+
+        return chatChoice.getMessage().getContent();
     }
 
     private ChatChoice sendToChatServer(String botId, String userId) {
@@ -61,12 +63,11 @@ public class GptServiceImpl implements GptService {
                 .messages(this.conversationService.getByUserId(userId).getMessageList())
                 .functions(this.funcService.getListByUserIdAndBotId(userId, botId))
                 .functionCall("auto")
-                .model(ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                .model(ChatCompletion.Model.GPT_4_0613.getName())
                 .build();
         ChatCompletionResponse chatCompletionResponse = this.openAiClient.chatCompletion(chatCompletion);
         ChatChoice chatChoice = chatCompletionResponse.getChoices().get(0);
         log.info("sendToChatServer: {}", chatChoice);
         return chatChoice;
     }
-
 }

@@ -62,6 +62,32 @@ class YucongApplicationTests {
         singleChatModel.setUserId(userId);
         singleChatModel.setContent("关闭离职人员账号");
         this.gptService.chat(singleChatModel);
+        singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setUserId(userId);
+        singleChatModel.setContent("账号是geex001");
+        this.gptService.chat(singleChatModel);
+
+        this.conversationService.getByUserId(userId).getMessageList().forEach(message ->
+                log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
+        );
+    }
+
+    @Test
+    void applyLoan() {
+        String userId = "test001";
+        String botId = "bot002";
+
+        // 用户询问上新时间
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setUserId(userId);
+        singleChatModel.setContent("办理个客人的分期");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("24000");
+        this.gptService.chat(singleChatModel);
 
         this.conversationService.getByUserId(userId).getMessageList().forEach(message ->
                 log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
