@@ -73,7 +73,7 @@ public class FuncServiceImpl implements FuncService {
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(functionCall);
             HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<Message> entity = this.actionRestTemplate.postForEntity("/yc-action-server/yc/function/openai/execute", requestEntity, Message.class);
+            ResponseEntity<Message> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, Message.class);
 
             Message message = entity.getBody();
             if (message != null) {
