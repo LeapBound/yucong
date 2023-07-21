@@ -23,4 +23,4 @@ management:
 
 spring:
   profiles:
-    active: api2d,db,apollo
+    active: apollo
