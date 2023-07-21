@@ -9,10 +9,10 @@ public interface ConversationService {
 
     Conversation getByAccountId(String accountId);
 
-    Conversation start(String botId, String userId);
+    Conversation start(String botId, String accountId);
 
-    void addMessage(String userId, Message... messages);
+    void addMessage(String accountId, Message... messages);
 
-    void addMessages(String userId, List<Message> messageList);
+    void addMessages(String accountId, List<Message> messageList);
 
 }

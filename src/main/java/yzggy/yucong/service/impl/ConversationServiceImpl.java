@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import yzggy.yucong.chat.dialog.Conversation;
 import yzggy.yucong.entities.BotEntity;
+import yzggy.yucong.entities.MessageEntity;
 import yzggy.yucong.mapper.BotMapper;
+import yzggy.yucong.mapper.MessageMapper;
 import yzggy.yucong.service.ConversationService;
 
 import java.util.HashMap;
@@ -18,6 +21,7 @@ import java.util.Map;
 public class ConversationServiceImpl implements ConversationService {
 
     private final BotMapper botMapper;
+    private final MessageMapper messageMapper;
     private final Map<String, Conversation> conversationMap = new HashMap<>();
 
     @Override
@@ -38,27 +42,37 @@ public class ConversationServiceImpl implements ConversationService {
 
         Conversation conversation = new Conversation();
         this.conversationMap.put(userId, conversation);
-        Message systemMsg = Message.builder()
-                .role(Message.Role.SYSTEM)
-                .content(botEntity.getInitRoleContent())
-                .build();
-        addMessage(userId, systemMsg);
+
+        // 初始化角色定义
+        if (StringUtils.hasText(botEntity.getInitRoleContent())) {
+            Message systemMsg = Message.builder()
+                    .role(Message.Role.SYSTEM)
+                    .content(botEntity.getInitRoleContent())
+                    .build();
+            addMessage(userId, systemMsg);
+        }
 
         return conversation;
     }
 
     @Override
-    public void addMessage(String userId, Message... messages) {
-        Conversation conversation = this.conversationMap.get(userId);
-        if (conversation != null) {
-            for (Message message : messages) {
-                conversation.addMessage(message);
-            }
-        }
+    public void addMessage(String accountId, Message... messages) {
+
+        addMessages(accountId, List.of(messages));
     }
 
     @Override
-    public void addMessages(String userId, List<Message> messageList) {
-        messageList.forEach(message -> addMessage(userId, message));
+    public void addMessages(String accountId, List<Message> messageList) {
+        Conversation conversation = this.conversationMap.get(accountId);
+        if (conversation != null) {
+            messageList.forEach(conversation::addMessage);
+        }
+    }
+
+    private void persistMessage(Message message) {
+        MessageEntity messageEntity = new MessageEntity();
+        messageEntity.setRole(message.getRole());
+        messageEntity.setContent(message.getContent());
+        this.messageMapper.insert(messageEntity);
     }
 }
