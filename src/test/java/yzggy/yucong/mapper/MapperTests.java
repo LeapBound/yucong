@@ -17,7 +17,7 @@ public class MapperTests {
 
     @Test
     public void getRoleByBot() {
-        List<RoleEntity> roleEntityList = this.botRoleMapper.selectRoleByBotId("bot001");
+        List<RoleEntity> roleEntityList = this.botRoleMapper.listRoleByBotId("bot001");
         log.info("{}", roleEntityList);
     }
 }

@@ -21,20 +21,23 @@ public class ConversationServiceImpl implements ConversationService {
     private final Map<String, Conversation> conversationMap = new HashMap<>();
 
     @Override
-    public Conversation getByUserId(String userId) {
-        return this.conversationMap.get(userId);
+    public Conversation getByAccountId(String accountId) {
+        return this.conversationMap.get(accountId);
     }
 
     @Override
     public Conversation start(String botId, String userId) {
-        Conversation conversation = new Conversation();
-        this.conversationMap.put(userId, conversation);
-
         // 系统消息，指定助理角色
         LambdaQueryWrapper<BotEntity> botLQW = new LambdaQueryWrapper<BotEntity>()
                 .eq(BotEntity::getBotId, botId)
                 .last("limit 1");
         BotEntity botEntity = this.botMapper.selectOne(botLQW);
+        if (botEntity == null) {
+            return null;
+        }
+
+        Conversation conversation = new Conversation();
+        this.conversationMap.put(userId, conversation);
         Message systemMsg = Message.builder()
                 .role(Message.Role.SYSTEM)
                 .content(botEntity.getInitRoleContent())

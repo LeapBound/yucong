@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ConversationService {
 
-    Conversation getByUserId(String userId);
+    Conversation getByAccountId(String accountId);
 
     Conversation start(String botId, String userId);
 

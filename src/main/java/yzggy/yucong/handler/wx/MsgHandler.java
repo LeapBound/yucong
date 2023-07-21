@@ -28,11 +28,11 @@ public class MsgHandler extends AbstractHandler {
 
         String username = wxMessage.getFromUserName();
         String content = wxMessage.getContent();
-        log.info("{} {}", username, content);
+        log.info("MsgHandler 接收到请求消息 username: {} content: {}", username, content);
 
         SingleChatModel singleChatModel = new SingleChatModel();
-        singleChatModel.setBotId("bot002");
-        singleChatModel.setUserId(username);
+        singleChatModel.setBotId(wxMessage.getAgentId());
+        singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
         String msg = this.gptService.chat(singleChatModel);
 
@@ -50,9 +50,6 @@ public class MsgHandler extends AbstractHandler {
             log.error("send error", e);
         }
 
-//        WxCpXmlOutTextMessage outMessage = new WxCpXmlOutTextMessage();
-//        outMessage.setContent(msg);
-//        return outMessage;
         return null;
     }
 }

@@ -6,6 +6,6 @@ import lombok.Data;
 public class SingleChatModel {
 
     private String botId;
-    private String userId;
+    private String accountId;
     private String content;
 }

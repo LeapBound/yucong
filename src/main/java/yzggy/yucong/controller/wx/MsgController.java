@@ -26,6 +26,7 @@ public class MsgController {
         WxCpXmlMessage inMessage = new WxCpXmlMessage();
         inMessage.setContent(content);
         inMessage.setFromUserName(username);
+        inMessage.setAgentId(agentId.toString());
 
         log.debug("消息解密后内容为：\n{} ", inMessage);
         WxCpXmlOutTextMessage outMessage = (WxCpXmlOutTextMessage) this.route(corpId, agentId, inMessage);

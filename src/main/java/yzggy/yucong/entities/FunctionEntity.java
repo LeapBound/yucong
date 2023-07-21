@@ -5,11 +5,16 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
-@TableName("yc_role")
-public class RoleEntity {
+@TableName("yc_function_manager")
+public class FunctionEntity {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String roleName;
+    private String functionName;
+    private String functionJson;
+    private Date createTime;
+    private Date updateTime;
 }
