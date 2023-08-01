@@ -3,9 +3,11 @@ package yzggy.yucong.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import yzggy.yucong.chat.dialog.Conversation;
+import yzggy.yucong.consts.MqConsts;
 import yzggy.yucong.entities.BotEntity;
 import yzggy.yucong.entities.MessageEntity;
 import yzggy.yucong.mapper.BotMapper;
@@ -22,6 +24,7 @@ public class ConversationServiceImpl implements ConversationService {
 
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final Map<String, Conversation> conversationMap = new HashMap<>();
 
     @Override
@@ -57,7 +60,6 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public void addMessage(String accountId, Message... messages) {
-
         addMessages(accountId, List.of(messages));
     }
 
@@ -66,13 +68,33 @@ public class ConversationServiceImpl implements ConversationService {
         Conversation conversation = this.conversationMap.get(accountId);
         if (conversation != null) {
             messageList.forEach(conversation::addMessage);
+            sendPersistMessageMq(messageList);
         }
     }
 
-    private void persistMessage(Message message) {
-        MessageEntity messageEntity = new MessageEntity();
-        messageEntity.setRole(message.getRole());
-        messageEntity.setContent(message.getContent());
-        this.messageMapper.insert(messageEntity);
+    @Override
+    public void persistMessage(List<Message> messageList) {
+//        List<MessageEntity> entityList = new ArrayList<>(messageList.size());
+        messageList.forEach(message -> {
+            MessageEntity messageEntity = new MessageEntity();
+            messageEntity.setRole(message.getRole());
+            messageEntity.setContent(message.getContent());
+            this.messageMapper.insert(messageEntity);
+        });
+    }
+
+    @Override
+    public void persistMessageMap(List<Map<String, Object>> messageList) {
+//        List<MessageEntity> entityList = new ArrayList<>(messageList.size());
+        messageList.forEach(message -> {
+            MessageEntity messageEntity = new MessageEntity();
+            messageEntity.setRole(message.get("role").toString());
+            messageEntity.setContent(message.get("content").toString());
+            this.messageMapper.insert(messageEntity);
+        });
+    }
+
+    private void sendPersistMessageMq(List<Message> messageList) {
+        this.redisTemplate.convertAndSend(MqConsts.MQ_CHAT_MESSAGE, messageList);
     }
 }
