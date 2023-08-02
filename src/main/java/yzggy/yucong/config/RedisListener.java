@@ -1,15 +1,17 @@
 package yzggy.yucong.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.core.RedisTemplate;
+import yzggy.yucong.chat.dialog.MessageMqTrans;
 import yzggy.yucong.service.ConversationService;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -17,13 +19,20 @@ import java.util.Map;
 public class RedisListener implements MessageListener {
 
     private final ConversationService conversationService;
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
         String topic = new String(pattern);
-        List<Map<String, Object>> messageList = (List<Map<String, Object>>) this.redisTemplate.getValueSerializer().deserialize(message.getBody());
-        this.conversationService.persistMessageMap(messageList);
-        log.info("topic: {}, context: {}", topic, messageList);
+        MessageMqTrans chatMessage = null;
+        try {
+            chatMessage = this.objectMapper.readValue(new String(message.getBody()), new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            log.error("onMessage error", e);
+        }
+
+        this.conversationService.persistMessage(chatMessage);
+        log.info("topic: {}, context: {}", topic, chatMessage);
     }
 }
