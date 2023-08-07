@@ -1,18 +1,21 @@
 package yzggy.yucong.service;
 
 import com.unfbx.chatgpt.entity.chat.Message;
-import yzggy.yucong.chat.dialog.Conversation;
+import yzggy.yucong.chat.dialog.MessageMqTrans;
 
 import java.util.List;
 
 public interface ConversationService {
 
-    Conversation getByAccountId(String accountId);
+    List<Message> getByConversationId(String conversationId);
 
-    Conversation start(String botId, String userId);
+    List<Message> getByBotIdAndAccountId(String botId, String accountId);
 
-    void addMessage(String userId, Message... messages);
+    Boolean start(String botId, String accountId);
 
-    void addMessages(String userId, List<Message> messageList);
+    void addMessage(String botId, String accountId, Message messages);
+
+
+    void persistMessage(MessageMqTrans messageList);
 
 }

@@ -64,7 +64,7 @@ public class FuncServiceImpl implements FuncService {
     }
 
     @Override
-    public void invokeFunc(String accountId, FunctionCall functionCall) {
+    public void invokeFunc(String botId, String accountId, FunctionCall functionCall) {
         try {
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
@@ -73,19 +73,19 @@ public class FuncServiceImpl implements FuncService {
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(functionCall);
             HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<Message> entity = this.actionRestTemplate.postForEntity("/yc-action-server/yc/function/openai/execute", requestEntity, Message.class);
+            ResponseEntity<Message> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, Message.class);
 
             Message message = entity.getBody();
             if (message != null) {
                 log.info("body {}", message);
-                this.conversationService.addMessages(accountId, List.of(message));
+                this.conversationService.addMessage(botId, accountId, message);
             }
         } catch (Exception e) {
             log.error("invokeFunc error", e);
             Message message = new Message();
             message.setRole(Message.Role.SYSTEM.getName());
             message.setContent("关闭失败");
-            this.conversationService.addMessage(accountId, message);
+            this.conversationService.addMessage(botId, accountId, message);
         }
     }
 }

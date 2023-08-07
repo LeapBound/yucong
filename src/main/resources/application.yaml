@@ -10,7 +10,7 @@ server:
   servlet:
     context-path: /yucong
 
-#actuator
+# actuator
 management:
   endpoints:
     web:

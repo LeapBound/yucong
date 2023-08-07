@@ -9,5 +9,5 @@ public interface FuncService {
 
     List<Functions> getListByAccountIdAndBotId(String accountName, String botId);
 
-    void invokeFunc(String userId, FunctionCall functionCall);
+    void invokeFunc(String botId, String userId, FunctionCall functionCall);
 }

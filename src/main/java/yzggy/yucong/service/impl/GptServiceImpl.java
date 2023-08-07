@@ -5,7 +5,6 @@ import com.unfbx.chatgpt.entity.chat.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import yzggy.yucong.chat.dialog.Conversation;
 import yzggy.yucong.model.SingleChatModel;
 import yzggy.yucong.service.ConversationService;
 import yzggy.yucong.service.FuncService;
@@ -25,12 +24,11 @@ public class GptServiceImpl implements GptService {
     @Override
     public String chat(SingleChatModel singleChatModel) {
         String botId = singleChatModel.getBotId();
-        String userId = singleChatModel.getAccountId();
+        String accountId = singleChatModel.getAccountId();
 
-        Conversation conversation = this.conversationService.getByAccountId(userId);
-        if (conversation == null) {
-            conversation = this.conversationService.start(botId, userId);
-            if (conversation == null) {
+        List<Message> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
+        if (messageList == null) {
+            if (!this.conversationService.start(botId, accountId)) {
                 return "该bot没有调用权限";
             }
         }
@@ -40,14 +38,14 @@ public class GptServiceImpl implements GptService {
                 .role(Message.Role.USER)
                 .content(singleChatModel.getContent())
                 .build();
-        this.conversationService.addMessage(userId, userMsg);
+        this.conversationService.addMessage(botId, accountId, userMsg);
 
-        ChatChoice chatChoice = sendToChatServer(botId, userId);
+        ChatChoice chatChoice = sendToChatServer(botId, accountId);
 
         // 处理方法调用
         if (chatChoice.getMessage().getFunctionCall() != null) {
-            this.funcService.invokeFunc(userId, chatChoice.getMessage().getFunctionCall());
-            chatChoice = sendToChatServer(botId, userId);
+            this.funcService.invokeFunc(botId, accountId, chatChoice.getMessage().getFunctionCall());
+            chatChoice = sendToChatServer(botId, accountId);
         }
 
         // 助理消息
@@ -55,14 +53,14 @@ public class GptServiceImpl implements GptService {
                 .role(chatChoice.getMessage().getRole())
                 .content(chatChoice.getMessage().getContent())
                 .build();
-        this.conversationService.addMessage(userId, assistantMsg);
+        this.conversationService.addMessage(botId, accountId, assistantMsg);
 
         return chatChoice.getMessage().getContent();
     }
 
     private ChatChoice sendToChatServer(String botId, String accountId) {
         ChatCompletion.ChatCompletionBuilder chatCompletionBuilder = ChatCompletion.builder()
-                .messages(this.conversationService.getByAccountId(accountId).getMessageList())
+                .messages(this.conversationService.getByBotIdAndAccountId(botId, accountId))
                 .model(ChatCompletion.Model.GPT_3_5_TURBO_0613.getName());
         List<Functions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId);
         if (functionsList != null && functionsList.size() > 0) {

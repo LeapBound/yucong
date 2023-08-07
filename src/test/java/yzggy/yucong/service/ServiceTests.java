@@ -1,6 +1,7 @@
 package yzggy.yucong.service;
 
 import com.unfbx.chatgpt.entity.chat.Functions;
+import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ public class ServiceTests {
     @Autowired
     private ConversationService conversationService;
 
-    private final String botId = "bot001";
+    private final String botId = "1000019";
     private final String accountId = "account001";
 
     @Test
@@ -72,17 +73,20 @@ public class ServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("办理个客人的分期");
-        this.gptService.chat(singleChatModel);
+
+        String response = "";
+        response = this.gptService.chat(singleChatModel);
         singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
-        this.gptService.chat(singleChatModel);
+        response = this.gptService.chat(singleChatModel);
         singleChatModel.setContent("24000");
-        this.gptService.chat(singleChatModel);
+        response = this.gptService.chat(singleChatModel);
     }
 
     @AfterEach
     void printLog() {
-        if (this.conversationService.getByAccountId(accountId) != null) {
-            this.conversationService.getByAccountId(accountId).getMessageList().forEach(message ->
+        List<Message> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
+        if (messageList != null) {
+            messageList.forEach(message ->
                     log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
             );
         }
