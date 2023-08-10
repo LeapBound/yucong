@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @SpringBootTest
-public class ServiceTests {
+public class ChatServiceTests {
 
     @Autowired
     private FuncService funcService;
@@ -124,6 +124,28 @@ public class ServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看下这个订单现在什么状态");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("GEX01-230414-859298");
+        this.gptService.chat(singleChatModel);
+    }
+
+    @Test
+    void tryRepay() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+        singleChatModel.setContent("提前还款费用");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("GEX01-230414-859298");
+        this.gptService.chat(singleChatModel);
+    }
+
+    @Test
+    void tryRefund() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+        singleChatModel.setContent("麻烦看下这个订单退贷费用");
         this.gptService.chat(singleChatModel);
         singleChatModel.setContent("GEX01-230414-859298");
         this.gptService.chat(singleChatModel);

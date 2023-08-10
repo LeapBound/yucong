@@ -1,0 +1,42 @@
+package yzggy.yucong.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import yzggy.yucong.entities.BotEntity;
+import yzggy.yucong.mapper.BotMapper;
+import yzggy.yucong.model.BotModel;
+import yzggy.yucong.service.BotService;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class BotServiceImpl implements BotService {
+
+    private final BotMapper botMapper;
+
+    @Override
+    public List<BotModel> listAll() {
+        QueryWrapper<BotEntity> qw = new QueryWrapper<>();
+        List<BotEntity> botEntityList = this.botMapper.selectList(qw);
+        if (botEntityList != null && !botEntityList.isEmpty()) {
+            List<BotModel> botModelList = new ArrayList<>(botEntityList.size());
+            botEntityList.forEach(botEntity -> botModelList.add(mapBotEntityToModel(botEntity)));
+            return botModelList;
+        }
+        return null;
+    }
+
+    private BotModel mapBotEntityToModel(BotEntity botEntity) {
+        BotModel botModel = new BotModel();
+        botModel.setBotId(botEntity.getBotId());
+        botModel.setBotName(botEntity.getBotName());
+        botModel.setInitContent(botEntity.getInitRoleContent());
+        botModel.setCreateTime(botEntity.getCreateTime());
+        return botModel;
+    }
+}
