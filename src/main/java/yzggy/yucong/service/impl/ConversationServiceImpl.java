@@ -97,6 +97,15 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public void clearMessageHistory(String botId, String accountId) {
+        String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
+        String conversationId = (String) this.redisTemplate.opsForHash().get(mapKey, "conversationId");
+        if (conversationId != null && Boolean.TRUE.equals(this.redisTemplate.hasKey(conversationId))) {
+            this.redisTemplate.delete(conversationId);
+        }
+    }
+
+    @Override
     public void persistMessage(MessageMqTrans message) {
         MessageEntity messageEntity = new MessageEntity();
         messageEntity.setConversationId(message.getConversationId());

@@ -15,6 +15,7 @@ public interface ConversationService {
 
     void addMessage(String botId, String accountId, Message messages);
 
+    void clearMessageHistory(String botId, String accountId);
 
     void persistMessage(MessageMqTrans messageList);
 

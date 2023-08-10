@@ -13,6 +13,11 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     @Override
+    public List<String> listAccountByBotName(String botName) {
+        return null;
+    }
+
+    @Override
     public List<String> getAuthByUserId(String userId) {
         return null;
     }
