@@ -4,6 +4,7 @@ import com.unfbx.chatgpt.entity.chat.Functions;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,8 +23,23 @@ public class ServiceTests {
     @Autowired
     private ConversationService conversationService;
 
-    private final String botId = "1000019";
+    private final String botId = "bot001";
     private final String accountId = "account001";
+
+    @BeforeEach
+    void clearHistory() {
+        this.conversationService.clearMessageHistory(this.botId, this.accountId);
+    }
+
+    @AfterEach
+    void printLog() {
+        List<Message> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
+        if (messageList != null) {
+            messageList.forEach(message ->
+                    log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
+            );
+        }
+    }
 
     @Test
     public void getFuncList() {
@@ -68,28 +84,48 @@ public class ServiceTests {
 
     @Test
     void applyLoan() {
-        // 用户询问上新时间
         SingleChatModel singleChatModel = new SingleChatModel();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("办理个客人的分期");
 
-        String response = "";
-        response = this.gptService.chat(singleChatModel);
+        this.gptService.chat(singleChatModel);
         singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
-        response = this.gptService.chat(singleChatModel);
+        this.gptService.chat(singleChatModel);
         singleChatModel.setContent("24000");
-        response = this.gptService.chat(singleChatModel);
+        this.gptService.chat(singleChatModel);
     }
 
-    @AfterEach
-    void printLog() {
-        List<Message> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
-        if (messageList != null) {
-            messageList.forEach(message ->
-                    log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
-            );
-        }
+    @Test
+    void currentRepay() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+        singleChatModel.setContent("看一下这个订单要还多少钱");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("FCS01-170217-248418");
+        this.gptService.chat(singleChatModel);
     }
 
+    @Test
+    void makeLoanStatus() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+        singleChatModel.setContent("看下这个订单什么时候放款");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("MLB01-230809-471196");
+        this.gptService.chat(singleChatModel);
+    }
+
+    @Test
+    void loanStatus() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+        singleChatModel.setContent("看下这个订单现在什么状态");
+        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("GEX01-230414-859298");
+        this.gptService.chat(singleChatModel);
+    }
 }
