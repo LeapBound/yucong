@@ -69,6 +69,7 @@ public class FuncServiceImpl implements FuncService {
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+            requestHeaders.add("userName", accountId);
             // body
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(functionCall);
