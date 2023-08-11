@@ -49,6 +49,19 @@ public class BotServiceImpl implements BotService {
         return channelEntity.getBotId();
     }
 
+    @Override
+    public Long getBotNIdByBotId(String botId) {
+        LambdaQueryWrapper<BotEntity> queryWrapper = new LambdaQueryWrapper<BotEntity>()
+                .eq(BotEntity::getBotId, botId)
+                .last("limit 1");
+        BotEntity botEntity = this.botMapper.selectOne(queryWrapper);
+        if (botEntity == null) {
+            return null;
+        }
+
+        return botEntity.getId();
+    }
+
     private BotModel mapBotEntityToModel(BotEntity botEntity) {
         BotModel botModel = new BotModel();
         botModel.setBotId(botEntity.getBotId());

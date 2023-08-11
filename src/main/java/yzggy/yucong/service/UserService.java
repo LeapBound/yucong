@@ -1,10 +1,14 @@
 package yzggy.yucong.service;
 
-import java.util.List;
-
 public interface UserService {
 
-    List<String> listAccountByBotName(String botName);
+    Long getUserByUsername(String username);
 
-    List<String> getAuthByUserId(String userId);
+    Long createUser(String username);
+
+    Long getAccountNId(Long userId, Long botId);
+
+    Long createAccount(String accountName, Long userNId, Long botUId);
+
+    void addAccountRoleRelation(String roleName, Long accountNId);
 }

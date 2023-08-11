@@ -30,7 +30,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final RedisTemplate<Object, Object> redisTemplate;
     private final ObjectMapper mapper;
     private final String ACCOUNT_MAP_KEY = "account.conversation.map";
-    private final int EXPIRES = 600;
+    private final int EXPIRES = 300;
 
     @Override
     public List<Message> getByConversationId(String conversationId) {
