@@ -33,6 +33,6 @@ public class RedisListener implements MessageListener {
         }
 
         this.conversationService.persistMessage(chatMessage);
-        log.info("topic: {}, context: {}", topic, chatMessage);
+        log.debug("topic: {}, context: {}", topic, chatMessage);
     }
 }

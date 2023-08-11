@@ -9,14 +9,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import yzggy.yucong.config.WxCpConfiguration;
 import yzggy.yucong.model.R;
+import yzggy.yucong.service.ChannelService;
 
 @Slf4j
 @RestController
 @RequestMapping("/message")
 @RequiredArgsConstructor
 public class MsgController {
+
+    private final ChannelService channelService;
 
     @PostMapping("/receive")
     public R<String> dealMessage(@RequestParam String corpId,
@@ -40,7 +42,7 @@ public class MsgController {
 
     private WxCpXmlOutMessage route(String corpId, Integer agentId, WxCpXmlMessage message) {
         try {
-            return WxCpConfiguration.getRouters().get(corpId + agentId).route(message);
+            return this.channelService.getRouter(corpId, agentId).route(message);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

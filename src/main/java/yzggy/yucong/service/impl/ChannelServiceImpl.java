@@ -1,63 +1,74 @@
-package yzggy.yucong.config;
+package yzggy.yucong.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import me.chanjar.weixin.common.api.WxConsts;
 import me.chanjar.weixin.common.error.WxRuntimeException;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.api.impl.WxCpServiceImpl;
 import me.chanjar.weixin.cp.config.impl.WxCpDefaultConfigImpl;
 import me.chanjar.weixin.cp.message.WxCpMessageRouter;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
+import yzggy.yucong.entities.ChannelEntity;
 import yzggy.yucong.handler.wx.LogHandler;
 import yzggy.yucong.handler.wx.MsgHandler;
+import yzggy.yucong.mapper.ChannelMapper;
+import yzggy.yucong.service.ChannelService;
 
-import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-@Configuration
-@EnableConfigurationProperties(WxCpProperties.class)
+@Slf4j
+@Service
 @RequiredArgsConstructor
-public class WxCpConfiguration {
+public class ChannelServiceImpl implements ChannelService {
 
     private final LogHandler logHandler;
     private final MsgHandler msgHandler;
-    private final WxCpProperties properties;
-    private static final Map<String, WxCpMessageRouter> routers = Maps.newHashMap();
-    private static Map<String, WxCpService> cpServices = Maps.newHashMap();
+    private final ChannelMapper channelMapper;
+    private final Map<String, WxCpMessageRouter> routers = Maps.newHashMap();
+    private final Map<String, WxCpService> cpServices = Maps.newHashMap();
 
-    public static Map<String, WxCpMessageRouter> getRouters() {
-        return routers;
-    }
-
-    public static WxCpService getCpService(String corpId, Integer agentId) {
-        WxCpService cpService = cpServices.get(corpId + agentId);
+    @Override
+    public WxCpService getCpService(String corpId, Integer agentId) {
+        WxCpService cpService = this.cpServices.get(corpId + agentId);
+        if (cpService == null) {
+            cpService = initService(corpId, agentId);
+        }
         return Optional.ofNullable(cpService).orElseThrow(() -> new WxRuntimeException("未配置此service"));
     }
 
-    @PostConstruct
-    public void initServices() {
-        cpServices = this.properties.getAppConfigs().stream()
-                .map(a -> {
-                    WxCpDefaultConfigImpl config = new WxCpDefaultConfigImpl();
-                    config.setCorpId(a.getCorpId());
-                    config.setAgentId(a.getAgentId());
-                    config.setCorpSecret(a.getSecret());
-                    config.setToken(a.getToken());
-                    config.setAesKey(a.getAesKey());
+    @Override
+    public WxCpMessageRouter getRouter(String corpId, Integer agentId) {
+        return this.routers.get(corpId + agentId);
+    }
 
-                    val service = new WxCpServiceImpl();
-                    service.setWxCpConfigStorage(config);
+    private WxCpService initService(String corpId, Integer agentId) {
+        LambdaQueryWrapper<ChannelEntity> queryWrapper = new LambdaQueryWrapper<ChannelEntity>()
+                .eq(ChannelEntity::getCorpId, corpId)
+                .eq(ChannelEntity::getAgentId, agentId)
+                .last("limit 1");
+        ChannelEntity channelEntity = this.channelMapper.selectOne(queryWrapper);
+        if (channelEntity == null) {
+            return null;
+        }
 
-                    routers.put(a.getCorpId() + a.getAgentId(), this.newRouter(service));
-                    return service;
-                })
-                .collect(Collectors.toMap(
-                        service -> service.getWxCpConfigStorage().getCorpId() + service.getWxCpConfigStorage().getAgentId(), a -> a
-                ));
+        WxCpDefaultConfigImpl config = new WxCpDefaultConfigImpl();
+        config.setCorpId(channelEntity.getCorpId());
+        config.setAgentId(Integer.valueOf(channelEntity.getAgentId()));
+        config.setCorpSecret(channelEntity.getSecret());
+        config.setToken(channelEntity.getToken());
+        config.setAesKey(channelEntity.getAesKey());
+
+        val service = new WxCpServiceImpl();
+        service.setWxCpConfigStorage(config);
+
+        this.routers.put(corpId + agentId, newRouter(service));
+        this.cpServices.put(corpId + agentId, service);
+        return service;
     }
 
     private WxCpMessageRouter newRouter(WxCpService wxCpService) {
@@ -103,10 +114,12 @@ public class WxCpConfiguration {
 //        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
 //                .event(WxCpConsts.EventType.ENTER_AGENT).handler(new EnterAgentHandler()).end();
 
-        // 默认
-        newRouter.rule().async(false).handler(this.msgHandler).end();
+        // 信息
+        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.TEXT).handler(this.msgHandler).end();
+
 //        newRouter.rule().async(false).handler(this.msgOrderHandler).end();
 
         return newRouter;
     }
+
 }
