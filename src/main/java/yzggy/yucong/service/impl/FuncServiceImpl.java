@@ -85,7 +85,7 @@ public class FuncServiceImpl implements FuncService {
             log.error("invokeFunc error", e);
             Message message = new Message();
             message.setRole(Message.Role.SYSTEM.getName());
-            message.setContent("关闭失败");
+            message.setContent("处理失败");
             this.conversationService.addMessage(botId, accountId, message);
         }
     }

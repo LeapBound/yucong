@@ -30,7 +30,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final RedisTemplate<Object, Object> redisTemplate;
     private final ObjectMapper mapper;
     private final String ACCOUNT_MAP_KEY = "account.conversation.map";
-    private final int EXPIRES = 600;
+    private final int EXPIRES = 300;
 
     @Override
     public List<Message> getByConversationId(String conversationId) {
@@ -125,14 +125,16 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     private void addMessage(String conversationId, String botId, String accountId, Message message) {
-        this.redisTemplate.opsForList().rightPush(conversationId, message);
-        this.redisTemplate.expire(conversationId, Duration.ofSeconds(EXPIRES));
+        if (StringUtils.hasText(message.getContent())) {
+            this.redisTemplate.opsForList().rightPush(conversationId, message);
+            this.redisTemplate.expire(conversationId, Duration.ofSeconds(EXPIRES));
 
-        MessageMqTrans messageMqTrans = new MessageMqTrans();
-        messageMqTrans.setConversationId(conversationId);
-        messageMqTrans.setBotId(botId);
-        messageMqTrans.setAccountId(accountId);
-        messageMqTrans.setMessage(message);
-        sendPersistMessageMq(messageMqTrans);
+            MessageMqTrans messageMqTrans = new MessageMqTrans();
+            messageMqTrans.setConversationId(conversationId);
+            messageMqTrans.setBotId(botId);
+            messageMqTrans.setAccountId(accountId);
+            messageMqTrans.setMessage(message);
+            sendPersistMessageMq(messageMqTrans);
+        }
     }
 }

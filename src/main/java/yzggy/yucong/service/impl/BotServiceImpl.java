@@ -1,11 +1,14 @@
 package yzggy.yucong.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import yzggy.yucong.entities.BotEntity;
+import yzggy.yucong.entities.ChannelEntity;
 import yzggy.yucong.mapper.BotMapper;
+import yzggy.yucong.mapper.ChannelMapper;
 import yzggy.yucong.model.BotModel;
 import yzggy.yucong.service.BotService;
 
@@ -18,6 +21,7 @@ import java.util.List;
 public class BotServiceImpl implements BotService {
 
     private final BotMapper botMapper;
+    private final ChannelMapper channelMapper;
 
     @Override
     public List<BotModel> listAll() {
@@ -29,6 +33,33 @@ public class BotServiceImpl implements BotService {
             return botModelList;
         }
         return null;
+    }
+
+    @Override
+    public String getBotId(String corpId, String agentId) {
+        LambdaQueryWrapper<ChannelEntity> queryWrapper = new LambdaQueryWrapper<ChannelEntity>()
+                .eq(ChannelEntity::getCorpId, corpId)
+                .eq(ChannelEntity::getAgentId, agentId)
+                .last("limit 1");
+        ChannelEntity channelEntity = this.channelMapper.selectOne(queryWrapper);
+        if (channelEntity == null) {
+            return null;
+        }
+
+        return channelEntity.getBotId();
+    }
+
+    @Override
+    public Long getBotNIdByBotId(String botId) {
+        LambdaQueryWrapper<BotEntity> queryWrapper = new LambdaQueryWrapper<BotEntity>()
+                .eq(BotEntity::getBotId, botId)
+                .last("limit 1");
+        BotEntity botEntity = this.botMapper.selectOne(queryWrapper);
+        if (botEntity == null) {
+            return null;
+        }
+
+        return botEntity.getId();
     }
 
     private BotModel mapBotEntityToModel(BotEntity botEntity) {

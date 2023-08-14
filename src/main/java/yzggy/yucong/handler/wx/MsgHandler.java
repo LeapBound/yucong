@@ -11,6 +11,8 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import org.springframework.stereotype.Component;
 import yzggy.yucong.model.SingleChatModel;
+import yzggy.yucong.service.BotService;
+import yzggy.yucong.service.ChannelService;
 import yzggy.yucong.service.GptService;
 
 import java.util.Map;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class MsgHandler extends AbstractHandler {
 
     private final GptService gptService;
+    private final BotService botService;
 
     @Override
     public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> map, WxCpService wxCpService, WxSessionManager wxSessionManager) throws WxErrorException {
@@ -31,7 +34,7 @@ public class MsgHandler extends AbstractHandler {
         log.info("MsgHandler 接收到请求消息 username: {} content: {}", username, content);
 
         SingleChatModel singleChatModel = new SingleChatModel();
-        singleChatModel.setBotId(wxMessage.getAgentId());
+        singleChatModel.setBotId(this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), wxMessage.getAgentId()));
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
         String msg = this.gptService.chat(singleChatModel);
