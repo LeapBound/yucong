@@ -1,4 +1,4 @@
-package yzggy.yucong.controller;
+package yzggy.yucong.controller.api;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,23 +8,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import yzggy.yucong.model.R;
 import yzggy.yucong.service.BotService;
-import yzggy.yucong.service.ConversationService;
 import yzggy.yucong.service.UserService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/user")
 @RequiredArgsConstructor
-public class ApiController {
+public class ApiUserController {
 
-    private final ConversationService conversationService;
     private final UserService userService;
     private final BotService botService;
-
-    @PostMapping("/conversation/clear")
-    public void clearMsgHistory(@RequestParam String botId, @RequestParam String accountId) {
-        this.conversationService.clearMessageHistory(botId, accountId);
-    }
 
     @PostMapping("/account/create")
     public R<String> createAccount(@RequestParam String username,
@@ -47,6 +40,6 @@ public class ApiController {
         }
 
         this.userService.addAccountRoleRelation(roleName, accountNID);
-        return R.ok("");
+        return R.ok();
     }
 }

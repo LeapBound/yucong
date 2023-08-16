@@ -11,8 +11,10 @@ import yzggy.yucong.mapper.BotMapper;
 import yzggy.yucong.mapper.ChannelMapper;
 import yzggy.yucong.model.BotModel;
 import yzggy.yucong.service.BotService;
+import yzggy.yucong.utils.bean.BotBeanMapper;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -60,6 +62,13 @@ public class BotServiceImpl implements BotService {
         }
 
         return botEntity.getId();
+    }
+
+    @Override
+    public void create(BotModel botModel) {
+        BotEntity botEntity = BotBeanMapper.mapModelToEntity(botModel);
+        botEntity.setCreateTime(new Date());
+        this.botMapper.insert(botEntity);
     }
 
     private BotModel mapBotEntityToModel(BotEntity botEntity) {

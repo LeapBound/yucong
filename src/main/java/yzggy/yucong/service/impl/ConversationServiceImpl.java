@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -29,8 +30,9 @@ public class ConversationServiceImpl implements ConversationService {
     private final MessageMapper messageMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final ObjectMapper mapper;
+    @Value("${yucong.conversation.expire|300}")
+    private int expires;
     private final String ACCOUNT_MAP_KEY = "account.conversation.map";
-    private final int EXPIRES = 300;
 
     @Override
     public List<Message> getByConversationId(String conversationId) {
@@ -74,7 +76,7 @@ public class ConversationServiceImpl implements ConversationService {
         String conversationId = generateConversationId();
         String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
         this.redisTemplate.opsForHash().put(mapKey, "conversationId", conversationId);
-        this.redisTemplate.expire(mapKey, Duration.ofSeconds(EXPIRES));
+        this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
 
         // 初始化角色定义
         if (StringUtils.hasText(botEntity.getInitRoleContent())) {
@@ -91,7 +93,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public void addMessage(String botId, String accountId, Message message) {
         String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
-        this.redisTemplate.expire(mapKey, Duration.ofSeconds(EXPIRES));
+        this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
         String conversationId = (String) this.redisTemplate.opsForHash().get(mapKey, "conversationId");
         addMessage(conversationId, botId, accountId, message);
     }
@@ -127,7 +129,7 @@ public class ConversationServiceImpl implements ConversationService {
     private void addMessage(String conversationId, String botId, String accountId, Message message) {
         if (StringUtils.hasText(message.getContent())) {
             this.redisTemplate.opsForList().rightPush(conversationId, message);
-            this.redisTemplate.expire(conversationId, Duration.ofSeconds(EXPIRES));
+            this.redisTemplate.expire(conversationId, Duration.ofSeconds(this.expires));
 
             MessageMqTrans messageMqTrans = new MessageMqTrans();
             messageMqTrans.setConversationId(conversationId);
