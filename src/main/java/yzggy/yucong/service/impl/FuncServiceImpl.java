@@ -2,10 +2,7 @@ package yzggy.yucong.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.unfbx.chatgpt.entity.chat.FunctionCall;
-import com.unfbx.chatgpt.entity.chat.Functions;
 import com.unfbx.chatgpt.entity.chat.Message;
-import com.unfbx.chatgpt.entity.chat.Parameters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -14,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import yzggy.yucong.chat.func.MyFunctionCall;
 import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.entities.FunctionEntity;
 import yzggy.yucong.mapper.FunctionMapper;
@@ -33,25 +31,16 @@ public class FuncServiceImpl implements FuncService {
     private final RestTemplate actionRestTemplate;
 
     @Override
-    public List<Functions> getListByAccountIdAndBotId(String accountId, String botId) {
+    public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId) {
         // 获取账号function列表
         List<FunctionEntity> functionList = this.functionMapper.listByAccountId(accountId);
         if (functionList != null && functionList.size() > 0) {
             ObjectMapper mapper = new ObjectMapper();
-            List<Functions> functions = new ArrayList<>(functionList.size());
+            List<MyFunctions> functions = new ArrayList<>(functionList.size());
             functionList.forEach(entity -> {
                 try {
                     MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                    Parameters parameters = Parameters.builder()
-                            .type(myFunctions.getParameters().getType())
-                            .properties(myFunctions.getParameters().getProperties())
-                            .required(myFunctions.getParameters().getRequired())
-                            .build();
-                    functions.add(Functions.builder()
-                            .name(myFunctions.getName())
-                            .description(myFunctions.getDescription())
-                            .parameters(parameters)
-                            .build());
+                    functions.add(myFunctions);
                 } catch (JsonProcessingException e) {
                     log.error("getListByAccountIdAndBotId error", e);
                 }
@@ -64,7 +53,7 @@ public class FuncServiceImpl implements FuncService {
     }
 
     @Override
-    public void invokeFunc(String botId, String accountId, FunctionCall functionCall) {
+    public void invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();

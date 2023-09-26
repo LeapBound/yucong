@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import yzggy.yucong.chat.dialog.MessageMqTrans;
+import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.consts.MqConsts;
 import yzggy.yucong.entities.BotEntity;
 import yzggy.yucong.entities.MessageEntity;
@@ -30,25 +31,25 @@ public class ConversationServiceImpl implements ConversationService {
     private final MessageMapper messageMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final ObjectMapper mapper;
-    @Value("${yucong.conversation.expire|300}")
+    @Value("${yucong.conversation.expire:300}")
     private int expires;
     private final String ACCOUNT_MAP_KEY = "account.conversation.map";
 
     @Override
-    public List<Message> getByConversationId(String conversationId) {
+    public List<MyMessage> getByConversationId(String conversationId) {
         if (Boolean.FALSE.equals(this.redisTemplate.hasKey(conversationId))) {
             return null;
         }
 
         List<Object> objList = this.redisTemplate.opsForList().range(conversationId, 0, -1);
-        List<Message> messageList = new ArrayList<>(objList.size());
+        List<MyMessage> messageList = new ArrayList<>(objList.size());
         objList.forEach(o -> messageList.add(mapper.convertValue(o, new TypeReference<>() {
         })));
         return messageList;
     }
 
     @Override
-    public List<Message> getByBotIdAndAccountId(String botId, String accountId) {
+    public List<MyMessage> getByBotIdAndAccountId(String botId, String accountId) {
         String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
         if (Boolean.FALSE.equals(this.redisTemplate.hasKey(mapKey))) {
             return null;

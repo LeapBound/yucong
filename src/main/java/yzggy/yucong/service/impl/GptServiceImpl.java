@@ -1,13 +1,16 @@
 package yzggy.yucong.service.impl;
 
-import com.unfbx.chatgpt.OpenAiClient;
-import com.unfbx.chatgpt.entity.chat.*;
+import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import yzggy.yucong.chat.dialog.MyChatCompletionResponse;
+import yzggy.yucong.chat.dialog.MyMessage;
+import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.model.SingleChatModel;
 import yzggy.yucong.service.ConversationService;
 import yzggy.yucong.service.FuncService;
+import yzggy.yucong.service.GptHandler;
 import yzggy.yucong.service.GptService;
 
 import java.util.List;
@@ -17,16 +20,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GptServiceImpl implements GptService {
 
-    private final OpenAiClient openAiClient;
     private final ConversationService conversationService;
     private final FuncService funcService;
+    private final GptHandler openAiHandler;
+    private final GptHandler qianfanHandler;
 
     @Override
     public String chat(SingleChatModel singleChatModel) {
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
 
-        List<Message> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
+        List<MyMessage> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
         if (messageList == null) {
             if (!this.conversationService.start(botId, accountId)) {
                 return "该bot没有调用权限";
@@ -40,38 +44,27 @@ public class GptServiceImpl implements GptService {
                 .build();
         this.conversationService.addMessage(botId, accountId, userMsg);
 
-        ChatChoice chatChoice = sendToChatServer(botId, accountId);
+        MyChatCompletionResponse response = sendToChatServer(botId, accountId);
 
         // 处理方法调用
-        if (chatChoice.getMessage().getFunctionCall() != null) {
-            this.funcService.invokeFunc(botId, accountId, chatChoice.getMessage().getFunctionCall());
-            chatChoice = sendToChatServer(botId, accountId);
+        if (response.getFunctionCall() != null) {
+            this.funcService.invokeFunc(botId, accountId, response.getFunctionCall());
+            response = sendToChatServer(botId, accountId);
         }
 
         // 助理消息
         Message assistantMsg = Message.builder()
-                .role(chatChoice.getMessage().getRole())
-                .content(chatChoice.getMessage().getContent())
+                .role(response.getMessage().getRole())
+                .content(response.getMessage().getContent())
                 .build();
         this.conversationService.addMessage(botId, accountId, assistantMsg);
 
-        return chatChoice.getMessage().getContent();
+        return response.getMessage().getContent();
     }
 
-    private ChatChoice sendToChatServer(String botId, String accountId) {
-        ChatCompletion.ChatCompletionBuilder chatCompletionBuilder = ChatCompletion.builder()
-                .messages(this.conversationService.getByBotIdAndAccountId(botId, accountId))
-                .model(ChatCompletion.Model.GPT_3_5_TURBO_0613.getName());
-        List<Functions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId);
-        if (functionsList != null && functionsList.size() > 0) {
-            chatCompletionBuilder
-                    .functionCall("auto")
-                    .functions(functionsList);
-        }
-
-        ChatCompletionResponse chatCompletionResponse = this.openAiClient.chatCompletion(chatCompletionBuilder.build());
-        ChatChoice chatChoice = chatCompletionResponse.getChoices().get(0);
-        log.info("sendToChatServer 返回结果: {}", chatChoice);
-        return chatChoice;
+    private MyChatCompletionResponse sendToChatServer(String botId, String accountId) {
+        List<MyMessage> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
+        List<MyFunctions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId);
+        return this.openAiHandler.chatCompletion(messageList, functionsList);
     }
 }

@@ -1,13 +1,13 @@
 package yzggy.yucong.service;
 
-import com.unfbx.chatgpt.entity.chat.Functions;
-import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import yzggy.yucong.chat.dialog.MyMessage;
+import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.model.SingleChatModel;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public class ChatServiceTests {
 
     @AfterEach
     void printLog() {
-        List<Message> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
+        List<MyMessage> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
         if (messageList != null) {
             messageList.forEach(message ->
                     log.info(String.format("%-9s %s", message.getRole(), message.getContent()))
@@ -43,7 +43,7 @@ public class ChatServiceTests {
 
     @Test
     public void getFuncList() {
-        List<Functions> functions = this.funcService.getListByAccountIdAndBotId(accountId, botId);
+        List<MyFunctions> functions = this.funcService.getListByAccountIdAndBotId(accountId, botId);
         log.info("{}", functions);
     }
 
