@@ -1,6 +1,7 @@
 package yzggy.yucong.bce;
 
 import cn.hutool.core.util.StrUtil;
+import io.reactivex.Single;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -9,6 +10,8 @@ import org.springframework.util.StringUtils;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
+import yzggy.yucong.bce.entity.ChatCompletion;
+import yzggy.yucong.bce.entity.ChatCompletionResponse;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -90,6 +93,11 @@ public class QianfanApiClient {
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(JacksonConverterFactory.create())
                 .build().create(QianfanApi.class);
+    }
+
+    public ChatCompletionResponse chatCompletion(ChatCompletion chatCompletion) {
+        Single<ChatCompletionResponse> chatCompletionResponse = this.qianfanApi.chatCompletion("24.1321bb2e6f3dbe96cda86e73d117099a.2592000.1698229133.282335-38561369", chatCompletion);
+        return chatCompletionResponse.blockingGet();
     }
 
     public static final class Builder {

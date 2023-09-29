@@ -3,8 +3,8 @@ package yzggy.yucong.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
@@ -30,6 +31,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
+
     private final ObjectMapper mapper;
     @Value("${yucong.conversation.expire:300}")
     private int expires;
@@ -81,10 +83,9 @@ public class ConversationServiceImpl implements ConversationService {
 
         // 初始化角色定义
         if (StringUtils.hasText(botEntity.getInitRoleContent())) {
-            Message systemMsg = Message.builder()
-                    .role(Message.Role.SYSTEM)
-                    .content(botEntity.getInitRoleContent())
-                    .build();
+            MyMessage systemMsg = new MyMessage();
+            systemMsg.setRole(MyMessage.Role.SYSTEM.getName());
+            systemMsg.setContent(botEntity.getInitRoleContent());
             addMessage(conversationId, botId, accountId, systemMsg);
         }
 
@@ -92,7 +93,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public void addMessage(String botId, String accountId, Message message) {
+    public void addMessage(String botId, String accountId, MyMessage message) {
         String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
         this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
         String conversationId = (String) this.redisTemplate.opsForHash().get(mapKey, "conversationId");
@@ -119,6 +120,30 @@ public class ConversationServiceImpl implements ConversationService {
         this.messageMapper.insert(messageEntity);
     }
 
+    @Override
+    public String findContentOfDialogByConversationId(String conversationId) {
+        LambdaQueryWrapper<MessageEntity> messageLQW = new LambdaQueryWrapper<MessageEntity>()
+                .eq(MessageEntity::getConversationId, conversationId)
+                .ne(MessageEntity::getRole, MyMessage.Role.SYSTEM.getName())
+                .orderByAsc(MessageEntity::getId);
+        List<MessageEntity> messageEntityList = this.messageMapper.selectList(messageLQW);
+
+        if (!messageEntityList.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            messageEntityList.forEach(messageEntity -> {
+                sb
+                        .append(messageEntity.getRole())
+                        .append(": ")
+                        .append(messageEntity.getContent())
+                        .append("\n");
+            });
+            log.info("summaryByConversationId: {}", sb);
+            return sb.toString();
+        }
+
+        return null;
+    }
+
     private void sendPersistMessageMq(MessageMqTrans message) {
         this.redisTemplate.convertAndSend(MqConsts.MQ_CHAT_MESSAGE, message);
     }
@@ -127,7 +152,7 @@ public class ConversationServiceImpl implements ConversationService {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    private void addMessage(String conversationId, String botId, String accountId, Message message) {
+    private void addMessage(String conversationId, String botId, String accountId, MyMessage message) {
         if (StringUtils.hasText(message.getContent())) {
             this.redisTemplate.opsForList().rightPush(conversationId, message);
             this.redisTemplate.expire(conversationId, Duration.ofSeconds(this.expires));

@@ -3,6 +3,7 @@ package yzggy.yucong.service.impl.gpt;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.entity.chat.*;
 import com.unfbx.chatgpt.entity.common.Usage;
+import com.unfbx.chatgpt.entity.embeddings.EmbeddingResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.chat.func.MyParameters;
 import yzggy.yucong.service.GptHandler;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class OpenAiHandler implements GptHandler {
     public MyChatCompletionResponse chatCompletion(List<MyMessage> messageList, List<MyFunctions> functionsList) {
         ChatCompletion.ChatCompletionBuilder chatCompletionBuilder = ChatCompletion.builder()
                 .messages(mapMyMessageListToMessageList(messageList))
-                .model(ChatCompletion.Model.GPT_3_5_TURBO_0613.getName());
+                .model(ChatCompletion.Model.GPT_3_5_TURBO.getName());
         if (functionsList != null && !functionsList.isEmpty()) {
             chatCompletionBuilder
                     .functionCall("auto")
@@ -38,6 +40,32 @@ public class OpenAiHandler implements GptHandler {
         ChatCompletionResponse chatCompletionResponse = this.openAiClient.chatCompletion(chatCompletionBuilder.build());
         log.info("OpenAiHandler chatCompletion 返回结果: {}", chatCompletionResponse.getChoices().get(0));
         return mapChatCompletionResponseToMyChatCompletionResponse(chatCompletionResponse);
+    }
+
+    @Override
+    public MyChatCompletionResponse summary(String content) {
+        String template = "请对以下对话内容进行摘要\n" +
+                "\n" +
+                content;
+        Message message = Message.builder()
+                .role(Message.Role.USER)
+                .content(template)
+                .build();
+
+        ChatCompletion.ChatCompletionBuilder chatCompletionBuilder = ChatCompletion.builder()
+                .messages(List.of(message))
+                .model(ChatCompletion.Model.GPT_3_5_TURBO.getName());
+
+        ChatCompletionResponse chatCompletionResponse = this.openAiClient.chatCompletion(chatCompletionBuilder.build());
+        log.info("OpenAiHandler summary 返回结果: {}", chatCompletionResponse.getChoices().get(0));
+        return mapChatCompletionResponseToMyChatCompletionResponse(chatCompletionResponse);
+    }
+
+    @Override
+    public List<BigDecimal> embedding(String content) {
+        EmbeddingResponse embeddingResponse = this.openAiClient.embeddings(content);
+        log.info("embedding {}", embeddingResponse);
+        return embeddingResponse.getData().get(0).getEmbedding();
     }
 
     private List<Message> mapMyMessageListToMessageList(List<MyMessage> messageList) {
@@ -105,7 +133,9 @@ public class OpenAiHandler implements GptHandler {
         myMessage.setName(message.getName());
         myMessage.setRole(message.getRole());
         myMessage.setContent(message.getContent());
-        myMessage.setFunctionCall(mapFunctionCallToMyFunctionCall(message.getFunctionCall()));
+        if (message.getFunctionCall() != null) {
+            myMessage.setFunctionCall(mapFunctionCallToMyFunctionCall(message.getFunctionCall()));
+        }
         return myMessage;
     }
 

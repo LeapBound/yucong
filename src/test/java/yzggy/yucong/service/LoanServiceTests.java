@@ -7,21 +7,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import yzggy.yucong.chat.dialog.MyMessage;
-import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.model.SingleChatModel;
 
 import java.util.List;
 
 @Slf4j
 @SpringBootTest
-public class ChatServiceTests {
+public class LoanServiceTests {
 
     @Autowired
-    private FuncService funcService;
+    protected FuncService funcService;
     @Autowired
-    private GptService gptService;
+    protected GptService gptService;
     @Autowired
-    private ConversationService conversationService;
+    protected ConversationService conversationService;
 
     private final String botId = "bot001";
     private final String accountId = "account001";
@@ -42,58 +41,17 @@ public class ChatServiceTests {
     }
 
     @Test
-    public void getFuncList() {
-        List<MyFunctions> functions = this.funcService.getListByAccountIdAndBotId(accountId, botId);
-        log.info("{}", functions);
-    }
-
-    @Test
-    void setNewArrival() {
-        // 设置上新时间
-        SingleChatModel singleChatModel = new SingleChatModel();
-        singleChatModel.setBotId(botId);
-        singleChatModel.setAccountId(accountId);
-        singleChatModel.setContent("设置一下上新时间");
-        this.gptService.chat(singleChatModel);
-    }
-
-    @Test
-    void newArrival() {
-        // 用户询问上新时间
-        SingleChatModel singleChatModel = new SingleChatModel();
-        singleChatModel.setBotId(botId);
-        singleChatModel.setAccountId(accountId);
-        singleChatModel.setContent("请问什么时候上新");
-        this.gptService.chat(singleChatModel);
-    }
-
-    @Test
-    void closeAccount() {
-        // 用户询问上新时间
-        SingleChatModel singleChatModel = new SingleChatModel();
-        singleChatModel.setBotId(botId);
-        singleChatModel.setAccountId(accountId);
-        singleChatModel.setContent("关闭离职人员账号");
-        this.gptService.chat(singleChatModel);
-        singleChatModel = new SingleChatModel();
-        singleChatModel.setBotId(botId);
-        singleChatModel.setAccountId(accountId);
-        singleChatModel.setContent("账号是geex001");
-        this.gptService.chat(singleChatModel);
-    }
-
-    @Test
     void applyLoan() {
         SingleChatModel singleChatModel = new SingleChatModel();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("办理个客人的分期");
+        this.gptService.chat(singleChatModel);
 
-        this.gptService.chat(singleChatModel);
-        singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
-        this.gptService.chat(singleChatModel);
-        singleChatModel.setContent("24000");
-        this.gptService.chat(singleChatModel);
+//        singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
+//        this.gptService.chat(singleChatModel);
+//        singleChatModel.setContent("24000");
+//        this.gptService.chat(singleChatModel);
     }
 
     @Test
@@ -150,4 +108,5 @@ public class ChatServiceTests {
         singleChatModel.setContent("GEX01-230414-859298");
         this.gptService.chat(singleChatModel);
     }
+
 }

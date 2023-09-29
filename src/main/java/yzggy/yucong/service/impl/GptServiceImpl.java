@@ -13,6 +13,7 @@ import yzggy.yucong.service.FuncService;
 import yzggy.yucong.service.GptHandler;
 import yzggy.yucong.service.GptService;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Slf4j
@@ -38,10 +39,9 @@ public class GptServiceImpl implements GptService {
         }
 
         // 客户消息
-        Message userMsg = Message.builder()
-                .role(Message.Role.USER)
-                .content(singleChatModel.getContent())
-                .build();
+        MyMessage userMsg = new MyMessage();
+        userMsg.setRole(Message.Role.USER.getName());
+        userMsg.setContent(singleChatModel.getContent());
         this.conversationService.addMessage(botId, accountId, userMsg);
 
         MyChatCompletionResponse response = sendToChatServer(botId, accountId);
@@ -53,18 +53,28 @@ public class GptServiceImpl implements GptService {
         }
 
         // 助理消息
-        Message assistantMsg = Message.builder()
-                .role(response.getMessage().getRole())
-                .content(response.getMessage().getContent())
-                .build();
+        MyMessage assistantMsg = new MyMessage();
+        assistantMsg.setRole(response.getMessage().getRole());
+        assistantMsg.setContent(response.getMessage().getContent());
         this.conversationService.addMessage(botId, accountId, assistantMsg);
 
         return response.getMessage().getContent();
+    }
+
+    @Override
+    public String summary(String content) {
+        return this.openAiHandler.summary(content).getMessage().getContent();
+    }
+
+    @Override
+    public List<BigDecimal> embedding(String content) {
+        return this.openAiHandler.embedding(content);
     }
 
     private MyChatCompletionResponse sendToChatServer(String botId, String accountId) {
         List<MyMessage> messageList = this.conversationService.getByBotIdAndAccountId(botId, accountId);
         List<MyFunctions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId);
         return this.openAiHandler.chatCompletion(messageList, functionsList);
+//        return this.qianfanHandler.chatCompletion(messageList, functionsList);
     }
 }

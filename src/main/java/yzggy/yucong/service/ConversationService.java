@@ -1,6 +1,5 @@
 package yzggy.yucong.service;
 
-import com.unfbx.chatgpt.entity.chat.Message;
 import yzggy.yucong.chat.dialog.MessageMqTrans;
 import yzggy.yucong.chat.dialog.MyMessage;
 
@@ -14,10 +13,11 @@ public interface ConversationService {
 
     Boolean start(String botId, String accountId);
 
-    void addMessage(String botId, String accountId, Message messages);
+    void addMessage(String botId, String accountId, MyMessage messages);
 
     void clearMessageHistory(String botId, String accountId);
 
     void persistMessage(MessageMqTrans messageList);
 
+    String findContentOfDialogByConversationId(String conversationId);
 }

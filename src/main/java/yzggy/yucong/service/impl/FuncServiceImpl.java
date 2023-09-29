@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.chat.func.MyFunctionCall;
 import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.entities.FunctionEntity;
@@ -63,16 +64,16 @@ public class FuncServiceImpl implements FuncService {
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(functionCall);
             HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<Message> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, Message.class);
+            ResponseEntity<MyMessage> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, MyMessage.class);
 
-            Message message = entity.getBody();
+            MyMessage message = entity.getBody();
             if (message != null) {
                 log.info("body {}", message);
                 this.conversationService.addMessage(botId, accountId, message);
             }
         } catch (Exception e) {
             log.error("invokeFunc error", e);
-            Message message = new Message();
+            MyMessage message = new MyMessage();
             message.setRole(Message.Role.SYSTEM.getName());
             message.setContent("处理失败");
             this.conversationService.addMessage(botId, accountId, message);

@@ -21,8 +21,8 @@ public class Message implements Serializable {
     @JsonProperty("function_call")
     private FunctionCall functionCall;
 
-    public static com.unfbx.chatgpt.entity.chat.Message.Builder builder() {
-        return new com.unfbx.chatgpt.entity.chat.Message.Builder();
+    public static Message.Builder builder() {
+        return new Message.Builder();
     }
 
     /**
