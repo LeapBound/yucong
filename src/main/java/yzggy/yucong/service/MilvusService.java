@@ -9,4 +9,6 @@ public interface MilvusService {
     void dropCollection();
 
     void insertData(long id, List<Float> embedding);
+
+    Long search(List<Float> vector);
 }

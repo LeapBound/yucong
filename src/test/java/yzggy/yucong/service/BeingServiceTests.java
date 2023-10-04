@@ -50,16 +50,28 @@ public class BeingServiceTests {
 
     @Test
     void doSummary() {
-        List<BigDecimal> embedding = this.gptService.embedding("assistant: 喵喵~你好呀！有什么我可以帮助你的吗？\n" +
+        String chatHistory = "assistant: 喵喵~你好呀！有什么我可以帮助你的吗？\n" +
                 "user: 今天天气怎么样\n" +
                 "assistant: 喵~天气晴朗，温度为28度，十分适宜\n" +
                 "user: 那我去打个篮球吧，有推荐的运动场所吗\n" +
                 "assistant: 喵~附近有一家叫超级篮球场的体育馆，费用为每小时20元，需要帮你预定吗\n" +
                 "user: 好的，帮我预定一下下午两点的场地吧\n" +
-                "assistant: 抱歉，作为一个虚拟助手，我无法为你进行实时的场地预定喵。记得提前预定场地，以确保你能在下午两点有一个篮球场地可用喵！祝你打球愉快喵~");
+                "assistant: 抱歉，作为一个虚拟助手，我无法为你进行实时的场地预定喵。记得提前预定场地，以确保你能在下午两点有一个篮球场地可用喵！祝你打球愉快喵~";
+        String summary = this.gptService.summary(chatHistory);
+        List<BigDecimal> embedding = this.gptService.embedding(summary);
         List<Float> floatList = new ArrayList<>(embedding.size());
         embedding.forEach(item -> floatList.add(item.floatValue()));
         this.milvusService.insertData(1, floatList);
+    }
+
+    @Test
+    void searchHistory() {
+        String searchContent = "打篮球";
+        List<BigDecimal> embedding = this.gptService.embedding(searchContent);
+        List<Float> floatList = new ArrayList<>(embedding.size());
+        embedding.forEach(item -> floatList.add(item.floatValue()));
+        Long contentId = this.milvusService.search(floatList);
+        log.info("contentId {}", contentId);
     }
 
     @Test
