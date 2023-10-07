@@ -1,4 +1,4 @@
-package yzggy.yucong.service;
+package yzggy.yucong.service.gpt;
 
 import yzggy.yucong.chat.dialog.MyChatCompletionResponse;
 import yzggy.yucong.chat.dialog.MyMessage;

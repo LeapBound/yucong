@@ -13,7 +13,7 @@ import yzggy.yucong.chat.dialog.MyUsage;
 import yzggy.yucong.chat.func.MyFunctionCall;
 import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.chat.func.MyParameters;
-import yzggy.yucong.service.GptHandler;
+import yzggy.yucong.service.gpt.GptHandler;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -64,7 +64,6 @@ public class OpenAiHandler implements GptHandler {
     @Override
     public List<BigDecimal> embedding(String content) {
         EmbeddingResponse embeddingResponse = this.openAiClient.embeddings(content);
-        log.info("embedding {}", embeddingResponse);
         return embeddingResponse.getData().get(0).getEmbedding();
     }
 

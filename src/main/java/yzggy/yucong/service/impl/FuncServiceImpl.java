@@ -17,7 +17,7 @@ import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.entities.FunctionEntity;
 import yzggy.yucong.mapper.FunctionMapper;
 import yzggy.yucong.service.ConversationService;
-import yzggy.yucong.service.FuncService;
+import yzggy.yucong.service.gpt.FuncService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,6 @@ import java.util.List;
 public class FuncServiceImpl implements FuncService {
 
     private final FunctionMapper functionMapper;
-    private final ConversationService conversationService;
     private final RestTemplate actionRestTemplate;
 
     @Override
@@ -54,7 +53,7 @@ public class FuncServiceImpl implements FuncService {
     }
 
     @Override
-    public void invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+    public MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
@@ -69,14 +68,16 @@ public class FuncServiceImpl implements FuncService {
             MyMessage message = entity.getBody();
             if (message != null) {
                 log.info("body {}", message);
-                this.conversationService.addMessage(botId, accountId, message);
+                return message;
             }
         } catch (Exception e) {
             log.error("invokeFunc error", e);
-            MyMessage message = new MyMessage();
-            message.setRole(Message.Role.SYSTEM.getName());
-            message.setContent("处理失败");
-            this.conversationService.addMessage(botId, accountId, message);
         }
+
+        MyMessage message = new MyMessage();
+        message.setRole(Message.Role.SYSTEM.getName());
+        message.setContent("处理失败");
+        return message;
+
     }
 }

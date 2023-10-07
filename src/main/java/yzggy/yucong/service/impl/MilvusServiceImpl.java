@@ -12,7 +12,7 @@ import io.milvus.response.SearchResultsWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import yzggy.yucong.service.MilvusService;
+import yzggy.yucong.service.gpt.MilvusService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,8 @@ public class MilvusServiceImpl implements MilvusService {
     public void createCollection() {
         FieldType fieldType1 = FieldType.newBuilder()
                 .withName("message_id")
-                .withDataType(DataType.Int64)
+                .withDataType(DataType.VarChar)
+                .withMaxLength(32)
                 .withPrimaryKey(true)
                 .withAutoID(false)
                 .build();
@@ -59,7 +60,7 @@ public class MilvusServiceImpl implements MilvusService {
     }
 
     @Override
-    public void insertData(long id, List<Float> embedding) {
+    public void insertData(String id, List<Float> embedding) {
         List<InsertParam.Field> fields = new ArrayList<>();
         fields.add(new InsertParam.Field("message_id", List.of(id)));
         fields.add(new InsertParam.Field("message_summary", List.of(embedding)));
@@ -72,7 +73,7 @@ public class MilvusServiceImpl implements MilvusService {
     }
 
     @Override
-    public Long search(List<Float> vector) {
+    public String search(List<Float> vector) {
         this.milvusServiceClient.loadCollection(
                 LoadCollectionParam.newBuilder()
                         .withCollectionName("message")
@@ -97,6 +98,6 @@ public class MilvusServiceImpl implements MilvusService {
                         .withCollectionName("message")
                         .build());
 
-        return (Long) wrapperSearch.getFieldData("message_id", 0).get(0);
+        return (String) wrapperSearch.getFieldData("message_id", 0).get(0);
     }
 }

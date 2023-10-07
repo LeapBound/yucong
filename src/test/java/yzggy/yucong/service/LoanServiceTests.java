@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.model.SingleChatModel;
+import yzggy.yucong.service.gpt.FuncService;
+import yzggy.yucong.service.gpt.GptService;
 
 import java.util.List;
 
@@ -15,10 +17,6 @@ import java.util.List;
 @SpringBootTest
 public class LoanServiceTests {
 
-    @Autowired
-    protected FuncService funcService;
-    @Autowired
-    protected GptService gptService;
     @Autowired
     protected ConversationService conversationService;
 
@@ -46,7 +44,7 @@ public class LoanServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("办理个客人的分期");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
 
 //        singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
 //        this.gptService.chat(singleChatModel);
@@ -60,9 +58,9 @@ public class LoanServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看一下这个订单要还多少钱");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
         singleChatModel.setContent("FCS01-170217-248418");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
     }
 
     @Test
@@ -71,9 +69,9 @@ public class LoanServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看下这个订单什么时候放款");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
         singleChatModel.setContent("MLB01-230809-471196");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
     }
 
     @Test
@@ -82,9 +80,9 @@ public class LoanServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看下这个订单现在什么状态");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
         singleChatModel.setContent("GEX01-230414-859298");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
     }
 
     @Test
@@ -93,9 +91,9 @@ public class LoanServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("提前还款费用");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
         singleChatModel.setContent("GEX01-230414-859298");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
     }
 
     @Test
@@ -104,9 +102,9 @@ public class LoanServiceTests {
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("麻烦看下这个订单退贷费用");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
         singleChatModel.setContent("GEX01-230414-859298");
-        this.gptService.chat(singleChatModel);
+        this.conversationService.chat(singleChatModel);
     }
 
 }

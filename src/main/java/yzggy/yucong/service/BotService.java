@@ -1,6 +1,7 @@
 package yzggy.yucong.service;
 
 import yzggy.yucong.model.BotModel;
+import yzggy.yucong.model.SingleChatModel;
 
 import java.util.List;
 
@@ -13,4 +14,6 @@ public interface BotService {
     Long getBotNIdByBotId(String botId);
 
     void create(BotModel botModel);
+
+
 }

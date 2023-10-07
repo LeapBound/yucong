@@ -3,6 +3,7 @@ package yzggy.yucong.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,14 +13,22 @@ import org.springframework.util.StringUtils;
 import yzggy.yucong.chat.dialog.MessageMqTrans;
 import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.consts.MqConsts;
+import yzggy.yucong.consts.RedisConsts;
 import yzggy.yucong.entities.BotEntity;
 import yzggy.yucong.entities.MessageEntity;
+import yzggy.yucong.entities.MessageSummaryEntity;
 import yzggy.yucong.mapper.BotMapper;
 import yzggy.yucong.mapper.MessageMapper;
+import yzggy.yucong.mapper.MessageSummaryMapper;
+import yzggy.yucong.model.SingleChatModel;
 import yzggy.yucong.service.ConversationService;
+import yzggy.yucong.service.gpt.GptService;
+import yzggy.yucong.service.gpt.MilvusService;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,12 +39,14 @@ public class ConversationServiceImpl implements ConversationService {
 
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
+    private final MessageSummaryMapper messageSummaryMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
+    private final GptService gptService;
+    private final MilvusService milvusService;
 
     private final ObjectMapper mapper;
     @Value("${yucong.conversation.expire:300}")
     private int expires;
-    private final String ACCOUNT_MAP_KEY = "account.conversation.map";
 
     @Override
     public List<MyMessage> getByConversationId(String conversationId) {
@@ -52,7 +63,7 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public List<MyMessage> getByBotIdAndAccountId(String botId, String accountId) {
-        String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
         if (Boolean.FALSE.equals(this.redisTemplate.hasKey(mapKey))) {
             return null;
         }
@@ -66,46 +77,73 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public Boolean start(String botId, String accountId) {
-        // 系统消息，指定助理角色
-        LambdaQueryWrapper<BotEntity> botLQW = new LambdaQueryWrapper<BotEntity>()
-                .eq(BotEntity::getBotId, botId)
+    public String chat(SingleChatModel singleChatModel) {
+        String botId = singleChatModel.getBotId();
+        String accountId = singleChatModel.getAccountId();
+        String content = singleChatModel.getContent();
+
+        List<MyMessage> messageList = getByBotIdAndAccountId(botId, accountId);
+        if (messageList == null) {
+            if (!start(botId, accountId)) {
+                return "该bot没有调用权限";
+            }
+        }
+        String conversationId = getConversationId(botId, accountId);
+
+        // 匹配历史记忆
+        List<BigDecimal> embedding = this.gptService.embedding(content);
+        List<Float> floatList = new ArrayList<>(embedding.size());
+        embedding.forEach(item -> floatList.add(item.floatValue()));
+        String summaryConversationId = this.milvusService.search(floatList);
+        LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
+                .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
                 .last("limit 1");
-        BotEntity botEntity = this.botMapper.selectOne(botLQW);
-        if (botEntity == null) {
-            return false;
-        }
+        MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
+        MyMessage botMemory = new MyMessage();
+        botMemory.setRole(Message.Role.SYSTEM.getName());
+        botMemory.setContent(summaryEntity.getContent());
+        addMessage(conversationId, botId, accountId, botMemory);
 
-        String conversationId = generateConversationId();
-        String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
-        this.redisTemplate.opsForHash().put(mapKey, "conversationId", conversationId);
-        this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
+        // 客户消息
+        MyMessage userMsg = new MyMessage();
+        userMsg.setRole(Message.Role.USER.getName());
+        userMsg.setContent(content);
+        addMessage(conversationId, botId, accountId, userMsg);
 
-        // 初始化角色定义
-        if (StringUtils.hasText(botEntity.getInitRoleContent())) {
-            MyMessage systemMsg = new MyMessage();
-            systemMsg.setRole(MyMessage.Role.SYSTEM.getName());
-            systemMsg.setContent(botEntity.getInitRoleContent());
-            addMessage(conversationId, botId, accountId, systemMsg);
-        }
+        // 调用gpt服务
+        messageList = getByBotIdAndAccountId(botId, accountId);
+        List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, messageList);
+        gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
 
-        return true;
+        return gptMessageList.get(gptMessageList.size() - 1).getContent();
     }
 
     @Override
-    public void addMessage(String botId, String accountId, MyMessage message) {
-        String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
-        this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
-        String conversationId = (String) this.redisTemplate.opsForHash().get(mapKey, "conversationId");
-        addMessage(conversationId, botId, accountId, message);
+    public void summaryDialog(String conversationId) {
+        String dialogContent = findContentOfDialogByConversationId(conversationId);
+
+        if (StringUtils.hasText(dialogContent)) {
+            String summaryContent = this.gptService.summary(dialogContent);
+            MessageSummaryEntity messageSummaryEntity = new MessageSummaryEntity();
+            messageSummaryEntity.setConversationId(conversationId);
+            messageSummaryEntity.setContent(summaryContent);
+            messageSummaryEntity.setCreateTime(new Date());
+            this.messageSummaryMapper.insert(messageSummaryEntity);
+
+            List<BigDecimal> embedding = this.gptService.embedding(dialogContent);
+            List<Float> floatList = new ArrayList<>(embedding.size());
+            embedding.forEach(item -> floatList.add(item.floatValue()));
+            this.milvusService.insertData(conversationId, floatList);
+        }
     }
 
     @Override
     public void clearMessageHistory(String botId, String accountId) {
-        String mapKey = ACCOUNT_MAP_KEY + botId + accountId;
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
         String conversationId = (String) this.redisTemplate.opsForHash().get(mapKey, "conversationId");
         if (conversationId != null && Boolean.TRUE.equals(this.redisTemplate.hasKey(conversationId))) {
             this.redisTemplate.delete(conversationId);
+            this.redisTemplate.delete(RedisConsts.ACCOUNT_REMAIN_KEY);
         }
     }
 
@@ -120,8 +158,7 @@ public class ConversationServiceImpl implements ConversationService {
         this.messageMapper.insert(messageEntity);
     }
 
-    @Override
-    public String findContentOfDialogByConversationId(String conversationId) {
+    private String findContentOfDialogByConversationId(String conversationId) {
         LambdaQueryWrapper<MessageEntity> messageLQW = new LambdaQueryWrapper<MessageEntity>()
                 .eq(MessageEntity::getConversationId, conversationId)
                 .ne(MessageEntity::getRole, MyMessage.Role.SYSTEM.getName())
@@ -150,6 +187,42 @@ public class ConversationServiceImpl implements ConversationService {
 
     private String generateConversationId() {
         return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private Boolean start(String botId, String accountId) {
+        // 系统消息，指定助理角色
+        LambdaQueryWrapper<BotEntity> botLQW = new LambdaQueryWrapper<BotEntity>()
+                .eq(BotEntity::getBotId, botId)
+                .last("limit 1");
+        BotEntity botEntity = this.botMapper.selectOne(botLQW);
+        if (botEntity == null) {
+            return false;
+        }
+
+        // 保留对话在redis中，并设置过期时间
+        String conversationId = generateConversationId();
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
+        this.redisTemplate.opsForHash().put(mapKey, "conversationId", conversationId);
+        this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
+
+        // 保留对话key，供定时任务使用
+        this.redisTemplate.opsForList().leftPush(RedisConsts.ACCOUNT_REMAIN_KEY, conversationId);
+
+        // 初始化角色定义
+        if (StringUtils.hasText(botEntity.getInitRoleContent())) {
+            MyMessage systemMsg = new MyMessage();
+            systemMsg.setRole(MyMessage.Role.SYSTEM.getName());
+            systemMsg.setContent(botEntity.getInitRoleContent());
+            addMessage(conversationId, botId, accountId, systemMsg);
+        }
+
+        return true;
+    }
+
+    private String getConversationId(String botId, String accountId) {
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
+        this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
+        return (String) this.redisTemplate.opsForHash().get(mapKey, "conversationId");
     }
 
     private void addMessage(String conversationId, String botId, String accountId, MyMessage message) {

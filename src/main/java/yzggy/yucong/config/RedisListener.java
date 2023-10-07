@@ -11,8 +11,6 @@ import org.springframework.data.redis.connection.MessageListener;
 import yzggy.yucong.chat.dialog.MessageMqTrans;
 import yzggy.yucong.service.ConversationService;
 
-import java.util.List;
-
 @Slf4j
 @Configuration
 @AllArgsConstructor

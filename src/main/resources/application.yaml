@@ -21,6 +21,6 @@ management:
     health:
       show-details: always
 
-#spring:
-#  profiles:
-#    active: apollo
+spring:
+  profiles:
+    active: apollo
