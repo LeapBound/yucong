@@ -10,5 +10,5 @@ public interface MilvusService {
 
     void insertData(String id, List<Float> embedding);
 
-    String search(List<Float> vector);
+    String search(List<Float> vector, Double score);
 }

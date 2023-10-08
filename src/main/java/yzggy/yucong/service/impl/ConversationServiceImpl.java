@@ -94,15 +94,17 @@ public class ConversationServiceImpl implements ConversationService {
         List<BigDecimal> embedding = this.gptService.embedding(content);
         List<Float> floatList = new ArrayList<>(embedding.size());
         embedding.forEach(item -> floatList.add(item.floatValue()));
-        String summaryConversationId = this.milvusService.search(floatList);
-        LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
-                .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
-                .last("limit 1");
-        MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
-        MyMessage botMemory = new MyMessage();
-        botMemory.setRole(Message.Role.SYSTEM.getName());
-        botMemory.setContent(summaryEntity.getContent());
-        addMessage(conversationId, botId, accountId, botMemory);
+        String summaryConversationId = this.milvusService.search(floatList, 0.4);
+        if (StringUtils.hasText(summaryConversationId)) {
+            LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
+                    .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
+                    .last("limit 1");
+            MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
+            MyMessage botMemory = new MyMessage();
+            botMemory.setRole(Message.Role.SYSTEM.getName());
+            botMemory.setContent(summaryEntity.getContent());
+            addMessage(conversationId, botId, accountId, botMemory);
+        }
 
         // 客户消息
         MyMessage userMsg = new MyMessage();
@@ -155,6 +157,7 @@ public class ConversationServiceImpl implements ConversationService {
         messageEntity.setAccountId(message.getAccountId());
         messageEntity.setRole(message.getMessage().getRole());
         messageEntity.setContent(message.getMessage().getContent());
+        messageEntity.setCreateTime(message.getCreateTime());
         this.messageMapper.insert(messageEntity);
     }
 
@@ -235,6 +238,7 @@ public class ConversationServiceImpl implements ConversationService {
             messageMqTrans.setBotId(botId);
             messageMqTrans.setAccountId(accountId);
             messageMqTrans.setMessage(message);
+            messageMqTrans.setCreateTime(new Date());
             sendPersistMessageMq(messageMqTrans);
         }
     }

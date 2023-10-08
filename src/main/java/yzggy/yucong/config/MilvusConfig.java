@@ -22,5 +22,4 @@ public class MilvusConfig {
                 .build();
         return new MilvusServiceClient(connectParam);
     }
-
 }

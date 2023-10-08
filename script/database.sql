@@ -104,7 +104,7 @@ create table yc_message_summary
     conversation_id varchar(32) null,
     content         text        null,
     create_time     datetime    null,
-    upate_time      datetime    null
+    update_time     datetime    null
 );
 
 create table yc_role
@@ -142,4 +142,4 @@ create table yc_user
     create_time datetime    null,
     update_time datetime    null
 );
-
+-- 2023/10/08

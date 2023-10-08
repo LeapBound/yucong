@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import yzggy.yucong.service.gpt.MilvusService;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +25,23 @@ import java.util.List;
 public class MilvusServiceImpl implements MilvusService {
 
     private final MilvusServiceClient milvusServiceClient;
+
+    @PostConstruct
+    public void init() {
+        this.milvusServiceClient.loadCollection(
+                LoadCollectionParam.newBuilder()
+                        .withCollectionName("message")
+                        .build()
+        );
+    }
+
+    @PreDestroy
+    public void destroy() {
+        this.milvusServiceClient.releaseCollection(
+                ReleaseCollectionParam.newBuilder()
+                        .withCollectionName("message")
+                        .build());
+    }
 
     @Override
     public void createCollection() {
@@ -73,12 +92,7 @@ public class MilvusServiceImpl implements MilvusService {
     }
 
     @Override
-    public String search(List<Float> vector) {
-        this.milvusServiceClient.loadCollection(
-                LoadCollectionParam.newBuilder()
-                        .withCollectionName("message")
-                        .build()
-        );
+    public String search(List<Float> vector, Double score) {
 
         List<String> searchOutputField = List.of("message_id");
         SearchParam searchParam = SearchParam.newBuilder()
@@ -93,11 +107,10 @@ public class MilvusServiceImpl implements MilvusService {
         SearchResultsWrapper wrapperSearch = new SearchResultsWrapper(respSearch.getData().getResults());
         log.info("getIDScore {}", wrapperSearch.getIDScore(0));
 
-        this.milvusServiceClient.releaseCollection(
-                ReleaseCollectionParam.newBuilder()
-                        .withCollectionName("message")
-                        .build());
+        if (wrapperSearch.getIDScore(0).get(0).getScore() < score) {
+            return (String) wrapperSearch.getFieldData("message_id", 0).get(0);
+        }
 
-        return (String) wrapperSearch.getFieldData("message_id", 0).get(0);
+        return null;
     }
 }
