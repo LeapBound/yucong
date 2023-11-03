@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.model.SingleChatModel;
-import yzggy.yucong.service.gpt.FuncService;
-import yzggy.yucong.service.gpt.GptService;
 
 import java.util.List;
 
@@ -43,13 +41,53 @@ public class LoanServiceTests {
         SingleChatModel singleChatModel = new SingleChatModel();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
-        singleChatModel.setContent("办理个客人的分期");
+        singleChatModel.setContent("我要申请一笔贷款");
         this.conversationService.chat(singleChatModel);
 
-//        singleChatModel.setContent("张雨绮 18012209999 310110200011218888");
-//        this.gptService.chat(singleChatModel);
-//        singleChatModel.setContent("24000");
-//        this.gptService.chat(singleChatModel);
+        singleChatModel.setContent("高志1 15781670616 130725199610121529");
+        this.conversationService.chat(singleChatModel);
+
+        singleChatModel.setContent("是的");
+        this.conversationService.chat(singleChatModel);
+    }
+
+    @Test
+    void applyStatus() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+
+        singleChatModel.setContent("请问我的贷款什么进度了");
+        this.conversationService.chat(singleChatModel);
+
+        singleChatModel.setContent("预审订单");
+        this.conversationService.chat(singleChatModel);
+    }
+
+    @Test
+    void bindCard() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+
+        singleChatModel.setContent("卡号是6227003815977406710，预留手机号15781670614");
+        this.conversationService.chat(singleChatModel);
+
+        singleChatModel.setContent("验证码是123456");
+        this.conversationService.chat(singleChatModel);
+    }
+
+    @Test
+    void withdraw() {
+        SingleChatModel singleChatModel = new SingleChatModel();
+        singleChatModel.setBotId(botId);
+        singleChatModel.setAccountId(accountId);
+
+        singleChatModel.setContent("我要提取3333.3元，分3期");
+        this.conversationService.chat(singleChatModel);
+
+        singleChatModel.setContent("对的");
+        this.conversationService.chat(singleChatModel);
     }
 
     @Test

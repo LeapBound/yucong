@@ -16,7 +16,6 @@ import yzggy.yucong.chat.func.MyFunctionCall;
 import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.entities.FunctionEntity;
 import yzggy.yucong.mapper.FunctionMapper;
-import yzggy.yucong.service.ConversationService;
 import yzggy.yucong.service.gpt.FuncService;
 
 import java.util.ArrayList;
@@ -34,7 +33,7 @@ public class FuncServiceImpl implements FuncService {
     public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId) {
         // 获取账号function列表
         List<FunctionEntity> functionList = this.functionMapper.listByAccountId(accountId);
-        if (functionList != null && functionList.size() > 0) {
+        if (functionList != null && !functionList.isEmpty()) {
             ObjectMapper mapper = new ObjectMapper();
             List<MyFunctions> functions = new ArrayList<>(functionList.size());
             functionList.forEach(entity -> {
@@ -58,10 +57,11 @@ public class FuncServiceImpl implements FuncService {
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("userName", accountId);
+            requestHeaders.add("accountId", accountId);
             // body
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(functionCall);
+            log.debug("invokeFunc json {}", json);
             HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
             ResponseEntity<MyMessage> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, MyMessage.class);
 

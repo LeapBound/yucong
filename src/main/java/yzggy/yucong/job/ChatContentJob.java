@@ -18,7 +18,7 @@ public class ChatContentJob {
     private final StringRedisTemplate redisTemplate;
     private final ConversationService conversationService;
 
-    @Scheduled(cron = "0/5 * * * * ?")
+//    @Scheduled(cron = "0/5 * * * * ?")
     public void summary() {
         List<String> conversationIdList = this.redisTemplate.opsForList().leftPop(RedisConsts.ACCOUNT_REMAIN_KEY, 10);
         if (conversationIdList != null && !conversationIdList.isEmpty()) {

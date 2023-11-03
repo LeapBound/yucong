@@ -10,6 +10,10 @@ server:
   servlet:
     context-path: /yucong
 
+logging:
+  level:
+    yzggy.yucong: DEBUG
+
 # actuator
 management:
   endpoints:

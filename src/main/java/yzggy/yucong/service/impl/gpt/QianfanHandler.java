@@ -16,6 +16,7 @@ import yzggy.yucong.service.gpt.GptHandler;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -27,7 +28,12 @@ public class QianfanHandler implements GptHandler {
     @Override
     public MyChatCompletionResponse chatCompletion(List<MyMessage> messageList, List<MyFunctions> functionsList) {
         ChatCompletion.ChatCompletionBuilder chatCompletionBuilder = ChatCompletion.builder()
-                .messages(mapMyMessageListToMessageList(messageList));
+                .stream(false);
+        if (Objects.equals(messageList.get(0).getRole(), MyMessage.Role.SYSTEM.getName())) {
+            chatCompletionBuilder.system(messageList.get(0).getContent());
+            messageList = messageList.subList(1, messageList.size());
+        }
+        chatCompletionBuilder.messages(mapMyMessageListToMessageList(messageList));
         if (functionsList != null && !functionsList.isEmpty()) {
             chatCompletionBuilder
                     .functionCall("auto")

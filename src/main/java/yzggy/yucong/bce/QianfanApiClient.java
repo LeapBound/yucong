@@ -96,7 +96,8 @@ public class QianfanApiClient {
     }
 
     public ChatCompletionResponse chatCompletion(ChatCompletion chatCompletion) {
-        Single<ChatCompletionResponse> chatCompletionResponse = this.qianfanApi.chatCompletion("24.1321bb2e6f3dbe96cda86e73d117099a.2592000.1698229133.282335-38561369", chatCompletion);
+        String token = "24.8fe100dfd5cf0e22b9acb394a24a642f.2592000.1701511676.282335-38561369";
+        Single<ChatCompletionResponse> chatCompletionResponse = this.qianfanApi.chatCompletion(token, chatCompletion);
         return chatCompletionResponse.blockingGet();
     }
 

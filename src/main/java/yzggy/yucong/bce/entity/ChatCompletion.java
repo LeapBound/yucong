@@ -16,6 +16,9 @@ import java.util.List;
 @AllArgsConstructor
 public class ChatCompletion implements Serializable {
 
+    private String system;
+    private Boolean stream;
+
     @NonNull
     private List<Message> messages;
 

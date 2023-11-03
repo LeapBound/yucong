@@ -29,8 +29,8 @@ public class GptServiceImpl implements GptService {
         List<MyMessage> gptMessageList = new ArrayList<>(2);
 
         // 处理方法调用
-        if (response.getFunctionCall() != null) {
-            MyMessage message = this.funcService.invokeFunc(botId, accountId, response.getFunctionCall());
+        if (response.getMessage().getFunctionCall() != null) {
+            MyMessage message = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());
             messageList.add(message);
             gptMessageList.add(message);
 
