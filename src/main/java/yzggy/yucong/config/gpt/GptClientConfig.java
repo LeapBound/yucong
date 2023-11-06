@@ -1,4 +1,4 @@
-package yzggy.yucong.config;
+package yzggy.yucong.config.gpt;
 
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.interceptor.DefaultOpenAiAuthInterceptor;
@@ -9,7 +9,8 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import yzggy.yucong.bce.QianfanApiClient;
+import yzggy.yucong.config.gpt.FirstKeyStrategy;
+import yzggy.yucong.vendor.bce.QianfanApiClient;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;

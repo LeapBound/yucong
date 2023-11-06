@@ -1,4 +1,4 @@
-package yzggy.yucong.config;
+package yzggy.yucong.config.redis;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

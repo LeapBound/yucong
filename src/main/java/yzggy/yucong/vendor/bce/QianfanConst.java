@@ -1,4 +1,4 @@
-package yzggy.yucong.bce;
+package yzggy.yucong.vendor.bce;
 
 public class QianfanConst {
 

@@ -1,4 +1,4 @@
-package yzggy.yucong.handler.wx;
+package yzggy.yucong.handler.wx.cp;
 
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class LogHandler extends AbstractHandler {
+public class CpLogHandler extends AbstractHandler {
 
     @Override
     public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> map, WxCpService wxCpService, WxSessionManager wxSessionManager) throws WxErrorException {

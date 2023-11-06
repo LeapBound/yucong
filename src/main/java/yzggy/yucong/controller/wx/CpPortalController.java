@@ -15,7 +15,7 @@ import yzggy.yucong.service.ChannelService;
 @RestController
 @RequestMapping("/wx/cp/portal/{corpId}/{agentId}")
 @RequiredArgsConstructor
-public class PortalController {
+public class CpPortalController {
 
     private final ChannelService channelService;
 
@@ -26,7 +26,7 @@ public class PortalController {
                           @RequestParam(name = "timestamp", required = false) String timestamp,
                           @RequestParam(name = "nonce", required = false) String nonce,
                           @RequestParam(name = "echostr", required = false) String echostr) {
-        log.debug("接收到来自微信服务器的认证消息：signature = [{}], timestamp = [{}], nonce = [{}], echostr = [{}]",
+        log.debug("接收到来自微信服务器CP的认证消息：signature = [{}], timestamp = [{}], nonce = [{}], echostr = [{}]",
                 signature, timestamp, nonce, echostr);
 
         if (StringUtils.isAnyBlank(signature, timestamp, nonce, echostr)) {
@@ -75,7 +75,7 @@ public class PortalController {
 
     private WxCpXmlOutMessage route(String corpId, Integer agentId, WxCpXmlMessage message) {
         try {
-            return this.channelService.getRouter(corpId, agentId).route(message);
+            return this.channelService.getCpRouter(corpId, agentId).route(message);
         } catch (Exception e) {
             log.error("route", e);
         }

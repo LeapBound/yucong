@@ -1,4 +1,4 @@
-package yzggy.yucong.config;
+package yzggy.yucong.config.gpt;
 
 import com.unfbx.chatgpt.function.KeyStrategyFunction;
 

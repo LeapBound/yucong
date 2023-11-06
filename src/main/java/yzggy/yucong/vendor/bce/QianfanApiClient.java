@@ -1,4 +1,4 @@
-package yzggy.yucong.bce;
+package yzggy.yucong.vendor.bce;
 
 import cn.hutool.core.util.StrUtil;
 import io.reactivex.Single;
@@ -10,8 +10,8 @@ import org.springframework.util.StringUtils;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import yzggy.yucong.bce.entity.ChatCompletion;
-import yzggy.yucong.bce.entity.ChatCompletionResponse;
+import yzggy.yucong.vendor.bce.entity.ChatCompletion;
+import yzggy.yucong.vendor.bce.entity.ChatCompletionResponse;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;

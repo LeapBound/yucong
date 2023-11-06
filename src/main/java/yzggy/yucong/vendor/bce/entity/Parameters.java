@@ -1,4 +1,4 @@
-package yzggy.yucong.bce.entity;
+package yzggy.yucong.vendor.bce.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

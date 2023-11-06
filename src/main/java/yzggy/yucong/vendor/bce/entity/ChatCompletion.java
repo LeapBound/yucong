@@ -1,4 +1,4 @@
-package yzggy.yucong.bce.entity;
+package yzggy.yucong.vendor.bce.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

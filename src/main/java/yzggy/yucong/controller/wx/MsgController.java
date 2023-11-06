@@ -42,7 +42,7 @@ public class MsgController {
 
     private WxCpXmlOutMessage route(String corpId, Integer agentId, WxCpXmlMessage message) {
         try {
-            return this.channelService.getRouter(corpId, agentId).route(message);
+            return this.channelService.getCpRouter(corpId, agentId).route(message);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

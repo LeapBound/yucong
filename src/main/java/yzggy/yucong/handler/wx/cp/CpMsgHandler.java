@@ -1,4 +1,4 @@
-package yzggy.yucong.handler.wx;
+package yzggy.yucong.handler.wx.cp;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MsgHandler extends AbstractHandler {
+public class CpMsgHandler extends AbstractHandler {
 
     private final ConversationService conversationService;
     private final BotService botService;
@@ -30,7 +30,7 @@ public class MsgHandler extends AbstractHandler {
 
         String username = wxMessage.getFromUserName();
         String content = wxMessage.getContent();
-        log.info("MsgHandler 接收到请求消息 username: {} content: {}", username, content);
+        log.info("CpMsgHandler 接收到请求消息 username: {} content: {}", username, content);
 
         SingleChatModel singleChatModel = new SingleChatModel();
         singleChatModel.setBotId(this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), wxMessage.getAgentId()));

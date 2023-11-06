@@ -1,20 +1,16 @@
-package yzggy.yucong.bce.entity;
+package yzggy.yucong.vendor.bce.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Functions implements Serializable {
-
+public class FunctionCall {
     private String name;
-    private String description;
-    private Parameters parameters;
-
+    private String thoughts;
+    private String arguments;
 }

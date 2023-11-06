@@ -3,8 +3,7 @@ package yzggy.yucong.service.impl.gpt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import yzggy.yucong.bce.QianfanApiClient;
-import yzggy.yucong.bce.entity.*;
+import yzggy.yucong.vendor.bce.QianfanApiClient;
 import yzggy.yucong.chat.dialog.MyChatCompletionResponse;
 import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.chat.dialog.MyUsage;
@@ -12,6 +11,7 @@ import yzggy.yucong.chat.func.MyFunctionCall;
 import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.chat.func.MyParameters;
 import yzggy.yucong.service.gpt.GptHandler;
+import yzggy.yucong.vendor.bce.entity.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
