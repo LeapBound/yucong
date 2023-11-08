@@ -3,8 +3,10 @@ package yzggy.yucong.chat.dialog;
 import lombok.Data;
 import yzggy.yucong.chat.func.MyFunctionCall;
 
+import java.io.Serializable;
+
 @Data
-public class MyChatCompletionResponse {
+public class MyChatCompletionResponse implements Serializable {
     private String id;
     private String object;
     private long created;

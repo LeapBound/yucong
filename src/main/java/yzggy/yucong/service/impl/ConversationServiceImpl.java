@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final RedisTemplate<Object, Object> redisTemplate;
     private final GptService gptService;
     private final MilvusService milvusService;
+    private final AmqpTemplate amqpTemplate;
 
     private final ObjectMapper mapper;
     @Value("${yucong.conversation.expire:300}")
@@ -185,7 +187,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     private void sendPersistMessageMq(MessageMqTrans message) {
-        this.redisTemplate.convertAndSend(MqConsts.MQ_CHAT_MESSAGE, message);
+        this.amqpTemplate.convertAndSend(MqConsts.MQ_DEFAULT_DIRECT_EXCHANGE, MqConsts.MQ_CHAT_MESSAGE_KEY, message);
     }
 
     private String generateConversationId() {

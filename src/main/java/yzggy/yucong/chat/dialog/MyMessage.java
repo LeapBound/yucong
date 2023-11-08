@@ -5,8 +5,10 @@ import lombok.Data;
 import lombok.Getter;
 import yzggy.yucong.chat.func.MyFunctionCall;
 
+import java.io.Serializable;
+
 @Data
-public class MyMessage {
+public class MyMessage implements Serializable {
 
     private String role;
     private String content;
