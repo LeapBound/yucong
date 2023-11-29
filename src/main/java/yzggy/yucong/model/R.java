@@ -20,6 +20,10 @@ public class R<T> {
         return r;
     }
 
+    public static <D> R<D> ok() {
+        return ok(null);
+    }
+
     public static <D> R<D> ok(D data) {
         R<D> r = new R<>();
         r.setStatus(200);

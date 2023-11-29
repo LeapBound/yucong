@@ -2,17 +2,25 @@ package yzggy.yucong.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import yzggy.yucong.chat.dialog.MyMessage;
+import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.entities.BotEntity;
 import yzggy.yucong.entities.ChannelEntity;
 import yzggy.yucong.mapper.BotMapper;
 import yzggy.yucong.mapper.ChannelMapper;
 import yzggy.yucong.model.BotModel;
+import yzggy.yucong.model.SingleChatModel;
 import yzggy.yucong.service.BotService;
+import yzggy.yucong.service.ConversationService;
+import yzggy.yucong.service.gpt.FuncService;
+import yzggy.yucong.utils.bean.BotBeanMapper;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -60,6 +68,13 @@ public class BotServiceImpl implements BotService {
         }
 
         return botEntity.getId();
+    }
+
+    @Override
+    public void create(BotModel botModel) {
+        BotEntity botEntity = BotBeanMapper.mapModelToEntity(botModel);
+        botEntity.setCreateTime(new Date());
+        this.botMapper.insert(botEntity);
     }
 
     private BotModel mapBotEntityToModel(BotEntity botEntity) {

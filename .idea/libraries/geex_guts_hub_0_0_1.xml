@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="geex-guts-hub-0.0.1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../guts/geex-guts-hub/target/geex-guts-hub-0.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
