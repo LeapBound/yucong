@@ -172,13 +172,11 @@ public class ConversationServiceImpl implements ConversationService {
 
         if (!messageEntityList.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            messageEntityList.forEach(messageEntity -> {
-                sb
-                        .append(messageEntity.getRole())
-                        .append(": ")
-                        .append(messageEntity.getContent())
-                        .append("\n");
-            });
+            messageEntityList.forEach(messageEntity -> sb
+                    .append(messageEntity.getRole())
+                    .append(": ")
+                    .append(messageEntity.getContent())
+                    .append("\n"));
             log.info("summaryByConversationId: {}", sb);
             return sb.toString();
         }

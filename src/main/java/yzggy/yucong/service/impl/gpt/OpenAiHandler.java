@@ -30,7 +30,7 @@ public class OpenAiHandler implements GptHandler {
     public MyChatCompletionResponse chatCompletion(List<MyMessage> messageList, List<MyFunctions> functionsList) {
         ChatCompletion.ChatCompletionBuilder chatCompletionBuilder = ChatCompletion.builder()
                 .messages(mapMyMessageListToMessageList(messageList))
-                .model(ChatCompletion.Model.GPT_3_5_TURBO.getName());
+                .model("gpt-3.5-turbo-1106");
         if (functionsList != null && !functionsList.isEmpty()) {
             chatCompletionBuilder
                     .functionCall("auto")

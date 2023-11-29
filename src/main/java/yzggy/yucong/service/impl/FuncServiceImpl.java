@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import yzggy.yucong.chat.dialog.MyMessage;
@@ -31,8 +28,28 @@ public class FuncServiceImpl implements FuncService {
 
     @Override
     public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId) {
+        // 查询是否存在进行中的流程
+        String taskName = null;
+        try {
+            // 请求action server执行方法
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+            requestHeaders.add("accountId", accountId);
+            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
+            ResponseEntity<String> entity = this.actionRestTemplate.exchange("/yc/business/task/next", HttpMethod.GET, requestEntity, String.class);
+
+            taskName = entity.getBody();
+        } catch (Exception e) {
+            log.error("getTask error", e);
+        }
+
         // 获取账号function列表
-        List<FunctionEntity> functionList = this.functionMapper.listByAccountId(accountId);
+        List<FunctionEntity> functionList;
+        if (taskName == null) {
+            functionList = this.functionMapper.listByAccountId(accountId);
+        } else {
+            functionList = this.functionMapper.listByTaskName(taskName);
+        }
         if (functionList != null && !functionList.isEmpty()) {
             ObjectMapper mapper = new ObjectMapper();
             List<MyFunctions> functions = new ArrayList<>(functionList.size());
@@ -78,6 +95,5 @@ public class FuncServiceImpl implements FuncService {
         message.setRole(Message.Role.SYSTEM.getName());
         message.setContent("处理失败");
         return message;
-
     }
 }

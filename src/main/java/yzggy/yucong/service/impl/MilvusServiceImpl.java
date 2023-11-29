@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import yzggy.yucong.service.gpt.MilvusService;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +22,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MilvusServiceImpl implements MilvusService {
 
-    private final MilvusServiceClient milvusServiceClient;
+    //    private final MilvusServiceClient milvusServiceClient;
+    private MilvusServiceClient milvusServiceClient;
 
-    @PostConstruct
+    //    @PostConstruct
     public void init() {
         this.milvusServiceClient.loadCollection(
                 LoadCollectionParam.newBuilder()
@@ -35,7 +34,7 @@ public class MilvusServiceImpl implements MilvusService {
         );
     }
 
-    @PreDestroy
+    //    @PreDestroy
     public void destroy() {
         this.milvusServiceClient.releaseCollection(
                 ReleaseCollectionParam.newBuilder()

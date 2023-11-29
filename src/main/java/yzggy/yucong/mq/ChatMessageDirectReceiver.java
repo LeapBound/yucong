@@ -17,7 +17,7 @@ public class ChatMessageDirectReceiver {
 
     @RabbitListener(queues = MqConsts.MQ_CHAT_MESSAGE)
     public void receive(MessageMqTrans chatMessage) {
-        log.info("接收到{}的消息：{}", MqConsts.MQ_CHAT_MESSAGE, chatMessage);
+//        log.info("接收到{}的消息：{}", MqConsts.MQ_CHAT_MESSAGE, chatMessage);
         this.conversationService.persistMessage(chatMessage);
     }
 }

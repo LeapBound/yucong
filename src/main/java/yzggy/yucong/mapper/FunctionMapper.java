@@ -16,4 +16,10 @@ public interface FunctionMapper extends BaseMapper<FunctionEntity> {
             "where a.account_name = #{accountId} " +
             "  and rr.relation_type = 1 ")
     List<FunctionEntity> listByAccountId(String accountId);
+
+    @Select("select fm.*" +
+            "from yc_task_function tf " +
+            "         left join yc_function_manage fm on tf.function_id = fm.id " +
+            "where tf.task_name = #{taskName}")
+    List<FunctionEntity> listByTaskName(String taskName);
 }
