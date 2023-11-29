@@ -9,7 +9,6 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import yzggy.yucong.config.gpt.FirstKeyStrategy;
 import yzggy.yucong.vendor.bce.QianfanApiClient;
 
 import java.util.Collections;
@@ -22,9 +21,9 @@ public class GptClientConfig {
     private String base;
     @Value("${api2d.api.key}")
     private String key;
-//    @Value("${bce.client.id}")
+    @Value("${bce.client.id}")
     private String qianfanClientId;
-//    @Value("${bce.client.secret}")
+    @Value("${bce.client.secret}")
     private String qianfanClientSecret;
 
     @Bean
