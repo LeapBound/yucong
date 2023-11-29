@@ -8,9 +8,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MilvusConfig {
 
-    @Value("${milvus.host}")
+//    @Value("${milvus.host}")
     private String host;
-    @Value("${milvus.port}")
+//    @Value("${milvus.port}")
     private Integer port;
 
     @Bean

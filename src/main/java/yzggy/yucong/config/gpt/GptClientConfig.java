@@ -22,9 +22,9 @@ public class GptClientConfig {
     private String base;
     @Value("${api2d.api.key}")
     private String key;
-    @Value("${bce.client.id}")
+//    @Value("${bce.client.id}")
     private String qianfanClientId;
-    @Value("${bce.client.secret}")
+//    @Value("${bce.client.secret}")
     private String qianfanClientSecret;
 
     @Bean
