@@ -1,7 +1,7 @@
 package yzggy.yucong.service.gpt;
 
-import yzggy.yucong.chat.dialog.MyChatCompletionResponse;
 import yzggy.yucong.chat.dialog.MyMessage;
+import yzggy.yucong.model.process.ProcessTaskDto;
 
 import java.math.BigDecimal;
 import java.util.List;

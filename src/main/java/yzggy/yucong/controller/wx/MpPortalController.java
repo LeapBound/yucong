@@ -96,5 +96,4 @@ public class MpPortalController {
 
         return null;
     }
-
 }

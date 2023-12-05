@@ -16,7 +16,7 @@ public class MpLogHandler extends AbstractHandler {
 
     @Override
     public WxMpXmlOutMessage handle(WxMpXmlMessage wxMpXmlMessage, Map<String, Object> map, WxMpService wxMpService, WxSessionManager wxSessionManager) throws WxErrorException {
-        log.info("{}", wxMpXmlMessage);
+//        log.info("{}", wxMpXmlMessage);
         return null;
     }
 }

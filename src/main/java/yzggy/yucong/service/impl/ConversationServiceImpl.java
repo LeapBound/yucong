@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 import yzggy.yucong.chat.dialog.MessageMqTrans;
 import yzggy.yucong.chat.dialog.MyMessage;
 import yzggy.yucong.consts.MqConsts;
@@ -45,6 +46,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final GptService gptService;
     private final MilvusService milvusService;
     private final AmqpTemplate amqpTemplate;
+    private final RestTemplate actionRestTemplate;
 
     private final ObjectMapper mapper;
     @Value("${yucong.conversation.expire:300}")
