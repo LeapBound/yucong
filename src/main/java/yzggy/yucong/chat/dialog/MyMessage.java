@@ -12,6 +12,8 @@ public class MyMessage implements Serializable {
 
     private String role;
     private String content;
+    private String picUrl;
+    private String type;
     private String name;
 
     private MyFunctionCall functionCall;

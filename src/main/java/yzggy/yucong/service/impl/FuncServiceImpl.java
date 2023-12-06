@@ -1,14 +1,12 @@
 package yzggy.yucong.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -20,8 +18,7 @@ import yzggy.yucong.mapper.FunctionMapper;
 import yzggy.yucong.model.process.ProcessTaskDto;
 import yzggy.yucong.service.gpt.FuncService;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -36,7 +33,7 @@ public class FuncServiceImpl implements FuncService {
         // 获取账号function列表
         List<FunctionEntity> functionList = null;
         if (task == null) {
-            functionList = this.functionMapper.listByAccountId(accountId);
+            functionList = this.functionMapper.listByBotId(botId);
         } else if (StringUtils.hasText(task.getTaskName())) {
             functionList = this.functionMapper.listByTaskName(task.getTaskName());
         }
@@ -44,19 +41,69 @@ public class FuncServiceImpl implements FuncService {
         if (functionList != null && !functionList.isEmpty()) {
             ObjectMapper mapper = new ObjectMapper();
             List<MyFunctions> functions = new ArrayList<>(functionList.size());
-            functionList.forEach(entity -> {
-                try {
-                    MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                    log.info("待执行的function: {}", myFunctions.getName());
-                    functions.add(myFunctions);
-                } catch (JsonProcessingException e) {
-                    log.error("getListByAccountIdAndBotId error", e);
-                }
-            });
+            if (task != null) {
+                JSONObject config = loadProcessConfig(task.getProcessInstanceId());
+                functionList.forEach(entity -> {
+                    try {
+                        MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
+                        // 填充枚举
+                        myFunctions.getParameters().getProperties().forEach((k, v) -> {
+                            switch (k) {
+                                case "loanTerm":
+                                    Map<String, Object> property = (Map<String, Object>) v;
+                                    Set<String> termSet = new HashSet<>();
+                                    for (Object stage : config.getJSONArray("StageCount")) {
+                                        Map<String, Object> stageObject = (Map<String, Object>) stage;
+                                        String value = stageObject.get("value").toString();
+                                        if (!"请选择".equals(value)) {
+                                            termSet.add(value);
+                                        }
+                                    }
+                                    property.put("enum", termSet);
+                                    break;
+                            }
+
+                        });
+                        log.info("可以执行的function: {}", myFunctions);
+                        functions.add(myFunctions);
+                    } catch (JsonProcessingException e) {
+                        log.error("getListByAccountIdAndBotId error", e);
+                    }
+                });
+            } else {
+                functionList.forEach(entity -> {
+                    try {
+                        MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
+                        log.info("可以执行的function: {}", myFunctions.getName());
+                        functions.add(myFunctions);
+                    } catch (JsonProcessingException e) {
+                        log.error("getListByAccountIdAndBotId error", e);
+                    }
+                });
+            }
             return functions;
         }
 
         return null;
+    }
+
+    private JSONObject loadProcessConfig(String processInstanceId) {
+        // 查询是否存在进行中的流程
+        JSONObject task = null;
+        try {
+            // 请求action server执行方法
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+            requestHeaders.add("processInstanceId", processInstanceId);
+            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
+            ResponseEntity<JSONObject> entity = this.actionRestTemplate.exchange("/yc/business/process/config", HttpMethod.GET, requestEntity, JSONObject.class);
+
+            task = entity.getBody();
+        } catch (Exception e) {
+            log.error("getTask error", e);
+        }
+
+        return task;
     }
 
     @Override

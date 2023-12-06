@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import yzggy.yucong.model.R;
 import yzggy.yucong.service.ChannelService;
 
-import java.util.HashMap;
-
 @Slf4j
 @RestController
 @RequestMapping("/api/wx")
@@ -45,8 +43,7 @@ public class ApiWxController {
         inMessage.setContent(content);
 
         log.debug("消息解密后内容为：\n{} ", inMessage);
-        WxMpService wxMpService = this.channelService.getMpService(appId);
-        WxMpXmlOutMessage outMessage = this.channelService.getMpRouter(appId).route(inMessage, new HashMap<>(), wxMpService);
+        WxMpXmlOutMessage outMessage = this.channelService.getMpRouter(appId).route(inMessage);
 
         log.debug("组装回复信息：\n{}", outMessage);
         return outMessage;

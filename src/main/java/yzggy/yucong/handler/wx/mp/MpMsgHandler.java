@@ -34,10 +34,13 @@ public class MpMsgHandler extends AbstractHandler {
         singleChatModel.setBotId(this.botService.getBotId(wxMpService.getWxMpConfigStorage().getAppId()));
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
+        singleChatModel.setPicUrl(wxMessage.getPicUrl());
+        singleChatModel.setType(wxMessage.getMsgType());
         String msg = this.conversationService.chat(singleChatModel);
 
         return WxMpXmlOutMessage
                 .TEXT()
+                .fromUser(wxMessage.getToUser())
                 .toUser(username)
                 .content(msg)
                 .build();

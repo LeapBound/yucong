@@ -14,6 +14,7 @@ import me.chanjar.weixin.mp.api.WxMpMessageRouter;
 import me.chanjar.weixin.mp.api.WxMpService;
 import me.chanjar.weixin.mp.api.impl.WxMpServiceImpl;
 import me.chanjar.weixin.mp.config.impl.WxMpDefaultConfigImpl;
+import me.chanjar.weixin.mp.util.WxMpConfigStorageHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import yzggy.yucong.entities.ChannelEntity;
@@ -67,7 +68,14 @@ public class ChannelServiceImpl implements ChannelService {
 
     @Override
     public WxMpMessageRouter getMpRouter(String appId) {
-        return this.mpRouters.get(appId);
+        // TODO: 2023/12/5
+        WxMpConfigStorageHolder.set(appId);
+        WxMpMessageRouter mpMessageRouter = this.mpRouters.get(appId);
+        if (mpMessageRouter == null) {
+            initMpService(appId);
+            mpMessageRouter = this.mpRouters.get(appId);
+        }
+        return mpMessageRouter;
     }
 
     private WxCpService initCpService(String corpId, Integer agentId) {
@@ -179,6 +187,7 @@ public class ChannelServiceImpl implements ChannelService {
 
         // 信息
         newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.TEXT).handler(this.mpMsgHandler).end();
+        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.IMAGE).handler(this.mpMsgHandler).end();
 
         return newRouter;
     }
