@@ -10,5 +10,11 @@ public interface BotService {
 
     String getBotId(String corpId, String agentId);
 
+    String getBotId(String appId);
+
     Long getBotNIdByBotId(String botId);
+
+    void create(BotModel botModel);
+
+
 }

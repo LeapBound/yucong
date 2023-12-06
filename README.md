@@ -18,11 +18,11 @@ Quick Start
 
 - 1. develop required (JAVA)
 
-springboot + mybatisplus + jdk17
+springboot + mybatis plus + jdk17
 
 spring-boot version = 3.1.1
 
-mybatisplus version = 3.5.3.1
+mybatis plus version = 3.5.3.1
 
 
 
@@ -39,3 +39,4 @@ yzggy.yucong.service       --
 ```
 
 - 3. demo
+

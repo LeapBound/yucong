@@ -11,8 +11,10 @@ import yzggy.yucong.mapper.BotMapper;
 import yzggy.yucong.mapper.ChannelMapper;
 import yzggy.yucong.model.BotModel;
 import yzggy.yucong.service.BotService;
+import yzggy.yucong.utils.bean.BotBeanMapper;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -50,6 +52,19 @@ public class BotServiceImpl implements BotService {
     }
 
     @Override
+    public String getBotId(String appId) {
+        LambdaQueryWrapper<ChannelEntity> queryWrapper = new LambdaQueryWrapper<ChannelEntity>()
+                .eq(ChannelEntity::getCorpId, appId)
+                .last("limit 1");
+        ChannelEntity channelEntity = this.channelMapper.selectOne(queryWrapper);
+        if (channelEntity == null) {
+            return null;
+        }
+
+        return channelEntity.getBotId();
+    }
+
+    @Override
     public Long getBotNIdByBotId(String botId) {
         LambdaQueryWrapper<BotEntity> queryWrapper = new LambdaQueryWrapper<BotEntity>()
                 .eq(BotEntity::getBotId, botId)
@@ -60,6 +75,13 @@ public class BotServiceImpl implements BotService {
         }
 
         return botEntity.getId();
+    }
+
+    @Override
+    public void create(BotModel botModel) {
+        BotEntity botEntity = BotBeanMapper.mapModelToEntity(botModel);
+        botEntity.setCreateTime(new Date());
+        this.botMapper.insert(botEntity);
     }
 
     private BotModel mapBotEntityToModel(BotEntity botEntity) {

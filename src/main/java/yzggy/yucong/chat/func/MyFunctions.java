@@ -1,6 +1,7 @@
 package yzggy.yucong.chat.func;
 
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 public class MyFunctions {

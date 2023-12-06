@@ -31,6 +31,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -40,7 +44,7 @@
         <dependency>
             <groupId>com.unfbx</groupId>
             <artifactId>chatgpt-java</artifactId>
-            <version>1.0.14</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
@@ -56,7 +60,12 @@
         <dependency>
             <groupId>com.github.binarywang</groupId>
             <artifactId>weixin-java-cp</artifactId>
-            <version>4.4.7.B</version>
+            <version>4.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-mp</artifactId>
+            <version>4.5.0</version>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>
@@ -68,6 +77,18 @@
             <groupId>com.ctrip.framework.apollo</groupId>
             <artifactId>apollo-client</artifactId>
             <version>2.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.xfyun</groupId>
+            <artifactId>websdk-java-core</artifactId>
+            <version>1.0.5</version>
         </dependency>
 
         <dependency>
