@@ -1,5 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/yucong_dev?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
-    username: root
-    password: 123
