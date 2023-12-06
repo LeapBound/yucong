@@ -9,6 +9,15 @@ import java.util.List;
 public interface FunctionMapper extends BaseMapper<FunctionEntity> {
 
     @Select("select fm.* " +
+            "from yc_bot b " +
+            "         left join yc_role_relation rr on b.id = rr.relate_id " +
+            "         left join yc_role_function rf on rr.role_id = rf.role_id " +
+            "         left join yc_function_manage fm on rf.function_id = fm.id " +
+            "where b.bot_id = #{botId} " +
+            "  and rr.relation_type = 0 ")
+    List<FunctionEntity> listByBotId(String botId);
+
+    @Select("select fm.* " +
             "from yc_account a " +
             "         left join yc_role_relation rr on a.id = rr.relate_id " +
             "         left join yc_role_function rf on rr.role_id = rf.role_id " +

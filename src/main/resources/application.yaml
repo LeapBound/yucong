@@ -9,7 +9,6 @@ server:
     includeMessage: ALWAYS
   servlet:
     context-path: /yucong
-
 # actuator
 management:
   endpoints:
@@ -24,3 +23,6 @@ management:
 spring:
   profiles:
     active: apollo
+logging:
+  level:
+    yzggy.yucong: info

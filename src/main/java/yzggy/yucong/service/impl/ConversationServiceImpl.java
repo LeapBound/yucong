@@ -114,6 +114,8 @@ public class ConversationServiceImpl implements ConversationService {
         MyMessage userMsg = new MyMessage();
         userMsg.setRole(Message.Role.USER.getName());
         userMsg.setContent(content);
+        userMsg.setPicUrl(singleChatModel.getPicUrl());
+        userMsg.setType(singleChatModel.getType());
         addMessage(conversationId, botId, accountId, userMsg);
 
         // 调用gpt服务
@@ -231,7 +233,8 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     private void addMessage(String conversationId, String botId, String accountId, MyMessage message) {
-        if (StringUtils.hasText(message.getContent())) {
+        if (StringUtils.hasText(message.getContent())
+                || StringUtils.hasText(message.getPicUrl())) {
             this.redisTemplate.opsForList().rightPush(conversationId, message);
             this.redisTemplate.expire(conversationId, Duration.ofSeconds(this.expires));
 

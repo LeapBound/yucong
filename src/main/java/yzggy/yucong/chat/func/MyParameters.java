@@ -3,6 +3,7 @@ package yzggy.yucong.chat.func;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class MyParameters {
@@ -13,7 +14,7 @@ public class MyParameters {
     /**
      * 参数属性、描述
      */
-    private Object properties;
+    private Map<String, Object> properties;
     /**
      * 方法必输字段
      */
