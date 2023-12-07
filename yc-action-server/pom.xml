@@ -28,12 +28,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -129,30 +123,6 @@
             <groupId>org.gitlab4j</groupId>
             <artifactId>gitlab4j-api</artifactId>
             <version>6.0.0-rc.2</version>
-        </dependency>
-        <dependency>
-            <groupId>geex</groupId>
-            <artifactId>geex-common</artifactId>
-            <version>2.2.5</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mybatis</groupId>
-                    <artifactId>mybatis</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mybatis</groupId>
-                    <artifactId>mybatis-spring</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.amqp</groupId>
-                    <artifactId>spring-rabbit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>geex-architecture</groupId>
-            <artifactId>geex-guts-hub</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
