@@ -5,6 +5,11 @@ on:
   push:
     branches:
       - '**'
+  workflow_call:
+    secrets:
+      YC_SA:
+        required: true
+      
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
