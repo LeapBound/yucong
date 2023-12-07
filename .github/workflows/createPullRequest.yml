@@ -39,8 +39,5 @@ jobs:
             automated pr
           assignees: FredGoo
           reviewers: FredGoo
-          team-reviewers: |
-            developers
-            qa-team
-          milestone: 1
+          milestone: pr
           draft: false
