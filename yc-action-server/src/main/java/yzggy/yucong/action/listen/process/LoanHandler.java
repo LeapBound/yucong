@@ -1,8 +1,6 @@
 package yzggy.yucong.action.listen.process;
 
 import com.alibaba.fastjson.JSONObject;
-import geex.architecture.guts.hub.func.loan.service.LoanService;
-import geex.architecture.guts.hub.func.loan.service.ProcessService;
 import org.camunda.bpm.client.spring.SpringTopicSubscription;
 import org.camunda.bpm.client.spring.annotation.ExternalTaskSubscription;
 import org.camunda.bpm.client.spring.event.SubscriptionInitializedEvent;
@@ -19,14 +17,6 @@ import java.util.Map;
 public class LoanHandler {
     private static final Logger log = LoggerFactory.getLogger(LoanHandler.class);
 
-    private final LoanService loanService;
-    private final ProcessService processService;
-
-    public LoanHandler(LoanService loanService, ProcessService processService) {
-        this.loanService = loanService;
-        this.processService = processService;
-    }
-
     @EventListener(SubscriptionInitializedEvent.class)
     public void catchSubscriptionInitEvent(SubscriptionInitializedEvent event) {
         SpringTopicSubscription topicSubscription = event.getSource();
@@ -40,12 +30,12 @@ public class LoanHandler {
             log.info("sendClientMobileVerifyCode");
 
             String mobile = externalTask.getVariable("mobile");
-            this.loanService.sendLoginSms(mobile);
+            // todo send login sms
             JSONObject inputForm = new JSONObject();
             inputForm.put("z_sendUserMobileVerifyCode", true);
 
             // 通知用户
-            this.loanService.notifyUser("account001", "验证码已经发送，请在收到验证码后发送给我");
+            // todo notify user
 
             externalTaskService.complete(externalTask, inputForm);
         };
@@ -60,7 +50,7 @@ public class LoanHandler {
             String mobile = externalTask.getVariable("mobile");
             String appId = externalTask.getVariable("appId");
             // certed需要验证字段
-            this.loanService.loadIdentity(this.loanService.getAppToken(mobile), appId);
+            // todo load identify
 
             externalTaskService.complete(externalTask, null);
         };
@@ -88,13 +78,14 @@ public class LoanHandler {
             String idValid = (String) ocrBackDetail.get("validDate");
 
             JSONObject inputForm = new JSONObject();
-            String appToken = this.loanService.getAppToken(mobile);
+            // todo get app token
             // 限额校验
-            this.loanService.bankCardCheck(appToken, name, idNo, bankCard, amount);
+            //todo check bank card
             // 历史数据校验
-            this.loanService.checkExistsUserInfo(appToken, name, idNo);
+            // todo check exist user info
             // 协议支付签约校验
-            JSONObject checkProtocolResult = this.loanService.checkUserPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode);
+            // todo check user pay protocol
+            JSONObject checkProtocolResult = new JSONObject();
             inputForm.put("payProtocolKey", checkProtocolResult.getString("makeProtocolKey"));
 
             externalTaskService.complete(externalTask, inputForm);
@@ -110,14 +101,14 @@ public class LoanHandler {
             String appId = externalTask.getVariable("appId");
             String mobile = externalTask.getVariable("mobile");
 
-            String appToken = this.loanService.getAppToken(mobile);
+            // todo get app token
 
             JSONObject info = new JSONObject();
             info.put("C_APP_ID", appId);
             info.put("C_STEP_ID", "NYB01_02");
             info.put("C_DEVICE_TYPE", "bot");
             info.put("C_FORM_ID", "NYB01");
-            this.loanService.submitApplyStep(appToken, info);
+            // todo submit apply step
 
             externalTaskService.complete(externalTask, null);
         };
@@ -132,12 +123,12 @@ public class LoanHandler {
             String appId = externalTask.getVariable("appId");
             String mobile = externalTask.getVariable("mobile");
 
-            String appToken = this.loanService.getAppToken(mobile);
+            // todo get app token
 
             JSONObject info = new JSONObject();
             info.put("C_APP_ID", appId);
             info.put("C_STEP_ID", "PREVIEW");
-            this.loanService.submitApplyStep(appToken, info);
+            // todo submit apply step
 
             externalTaskService.complete(externalTask, null);
         };

@@ -2,6 +2,9 @@ name: create pull requests
 on:
   pull_request:
     types: [opened, reopened]
+  # push:
+  #   branches:
+  #     - '**'
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
@@ -10,20 +13,19 @@ jobs:
     #   pull-requests: write
     steps:
       - uses: actions/checkout@v4
-
       - name: Make changes to pull request
         run: date +%s > report.txt
-
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
-          # token: ${{ secrets.PAT }}
+          token: ${{ secrets.YC_ACTION_SECRETS }}
           commit-message: Update report
           committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
-          branch: example-patches
+          branch: pr-patch
+          base: ${{ github.head_ref }}
           delete-branch: true
           title: '[Example] Update report'
           body: |
@@ -37,8 +39,5 @@ jobs:
             automated pr
           assignees: FredGoo
           reviewers: FredGoo
-          team-reviewers: |
-            developers
-            qa-team
-          milestone: 1
+          milestone: pr
           draft: false
