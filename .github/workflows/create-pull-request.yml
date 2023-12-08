@@ -2,9 +2,9 @@ name: create pull requests
 on:
   pull_request:
     types: [opened, reopened]
-  # push:
-  #   branches:
-  #     - '**'
+  push:
+    branches:
+      - 'pr-patch'
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
