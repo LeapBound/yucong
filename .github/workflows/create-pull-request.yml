@@ -2,9 +2,9 @@ name: create pull requests
 on:
   pull_request:
     types: [opened, reopened]
-  # push:
-  #   branches:
-  #     - '**'
+  push:
+    branches:
+      - 'pr-patch'
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
@@ -25,7 +25,7 @@ jobs:
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
           branch: pr-patch
-          base: ${{ github.head_ref }}
+          # base: ${{ github.head_ref }}
           delete-branch: true
           title: '[Example] Update report'
           body: |
