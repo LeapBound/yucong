@@ -4,7 +4,7 @@ on:
     types: [opened, reopened]
   push:
     branches:
-      - 'pr-patch'
+      - '**'
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
