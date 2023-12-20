@@ -1,10 +1,9 @@
 name: Build and Deploy Vuepress
 on:
   push:
-    branches:
-    - gh_pages
+    branches: [feature/docs]
 jobs:
-  job:
+  docs:
     name: Deployment
     runs-on: ubuntu-latest
     permissions:
@@ -16,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -27,35 +28,35 @@ jobs:
         id: pnpm-install
         with:
           version: 8
-          run_install: false
+          run_install: true
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        if: steps.pnpm-cache-outputs.cache-hit != 'true'
-        run: |
-          pnpm install
+#      - name: Get pnpm store directory
+#        id: pnpm-cache
+#        shell: bash
+#        run: |
+#          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+#
+#      - name: Setup pnpm cache
+#        uses: actions/cache@v3
+#        with:
+#          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+#          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+#          restore-keys: |
+#            ${{ runner.os }}-pnpm-store-
+#
+#      - name: Install dependencies
+#        if: steps.pnpm-cache-outputs.cache-hit != 'true'
+#        run: |
+#          pnpm install
 
       - name: Build
-        run: pnpm run build
-
-      - name: upload production artifacts
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: dist
+        run: pnpm docs:build
 
       - name: Deploy Page to Release
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: gh-pages
+          build_dir: docs/.vuepress/dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.YC_ACTION_SECRETS }}
