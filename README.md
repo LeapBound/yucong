@@ -1,42 +1,27 @@
-# yucong
+<h2 align="center">yucong</h2>
 
-### *An Epoch-marking Intelligent Order Service System*
+<h4 align=center>*An Epoch-marking Intelligent Order Service System*</h4>
 
 ****
 
-Features
--
+## [English Docs](https://leapbound.github.io/)
 
-- chatgpt
-- order
-- service
-- manager
-- system
+## Contact
 
-Quick Start
--
+We recommend you to contact us using [issues](https://github.com/LeapBound/yucong/issues).
 
-- 1. develop required (JAVA)
+## Details
 
-springboot + mybatis plus + jdk17
+A chat system that can be used in multiple scenarios. For example, orders and customer service systems. At the beginning, you need to configure some of your own environment, configure your own process, and cooperate with the function-calling of the process to complete the entire system.
 
-spring-boot version = 3.1.1
+- yc-action-server (*Function-calling implementation and script execution*)
+- yc-hub (*integrate with openai*)
+- yc-process (*integrate with camunda*)
 
-mybatis plus version = 3.5.3.1
+Demo is coming.
 
+## Contributors
 
+Thanks to all the contributors!
 
-- 2. project structure
-
-```text
-yzggy.yucong.chat          -- 
-yzggy.yucong.config        --
-yzggy.yucong.controller    --
-yzggy.yucong.entities      --
-yzggy.yucong.mapper        --
-yzggy.yucong.model         --
-yzggy.yucong.service       --
-```
-
-- 3. demo
-
+[![contributors](https://contrib.rocks/image?repo=LeapBound/yucong)](https://github.com/LeapBound/yucong/graphs/contributors)
