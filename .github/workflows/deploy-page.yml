@@ -56,7 +56,6 @@ jobs:
         working-directory: ./docs
         run: |-
           pnpm docs:build
-          > docs/src/.vuepress/dist/.nojekyll
 
       - name: Deploy Page to Release
         id: deployment
