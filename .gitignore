@@ -5,3 +5,6 @@ target/
 
 ### VS Code ###
 .vscode/
+pages/node_modules
+pages/docs/.vuepress/.temp
+pages/docs/.vuepress/.cache

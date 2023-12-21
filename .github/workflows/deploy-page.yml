@@ -1,61 +1,66 @@
 name: Build and Deploy Vuepress
 on:
   push:
-    branches:
-    - gh_pages
+    branches: [feature/docs]
 jobs:
-  job:
+  docs:
     name: Deployment
     runs-on: ubuntu-latest
     permissions:
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
         with:
-          node-version: 18
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         id: pnpm-install
         with:
           version: 8
-          run_install: false
+          package_json_file: docs/package.json
+          run_install: true
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version: 20
 
-      - name: Install dependencies
-        if: steps.pnpm-cache-outputs.cache-hit != 'true'
-        run: |
-          pnpm install
+#      - name: Get pnpm store directory
+#        id: pnpm-cache
+#        shell: bash
+#        run: |
+#          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+#
+#      - name: Setup pnpm cache
+#        uses: actions/cache@v3
+#        with:
+#          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+#          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+#          restore-keys: |
+#            ${{ runner.os }}-pnpm-store-
+#
+#      - name: Install dependencies
+#        if: steps.pnpm-cache-outputs.cache-hit != 'true'
+#        run: |
+#          pnpm install
 
       - name: Build
-        run: pnpm run build
-
-      - name: upload production artifacts
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: dist
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+        working-directory: ./docs
+        run: |-
+          pnpm docs:build
+          > src/.vuepress/dist/.nojekyll
 
       - name: Deploy Page to Release
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/src/.vuepress/dist
+          token: ${{ secrets.YC_ACTION_SECRETS }}

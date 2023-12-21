@@ -2,6 +2,7 @@
   "name": "yucong",
   "version": "1.0.0",
   "description": "yucong",
+  "main": "index.js",
   "license": "MIT",
   "type": "module",
   "scripts": {
