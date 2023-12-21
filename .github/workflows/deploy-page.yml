@@ -64,6 +64,6 @@ jobs:
         with:
           branch: gh-pages
           folder: docs/src/.vuepress/dist
-          ssh-key: ${{ secrets.YC_ACTION_SECRETS }}
+          token: ${{ secrets.YC_ACTION_SECRETS }}
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.YC_ACTION_SECRETS }}
