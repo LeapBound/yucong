@@ -22,7 +22,7 @@ jobs:
         id: pnpm-install
         with:
           version: 8
-          package_json_file: pages/package.json
+          package_json_file: docs/package.json
           run_install: true
 
       - name: Setup Node.js
@@ -52,15 +52,15 @@ jobs:
       - name: Build
         env:
           NODE_OPTIONS: --max_old_space_size=4096
-        working-directory: ./pages
+        working-directory: ./docs
         run: |-
           pnpm docs:build
-          > docs/.vuepress/dist/.nojekyll
+          > src/.vuepress/dist/.nojekyll
 
       - name: Deploy Page to Release
         id: deployment
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: pages/docs/.vuepress/dist
+          folder: docs/src/.vuepress/dist
           token: ${{ secrets.YC_ACTION_SECRETS }}
