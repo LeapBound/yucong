@@ -51,6 +51,7 @@ jobs:
 
       - name: Build
         run: pnpm docs:build
+        working-directory: ./docs
 
       - name: Deploy Page to Release
         id: deployment
