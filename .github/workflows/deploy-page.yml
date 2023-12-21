@@ -66,5 +66,3 @@ jobs:
           branch: gh-pages
           folder: pages/docs/.vuepress/dist
           token: ${{ secrets.YC_ACTION_SECRETS }}
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.YC_ACTION_SECRETS }}
