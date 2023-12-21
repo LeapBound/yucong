@@ -18,18 +18,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         id: pnpm-install
         with:
           run_install: true
-          working-directory: ./docs
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
 
 #      - name: Get pnpm store directory
 #        id: pnpm-cache
