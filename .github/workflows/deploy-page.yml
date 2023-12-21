@@ -9,6 +9,7 @@ jobs:
     permissions:
       pages: write
       id-token: write
+      contents: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -63,5 +64,6 @@ jobs:
         with:
           branch: gh-pages
           folder: docs/src/.vuepress/dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.YC_ACTION_SECRETS }}
+          ssh-key: ${{ secrets.YC_ACTION_SECRETS }}
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.YC_ACTION_SECRETS }}
