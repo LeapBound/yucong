@@ -31,7 +31,7 @@ static def execWeatherMethod(String method, String arguments) {
     }
 }
 
-static def getDayWeatherForecast(String arguments) {
+static def getCurrentWeather(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String location = ''
     String format = '摄氏度'
@@ -56,7 +56,7 @@ static def getDayWeatherForecast(String arguments) {
     return result;
 }
 
-static def getCurrentWeather(String arguments) {
+static def getDayWeatherForecast(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String location = ''
     String format = '摄氏度'
