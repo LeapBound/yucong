@@ -1,43 +1,56 @@
-# yucong action server
+# yc-action-server
 
-功能比较简单，给 yucong 项目一些 function 的支持。
+### What Is yc-action-server?
 
-java 语言开发，主要框架 springboot 3 + mybatisplus， mysql 存储，redis 作缓存及消息队列用。
+`yc-action-server` is a simple backend application. It is for `function-call` definition method implementation.
 
-### Feature
+### Feature Overview
 
-1. 更丰富的功能
+1.`yc-action-server` adopts the java + groovy method. Except for the interface and class definitions, which are all
+java, the implementation methods of function-call are all completed by groovy scripts.
+The advantage of using a groovy script instead of a class is that the methods in the groovy script can be dynamically
+called at any time, so that you can respond to the continuously added methods of the upper-layer service `function-call`
+at any time.
 
-2. 其他功能
+2.The project uses `redis-stream` as the message queue
 
-### Release Note.
+3.Configure using `HTTP Interface Client(WebClient)` to write Http client, similar to Spring Cloud OpenFeign, you only
+need to declare the interface to complete the work.
 
-###### v1.0.0 / 2023-12-08
+### Start Up
 
-1. 基础功能
+```
+1. execute sql， sql/20231016/yucong.sql
 
-### 启动
+2. The configuration file is configured according to your own environment
 
-```angular2html
-1. 执行 sql， sql/20231016/yucong.sql
-2. 配置文件根据自己的环境配置
-3. 启动 Spring
+3. Start Spring
 ```
 
-###### 说明
+### Explanation
 
-方法调用，查找存储中配置的 class/groovy 方法和对应的文件，执行并返回。
-如果配置了 groovy scripts，默认存放的位置 /home/scripts。项目启动时，根据存储中的 groovy 记录，会读取 resources/scripts
-下的文件，并放到 /home/scripts 下。
+1.Table `yc_function_groovy` saves the groovy script name and script storage location corresponding to the function
+name. When the application reads the function defined by the `function-call` of the upper-layer service,
+Find the groovy script and call it.
 
-### http
+2.The data table `yc_function_execute_record` records the records of function calls, including input parameters and
+returns.
 
-1. 保存 groovy script
+3.When this application starts, `ApplicationListener` is set, reads the scripts under resources (including all groovy
+scripts) and places them at the specified groovy address (`groovy_url` of `yc_function_groovy`).
 
-```http request
-POST http://localhost:8180/yc/function/groovy/save
-Content-Type: application/json
+4.The original java class calling method is also retained in the application.
 
+### How To Use?
+
+1. Save groovy script definition
+
+- Method: **POST**
+- URL: ```http://localhost:8180/yc/function/groovy/save```
+- Headers: Content-Type:application/json
+- Body:
+
+```json
 {
   "functionName": "get_current_weather",
   "groovyName": "Weather.groovy",
@@ -46,10 +59,94 @@ Content-Type: application/json
 }
 ```
 
-2. 上传 groovy script 文件到 groovy url 
+- Response:
 
-```http request
-POST http://localhost:8180/yc/function/groovy/scripts/upload
-Content-Type: application/x-www-form-urlencoded
+```json
+{
+  "success": true,
+  "code": null,
+  "msg": null,
+  "data": null
+}
+```
 
+```json
+{
+  "success": false,
+  "code": null,
+  "msg": "data has existed",
+  "data": null
+}
+```
+
+2. Upload groovy script file to groovy url
+
+- Method: **POST**
+- URL: ```http://localhost:8180/yc/function/groovy/scripts/upload```
+- Headers: Content-Type:multipart/form-data
+- Form-data:
+
+```
+file@
+groovyUrl=/home/scripts/weather/
+```
+
+- Response:
+
+```json
+{
+  "success": true,
+  "code": null,
+  "msg": null,
+  "data": null
+}
+```
+
+```json
+{
+  "success": false,
+  "code": null,
+  "msg": "Groovy scripts not exist in yc_function_groovy, Weather.groovy",
+  "data": null
+}
+```
+
+3.call execute
+
+- Method: **POST**
+- URL: ```http://localhost:8180/yc/function/openai/execute```
+- Headers:
+
+```
+Content-Type:application-json
+userName: yao
+accountId:
+deviceId:
+```
+
+- Body:
+
+```json
+{
+  "name": "get_current_weather",
+  "arguments": "{\"location\":\"Los Angeles\"}"
+}
+```
+
+- Response:
+
+```json
+{
+  "role": "function",
+  "content": "{\"Weather\":\"Sunny\",\"Temperature\":\"32\",\"UV index\":\"5\",\"Wind speed\":\"5m/s\",\"Air Quality Index\":\"30\",\"location\":\"Los Angeles\"}",
+  "name": "get_current_weather"
+}
+```
+
+```json
+{
+  "role": "function",
+  "content": "{\"Error\":\"No location is provided, the user is required to specify the location.\"}",
+  "name": "get_current_weather"
+}
 ```
