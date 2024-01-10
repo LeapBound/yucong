@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author yamath
  * @since 2023/7/11 9:34
  */
-@SpringBootApplication(scanBasePackages = {"yzggy.yucong.action", "geex.architecture.guts.hub.func", "geex.architecture.guts.hub.config"})
+@SpringBootApplication
 public class YcActionApplication {
 
     public static void main(String[] args) {

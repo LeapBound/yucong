@@ -3,7 +3,6 @@ package yzggy.yucong.action.service.impl.openai;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.unfbx.chatgpt.entity.chat.Functions;
 import com.unfbx.chatgpt.entity.chat.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,21 +12,16 @@ import yzggy.yucong.action.config.RedisConfig;
 import yzggy.yucong.action.func.FunctionExecutor;
 import yzggy.yucong.action.func.FunctionGroovyExec;
 import yzggy.yucong.action.model.dto.YcFunctionGroovyDto;
-import yzggy.yucong.action.model.dto.YcFunctionManageDto;
 import yzggy.yucong.action.model.dto.YcFunctionMethodDto;
 import yzggy.yucong.action.model.vo.request.FunctionExecuteRecordSaveRequest;
 import yzggy.yucong.action.model.vo.request.FunctionExecuteRequest;
 import yzggy.yucong.action.service.YcFunctionGroovyService;
-import yzggy.yucong.action.service.YcFunctionManageService;
 import yzggy.yucong.action.service.YcFunctionMethodService;
 import yzggy.yucong.action.service.YcFunctionOpenaiService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author yamath
@@ -38,37 +32,17 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
 
     private static final Logger logger = LoggerFactory.getLogger(YcFunctionOpenaiServiceImpl.class);
 
-    private final YcFunctionManageService ycFunctionManageService;
     private final YcFunctionMethodService ycFunctionMethodService;
     private final YcFunctionGroovyService ycFunctionGroovyService;
     private final RedisTemplate redisTemplate;
 
-    public YcFunctionOpenaiServiceImpl(YcFunctionManageService ycFunctionManageService,
-                                       YcFunctionMethodService ycFunctionMethodService,
-                                       YcFunctionGroovyService ycFunctionGroovyService,
-                                       RedisTemplate redisTemplate) {
-        this.ycFunctionManageService = ycFunctionManageService;
+    public YcFunctionOpenaiServiceImpl(
+            YcFunctionMethodService ycFunctionMethodService,
+            YcFunctionGroovyService ycFunctionGroovyService,
+            RedisTemplate redisTemplate) {
         this.ycFunctionMethodService = ycFunctionMethodService;
         this.ycFunctionGroovyService = ycFunctionGroovyService;
         this.redisTemplate = redisTemplate;
-    }
-
-    @Override
-    public List<Functions> getFunctionsForOpenai(List<String> roleIdList) {
-        // select function manage
-        List<YcFunctionManageDto> list = this.ycFunctionManageService.getFunctionManageDtoList(roleIdList);
-        // if no data
-        if (list == null || list.isEmpty()) {
-            logger.warn("no functions found, role = {}", roleIdList);
-            return Collections.emptyList();
-        }
-        // json
-        List<Functions> functionsList = new ArrayList<>();
-        for (YcFunctionManageDto dto : list) {
-            Functions functions = JSON.parseObject(dto.getFunctionJson(), Functions.class);
-            functionsList.add(functions);
-        }
-        return functionsList;
     }
 
     @Override

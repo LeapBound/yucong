@@ -7,3 +7,6 @@ target/
 .vscode/
 
 .idea/
+pages/node_modules
+pages/docs/.vuepress/.temp
+pages/docs/.vuepress/.cache
