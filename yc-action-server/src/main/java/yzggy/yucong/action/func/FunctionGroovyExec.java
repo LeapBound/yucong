@@ -19,22 +19,27 @@ public class FunctionGroovyExec {
 
     private static final Logger logger = LoggerFactory.getLogger(FunctionGroovyExec.class);
 
-    public static JSONObject executeGroovy(YcFunctionGroovyDto functionGroovyDto, JSONObject arguments) {
-        String groovyUrl = functionGroovyDto.getGroovyUrl();
-        String groovyName = functionGroovyDto.getGroovyName();
+    public static GroovyScriptEngine createGroovyEngine(String groovyUrl) {
         try {
-            // groovy script engine
-            GroovyScriptEngine engine = new GroovyScriptEngine(groovyUrl);
-            // param
+            return new GroovyScriptEngine(groovyUrl);
+        } catch (Exception ex) {
+            logger.error("create groovy engine error, groovyUrl: {}", groovyUrl, ex);
+        }
+        return null;
+    }
+
+    public static JSONObject runScript(GroovyScriptEngine engine, YcFunctionGroovyDto functionGroovyDto, JSONObject arguments) {
+        String groovyName = functionGroovyDto.getGroovyName();
+        // param
+        try {
             Map<String, String> map = Maps.newHashMap();
             map.put("method", functionGroovyDto.getFunctionName());
             map.put("arguments", arguments.toJSONString());
             Binding binding = new Binding(map);
-            // groovy result
-            Object result = engine.run(groovyName, binding);
 
-            if (result != null) {
-                return (JSONObject) JSON.toJSON(result);
+            Object object = engine.run(groovyName, binding);
+            if (object != null) {
+                return (JSONObject) JSON.toJSON(object);
             }
         } catch (Exception ex) {
             logger.error("execute groovy script error,", ex);

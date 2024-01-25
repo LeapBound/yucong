@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.unfbx.chatgpt.entity.chat.Message;
+import groovy.util.GroovyScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,6 +23,7 @@ import yzggy.yucong.action.service.YcFunctionOpenaiService;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author yamath
@@ -35,6 +37,7 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
     private final YcFunctionMethodService ycFunctionMethodService;
     private final YcFunctionGroovyService ycFunctionGroovyService;
     private final RedisTemplate redisTemplate;
+    private final ConcurrentHashMap<String, GroovyScriptEngine> engineMap = new ConcurrentHashMap<>();
 
     public YcFunctionOpenaiServiceImpl(
             YcFunctionMethodService ycFunctionMethodService,
@@ -124,7 +127,18 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
                 arguments.put("accountId", request.getAccountId());
             }
             // execute
-            JSONObject jsonObject = FunctionGroovyExec.executeGroovy(dto, arguments);
+            JSONObject jsonObject = null;
+            String engineKey = dto.getGroovyName();
+            if (engineMap.containsKey(engineKey)) {
+                GroovyScriptEngine engine = engineMap.get(engineKey);
+                jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
+            } else {
+                GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
+                if (engine != null) {
+                    engineMap.put(engineKey, engine);
+                    jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
+                }
+            }
             // return result
             if (jsonObject != null) {
                 executeResult = JSON.toJSONString(jsonObject);
