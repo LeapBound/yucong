@@ -1,4 +1,4 @@
-package yzggy.yucong;
+package yzggy.yucong.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
