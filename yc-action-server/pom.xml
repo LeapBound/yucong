@@ -204,6 +204,12 @@
                                 <include>**/*.groovy</include>
                             </includes>
                         </source>
+                        <source>
+                            <directory>${project.basedir}/src/main/groovy/yzggy/yucong/hub</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </source>
                     </sources>
                 </configuration>
             </plugin>
