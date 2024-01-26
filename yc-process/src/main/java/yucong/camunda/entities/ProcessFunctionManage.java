@@ -1,4 +1,4 @@
-package geex.architecture.guts.camunda.entities;
+package yucong.camunda.entities;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

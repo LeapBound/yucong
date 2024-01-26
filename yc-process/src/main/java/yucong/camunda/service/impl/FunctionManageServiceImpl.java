@@ -1,13 +1,13 @@
-package geex.architecture.guts.camunda.service.impl;
+package yucong.camunda.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import geex.architecture.guts.camunda.entities.ProcessFunctionManage;
-import geex.architecture.guts.camunda.mapper.ProcessFunctionManageMapper;
-import geex.architecture.guts.camunda.model.bo.ProcessFunctionSaveRequest;
-import geex.architecture.guts.camunda.model.vo.R;
-import geex.architecture.guts.camunda.service.FunctionManageService;
+import yucong.camunda.entities.ProcessFunctionManage;
+import yucong.camunda.mapper.ProcessFunctionManageMapper;
+import yucong.camunda.model.bo.ProcessFunctionSaveRequest;
+import yucong.camunda.model.vo.R;
+import yucong.camunda.service.FunctionManageService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

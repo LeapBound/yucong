@@ -1,4 +1,4 @@
-package geex.architecture.guts.camunda.model.vo;
+package yucong.camunda.model.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

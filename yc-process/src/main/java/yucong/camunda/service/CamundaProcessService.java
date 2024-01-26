@@ -1,4 +1,4 @@
-package geex.architecture.guts.camunda.service;
+package yucong.camunda.service;
 
 import java.util.Map;
 

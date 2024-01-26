@@ -1,12 +1,12 @@
-package geex.architecture.guts.camunda.service.impl;
+package yucong.camunda.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import geex.architecture.guts.camunda.model.bo.ProcessStartRequest;
-import geex.architecture.guts.camunda.model.bo.ProcessVariablesRequest;
-import geex.architecture.guts.camunda.model.bo.TaskCompleteRequest;
-import geex.architecture.guts.camunda.model.bo.TaskFindRequest;
-import geex.architecture.guts.camunda.model.vo.*;
-import geex.architecture.guts.camunda.service.BusinessCamundaService;
+import yucong.camunda.model.bo.ProcessStartRequest;
+import yucong.camunda.model.bo.ProcessVariablesRequest;
+import yucong.camunda.model.bo.TaskCompleteRequest;
+import yucong.camunda.model.bo.TaskFindRequest;
+import yucong.camunda.model.vo.*;
+import yucong.camunda.service.BusinessCamundaService;
 import org.camunda.bpm.engine.FormService;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;

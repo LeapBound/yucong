@@ -1,10 +1,10 @@
-package geex.architecture.guts.camunda.service;
+package yucong.camunda.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import geex.architecture.guts.camunda.entities.ProcessFunctionManage;
-import geex.architecture.guts.camunda.model.bo.ProcessFunctionSaveRequest;
-import geex.architecture.guts.camunda.model.vo.ProcessFunction;
-import geex.architecture.guts.camunda.model.vo.R;
+import yucong.camunda.entities.ProcessFunctionManage;
+import yucong.camunda.model.bo.ProcessFunctionSaveRequest;
+import yucong.camunda.model.vo.ProcessFunction;
+import yucong.camunda.model.vo.R;
 
 /**
  * @author yamath
