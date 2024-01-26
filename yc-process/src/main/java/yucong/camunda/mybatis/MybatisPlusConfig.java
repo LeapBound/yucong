@@ -1,4 +1,4 @@
-package yucong.camunda.utils.mybatis;
+package yucong.camunda.mybatis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

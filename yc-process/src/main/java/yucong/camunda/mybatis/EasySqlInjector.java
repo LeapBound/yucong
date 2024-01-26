@@ -1,4 +1,4 @@
-package yucong.camunda.utils.mybatis;
+package yucong.camunda.mybatis;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.core.injector.AbstractMethod;
