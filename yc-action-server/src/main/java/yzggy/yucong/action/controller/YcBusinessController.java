@@ -26,8 +26,8 @@ public class YcBusinessController {
     @PostMapping("/execute")
     public Message executeBusiness(@RequestBody FunctionExecuteRequest request) {
         logger.info("business execute request: {}", request);
-        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request);
-//        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request);
+//        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request);
+        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request);
     }
 
 }
