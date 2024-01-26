@@ -18,12 +18,26 @@ spring:
     #h2
     url: jdbc:h2:file:./camunda-h2-database
     #mysql
-#    url: jdbc:mysql://localhost:3306/camunda_test?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+#    url: jdbc:mysql://localhost:3306/camunda_dev?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
 #    driver-class-name: com.mysql.cj.jdbc.Driver
 #    username: root
 #    password: root
-  sql.init.mode: always
+  sql:
+    init:
+      encoding: utf-8
+      mode: embedded
+      schema-locations: classpath*:db/ddl_create.sql
 
+#  camunda配置
+camunda:
+  bpm:
+  # 配置账户密码来访问Camunda自带的管理界面
+    admin-user:
+      id: admin
+      password: admin
+      first-name: admin
+    filter:
+      create: All tasks
 #actuator
 management:
   endpoints:
