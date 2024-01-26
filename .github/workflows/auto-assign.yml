@@ -1,0 +1,20 @@
+name: Auto Assign
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled]
+  pull_request:
+    types: [opened, edited, labeled, unlabeled]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: wow-actions/auto-assign@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.YC_ACTION_SECRETS }}
+          reviewers: |
+            FredGoo
+          assignees: FredGoo
+          skipKeywords: wip, draft
