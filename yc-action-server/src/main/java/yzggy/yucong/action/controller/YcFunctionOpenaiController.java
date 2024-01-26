@@ -53,7 +53,7 @@ public class YcFunctionOpenaiController {
         if (!StrUtil.isEmptyIfStr(deviceId)) {
             request.setDeviceId(deviceId);
         }
-        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request);
-//        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request);
+//        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request);
+        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request);
     }
 }
