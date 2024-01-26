@@ -1,11 +1,11 @@
-package geex.architecture.guts.camunda.controller;
+package yucong.camunda.controller;
 
-import geex.architecture.guts.camunda.model.bo.ProcessStartRequest;
-import geex.architecture.guts.camunda.model.bo.ProcessVariablesRequest;
-import geex.architecture.guts.camunda.model.bo.TaskCompleteRequest;
-import geex.architecture.guts.camunda.model.bo.TaskFindRequest;
-import geex.architecture.guts.camunda.model.vo.R;
-import geex.architecture.guts.camunda.service.BusinessCamundaService;
+import yucong.camunda.model.bo.ProcessStartRequest;
+import yucong.camunda.model.bo.ProcessVariablesRequest;
+import yucong.camunda.model.bo.TaskCompleteRequest;
+import yucong.camunda.model.bo.TaskFindRequest;
+import yucong.camunda.model.vo.R;
+import yucong.camunda.service.BusinessCamundaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 

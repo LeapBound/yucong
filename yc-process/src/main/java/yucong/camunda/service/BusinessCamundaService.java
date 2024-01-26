@@ -1,10 +1,10 @@
-package geex.architecture.guts.camunda.service;
+package yucong.camunda.service;
 
-import geex.architecture.guts.camunda.model.bo.ProcessStartRequest;
-import geex.architecture.guts.camunda.model.bo.ProcessVariablesRequest;
-import geex.architecture.guts.camunda.model.bo.TaskCompleteRequest;
-import geex.architecture.guts.camunda.model.bo.TaskFindRequest;
-import geex.architecture.guts.camunda.model.vo.R;
+import yucong.camunda.model.bo.ProcessStartRequest;
+import yucong.camunda.model.bo.ProcessVariablesRequest;
+import yucong.camunda.model.bo.TaskCompleteRequest;
+import yucong.camunda.model.bo.TaskFindRequest;
+import yucong.camunda.model.vo.R;
 
 /**
  * @author yamath

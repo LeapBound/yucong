@@ -1,7 +1,7 @@
-package geex.architecture.guts.camunda.mapper;
+package yucong.camunda.mapper;
 
-import geex.architecture.guts.camunda.entities.ProcessFunctionManage;
-import geex.architecture.guts.camunda.utils.mybatis.EasyBaseMapper;
+import yucong.camunda.entities.ProcessFunctionManage;
+import yucong.camunda.utils.mybatis.EasyBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

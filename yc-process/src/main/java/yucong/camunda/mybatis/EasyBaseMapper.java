@@ -1,4 +1,4 @@
-package geex.architecture.guts.camunda.utils.mybatis;
+package yucong.camunda.utils.mybatis;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 

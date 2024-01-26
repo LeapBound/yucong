@@ -1,4 +1,4 @@
-package geex.architecture.guts.camunda.model.bo;
+package yucong.camunda.model.bo;
 
 import lombok.Data;
 

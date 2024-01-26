@@ -1,8 +1,8 @@
-package geex.architecture.guts.camunda.controller;
+package yucong.camunda.controller;
 
-import geex.architecture.guts.camunda.model.bo.ProcessFunctionSaveRequest;
-import geex.architecture.guts.camunda.model.vo.R;
-import geex.architecture.guts.camunda.service.FunctionManageService;
+import yucong.camunda.model.bo.ProcessFunctionSaveRequest;
+import yucong.camunda.model.vo.R;
+import yucong.camunda.service.FunctionManageService;
 import org.springframework.web.bind.annotation.*;
 
 /**

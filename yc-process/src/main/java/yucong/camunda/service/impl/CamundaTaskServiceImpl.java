@@ -1,6 +1,6 @@
-package geex.architecture.guts.camunda.service.impl;
+package yucong.camunda.service.impl;
 
-import geex.architecture.guts.camunda.service.CamundaTaskService;
+import yucong.camunda.service.CamundaTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
