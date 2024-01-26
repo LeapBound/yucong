@@ -19,9 +19,9 @@ import java.util.List;
 public class GitlabApiClient {
 
     private static final Logger logger = LoggerFactory.getLogger(GitlabApiClient.class);
-// todo 可配置化
-    private final static String HOST = "";
-    private final static String ACCESS_TOKEN = "";
+
+    private final static String HOST = "http://192.168.7.197:8083";
+    private final static String ACCESS_TOKEN = "FkxF68GvtxDwEd5NyBfw";
 
     public static void getLocalProjectFiles(String groupName, String projectName, String branch, String srcPath, String groovyPath) { // rpa yc-action-server master
         try (GitLabApi gitLabApi = new GitLabApi(HOST, ACCESS_TOKEN)) {

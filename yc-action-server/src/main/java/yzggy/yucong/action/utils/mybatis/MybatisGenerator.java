@@ -14,9 +14,9 @@ import java.util.Map;
  */
 public class MybatisGenerator {
 
-    private static final String URL = "jdbc:mysql://127.0.0.1:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true";
-    private static final String USERNAME = "";
-    private static final String PASSWORD = "";
+    private static final String URL = "jdbc:mysql://192.168.117.199:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "123456";
 
     private static String[] tables = {"yc_function_groovy"};
 

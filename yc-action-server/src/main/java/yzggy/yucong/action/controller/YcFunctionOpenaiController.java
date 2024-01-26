@@ -1,6 +1,7 @@
 package yzggy.yucong.action.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.unfbx.chatgpt.entity.chat.Functions;
 import com.unfbx.chatgpt.entity.chat.Message;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import yzggy.yucong.action.model.vo.request.FunctionExecuteRequest;
 import yzggy.yucong.action.service.YcFunctionOpenaiService;
+
+import java.util.List;
 
 /**
  * @author yamath
@@ -26,6 +29,12 @@ public class YcFunctionOpenaiController {
 
     public YcFunctionOpenaiController(YcFunctionOpenaiService ycFunctionOpenaiService) {
         this.ycFunctionOpenaiService = ycFunctionOpenaiService;
+    }
+
+    @PostMapping("/list")
+    public List<Functions> getFunctionsForOpenai(@RequestBody List<String> roleIdList) {
+        //
+        return this.ycFunctionOpenaiService.getFunctionsForOpenai(roleIdList);
     }
 
     @PostMapping("/execute")
@@ -44,7 +53,7 @@ public class YcFunctionOpenaiController {
         if (!StrUtil.isEmptyIfStr(deviceId)) {
             request.setDeviceId(deviceId);
         }
-//        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request); // java class
-        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request); // groovy script
+        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request);
+//        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request);
     }
 }
