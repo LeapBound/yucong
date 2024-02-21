@@ -4,8 +4,8 @@ import io.reactivex.Single;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
-import yzggy.yucong.vendor.bce.entity.ChatCompletion;
-import yzggy.yucong.vendor.bce.entity.ChatCompletionResponse;
+import yzggy.yucong.vendor.bce.model.ChatCompletion;
+import yzggy.yucong.vendor.bce.model.ChatCompletionResponse;
 
 public interface QianfanApi {
 

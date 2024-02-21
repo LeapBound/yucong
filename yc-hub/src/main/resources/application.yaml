@@ -22,7 +22,7 @@ management:
 
 spring:
   profiles:
-    active: apollo
+    active: noApollo
 logging:
   level:
     yzggy.yucong: info

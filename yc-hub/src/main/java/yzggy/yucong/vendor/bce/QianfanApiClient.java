@@ -10,8 +10,8 @@ import org.springframework.util.StringUtils;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import yzggy.yucong.vendor.bce.entity.ChatCompletion;
-import yzggy.yucong.vendor.bce.entity.ChatCompletionResponse;
+import yzggy.yucong.vendor.bce.model.ChatCompletion;
+import yzggy.yucong.vendor.bce.model.ChatCompletionResponse;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;

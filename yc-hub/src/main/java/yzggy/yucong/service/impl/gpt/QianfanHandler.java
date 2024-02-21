@@ -11,7 +11,7 @@ import yzggy.yucong.chat.func.MyFunctionCall;
 import yzggy.yucong.chat.func.MyFunctions;
 import yzggy.yucong.chat.func.MyParameters;
 import yzggy.yucong.service.gpt.GptHandler;
-import yzggy.yucong.vendor.bce.entity.*;
+import yzggy.yucong.vendor.bce.model.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

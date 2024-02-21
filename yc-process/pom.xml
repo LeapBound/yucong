@@ -10,7 +10,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>yzg-gy</groupId>
+    <groupId>com.github.leapbound</groupId>
     <artifactId>yc-process</artifactId>
     <version>1.0.0</version>
     <name>yc-process</name>

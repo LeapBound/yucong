@@ -5,19 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.leapbound</groupId>
-    <artifactId>yucong</artifactId>
+    <artifactId>yc-examples</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
-    <properties>
-        <maven.compiler.source>20</maven.compiler.source>
-        <maven.compiler.target>20</maven.compiler.target>
-    </properties>
-
     <modules>
-        <module>yc-action-server</module>
-        <module>yc-hub</module>
-        <module>yc-process</module>
-        <module>yc-examples</module>
+        <module>yc-hub-example</module>
     </modules>
 </project>
