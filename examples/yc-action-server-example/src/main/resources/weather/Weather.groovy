@@ -1,4 +1,4 @@
-package scripts.weather
+package weather
 
 import cn.hutool.core.util.StrUtil
 import com.alibaba.fastjson.JSON
