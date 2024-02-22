@@ -15,14 +15,20 @@ spring:
   application:
     name: geex-guts-camunda
   datasource:
-    #h2
-    url: jdbc:h2:file:./camunda-h2-database
     #mysql
-#    url: jdbc:mysql://localhost:3306/camunda_test?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-#    username: root
-#    password: root
-  sql.init.mode: always
+    url: jdbc:mysql://localhost:3306/camunda_test?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+
+
+app:
+  id: geex-guts-camunda
+apollo:
+  bootstrap:
+    enabled: true
+
+
 
 #actuator
 management:

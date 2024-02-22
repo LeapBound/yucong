@@ -1,4 +1,4 @@
-package geex.architecture.guts.camunda;
+package yucong.camunda;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
