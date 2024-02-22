@@ -18,6 +18,7 @@
         <module>yc-action-server</module>
         <module>yc-hub</module>
         <module>yc-process</module>
-        <module>yc-examples</module>
+
+        <module>examples</module>
     </modules>
 </project>

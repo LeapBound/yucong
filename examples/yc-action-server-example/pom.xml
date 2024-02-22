@@ -42,7 +42,7 @@
 			<version>2.1.0</version>
 		</dependency>
 		<dependency>
-			<groupId>yzg-gy</groupId>
+			<groupId>com.github.leapbound</groupId>
 			<artifactId>yc-action-server</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>

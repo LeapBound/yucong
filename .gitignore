@@ -7,3 +7,5 @@ target/
 .vscode/
 
 .idea/
+
+application-dev.yaml
