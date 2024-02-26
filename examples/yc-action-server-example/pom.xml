@@ -65,7 +65,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>yzggy.yc.action.server.example.YcActionServerExampleApplication</mainClass>
+					<mainClass>com.github.leapbound.yc.action.server.example.YcActionServerExampleApplication</mainClass>
 				</configuration>
 				<executions>
 					<execution>
