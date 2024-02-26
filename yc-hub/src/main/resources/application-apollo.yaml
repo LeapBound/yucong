@@ -1,5 +1,0 @@
-app:
-  id: yucong-01
-apollo:
-  bootstrap:
-    enabled: true

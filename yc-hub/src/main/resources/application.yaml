@@ -9,20 +9,3 @@ server:
     includeMessage: ALWAYS
   servlet:
     context-path: /yucong
-# actuator
-management:
-  endpoints:
-    web:
-      exposure:
-        include: prometheus,health
-      base-path: /metrics
-  endpoint:
-    health:
-      show-details: always
-
-spring:
-  profiles:
-    active: apollo
-logging:
-  level:
-    yzggy.yucong: info

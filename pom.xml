@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>yzg-gy</groupId>
+    <groupId>com.github.leapbound</groupId>
     <artifactId>yucong</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
@@ -18,5 +18,7 @@
         <module>yc-action-server</module>
         <module>yc-hub</module>
         <module>yc-process</module>
+
+        <module>examples</module>
     </modules>
 </project>
