@@ -16,7 +16,7 @@ import com.github.leapbound.yc.hub.service.ChannelService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/wx")
+@RequestMapping("/${yc.hub.context-path:yc-hub}/api/wx")
 @RequiredArgsConstructor
 public class ApiWxController {
 

@@ -13,7 +13,7 @@ import com.github.leapbound.yc.hub.service.ChannelService;
 
 @Slf4j
 @RestController
-@RequestMapping("/wx/cp/portal/{corpId}/{agentId}")
+@RequestMapping("/${yc.hub.context-path:yc-hub}/wx/cp/portal/{corpId}/{agentId}")
 @RequiredArgsConstructor
 public class CpPortalController {
 
