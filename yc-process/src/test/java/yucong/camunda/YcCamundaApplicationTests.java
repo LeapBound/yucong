@@ -1,4 +1,4 @@
-package yucong.camunda;
+package com.github.leapbound.yc.camunda;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
