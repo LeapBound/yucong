@@ -1,10 +1,10 @@
-package yucong.camunda.service;
+package com.github.leapbound.yc.camunda.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import yucong.camunda.entities.ProcessFunctionManage;
-import yucong.camunda.model.bo.ProcessFunctionSaveRequest;
-import yucong.camunda.model.vo.ProcessFunction;
-import yucong.camunda.model.vo.R;
+import com.github.leapbound.yc.camunda.entities.ProcessFunctionManage;
+import com.github.leapbound.yc.camunda.model.bo.ProcessFunctionSaveRequest;
+import com.github.leapbound.yc.camunda.model.vo.ProcessFunction;
+import com.github.leapbound.yc.camunda.model.vo.R;
 
 /**
  * @author yamath

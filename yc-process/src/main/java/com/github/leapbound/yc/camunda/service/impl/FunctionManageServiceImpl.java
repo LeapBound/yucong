@@ -1,13 +1,13 @@
-package yucong.camunda.service.impl;
+package com.github.leapbound.yc.camunda.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import yucong.camunda.entities.ProcessFunctionManage;
-import yucong.camunda.mapper.ProcessFunctionManageMapper;
-import yucong.camunda.model.bo.ProcessFunctionSaveRequest;
-import yucong.camunda.model.vo.R;
-import yucong.camunda.service.FunctionManageService;
+import com.github.leapbound.yc.camunda.entities.ProcessFunctionManage;
+import com.github.leapbound.yc.camunda.mapper.ProcessFunctionManageMapper;
+import com.github.leapbound.yc.camunda.model.bo.ProcessFunctionSaveRequest;
+import com.github.leapbound.yc.camunda.model.vo.R;
+import com.github.leapbound.yc.camunda.service.FunctionManageService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
