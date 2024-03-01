@@ -12,7 +12,8 @@
 
     <groupId>com.github.leapbound</groupId>
     <artifactId>yc-process</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
     <name>yc-process</name>
     <description>yc-process</description>
     <properties>
