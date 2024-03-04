@@ -1,5 +1,5 @@
 server:
-  # 启用 gzip 压缩
+  # enable gzip
   compression:
     mime-types: application/javascript,text/css,application/json,application/xml,text/html,text/xml,text/plain
     enabled: true
@@ -22,10 +22,10 @@ spring:
     username: root
     password: root
 
-#  camunda配置
+#  camunda
 camunda:
   bpm:
-  # 配置账户密码来访问Camunda自带的管理界面
+  # config the camunda default manager web
     admin-user:
       id: admin
       password: admin
