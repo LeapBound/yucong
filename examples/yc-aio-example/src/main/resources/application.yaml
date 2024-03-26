@@ -2,3 +2,41 @@ logging:
   level:
     root: info
     _org.springframework.web: DEBUG
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/xxx?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+    username: xxx
+    password: xxx
+
+#  camunda配置
+camunda:
+  bpm:
+    # 配置账户密码来访问Camunda自带的管理界面
+    admin-user:
+      id: admin
+      password: xxx
+      first-name: admin
+    filter:
+      create: All tasks
+
+milvus:
+  host: 127.0.0.1
+  port: 19530
+
+yucong:
+  action:
+    rest:
+      url: http://xx.xx.xx.xx:xxxx/yc-action-server
+  conversation:
+    expire: 300
+
+api2d:
+  api:
+    base: https://openai.api2d.net/
+    key: xxxxxxx
+
+bce:
+  client:
+    id: xxx
+    secret: xxx
