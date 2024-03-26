@@ -12,7 +12,7 @@ import com.github.leapbound.yc.hub.service.BotService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/bot")
+@RequestMapping("/${yc.hub.context-path:yc-hub}/api/bot")
 @RequiredArgsConstructor
 public class ApiBotController {
 

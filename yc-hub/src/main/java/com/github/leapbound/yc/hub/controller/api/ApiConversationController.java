@@ -11,7 +11,7 @@ import com.github.leapbound.yc.hub.service.ConversationService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/conversation")
+@RequestMapping("/${yc.hub.context-path:yc-hub}/api/conversation")
 @RequiredArgsConstructor
 public class ApiConversationController {
 

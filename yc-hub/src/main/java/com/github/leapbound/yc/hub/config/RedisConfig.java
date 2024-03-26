@@ -10,11 +10,11 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Slf4j
-@Configuration
+@Configuration("hubRedisConfig")
 public class RedisConfig {
 
     @Bean
-    public RedisTemplate<Object, Object> redisTemplate(LettuceConnectionFactory lettuceConnectionFactory, ObjectMapper objectMapper) {
+    public RedisTemplate<Object, Object> myRedisTemplate(LettuceConnectionFactory lettuceConnectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(lettuceConnectionFactory);
         Jackson2JsonRedisSerializer<Object> jsonRedisSerializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);

@@ -12,7 +12,7 @@ import com.github.leapbound.yc.hub.service.UserService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/${yc.hub.context-path:yc-hub}/api/user")
 @RequiredArgsConstructor
 public class ApiUserController {
 

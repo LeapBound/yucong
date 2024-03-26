@@ -13,7 +13,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/asr")
+@RequestMapping("/${yc.hub.context-path:yc-hub}/api/asr")
 @RequiredArgsConstructor
 public class ApiAsrController {
 

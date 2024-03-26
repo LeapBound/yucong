@@ -18,6 +18,8 @@
     </properties>
 
     <modules>
+        <module>yc-aio-example</module>
+
         <module>yc-action-server-example</module>
         <module>yc-hub-example</module>
         <module>yc-process-example</module>
