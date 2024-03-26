@@ -1,15 +1,15 @@
 package com.github.leapbound.yc.camunda;
 
-import org.camunda.bpm.spring.boot.starter.annotation.EnableProcessApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+/**
+ * @author tangxu
+ * @since 2023/11/10 13:49
+ */
 @SpringBootApplication
-@EnableProcessApplication
-public class YcCamundaApplication {
-
+public class CommonTestApplication {
     public static void main(String[] args) {
-        SpringApplication.run(YcCamundaApplication.class, args);
+        SpringApplication.run(CommonTestApplication.class, args);
     }
-
 }

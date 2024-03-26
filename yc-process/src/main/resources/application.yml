@@ -15,18 +15,10 @@ spring:
   application:
     name: geex-guts-camunda
   datasource:
-    #h2
-    url: jdbc:h2:file:./camunda-h2-database
-    #mysql
-#    url: jdbc:mysql://localhost:3306/camunda_dev?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-#    username: root
-#    password: root
-  sql:
-    init:
-      encoding: utf-8
-      mode: embedded
-      schema-locations: classpath*:db/ddl_create.sql
+    url: jdbc:mysql://localhost:3306/camunda_test?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
 
 #  camunda配置
 camunda:
