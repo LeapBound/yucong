@@ -1,5 +1,7 @@
 package com.github.leapbound.yc.action.controller;
 
+import com.github.leapbound.yc.action.model.vo.request.FunctionTaskRequest;
+import com.github.leapbound.yc.action.service.YcFunctionTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +24,14 @@ public class YcFunctionManageController {
     private final YcFunctionMethodService ycFunctionMethodService;
     private final YcFunctionGroovyService ycFunctionGroovyService;
 
+    private final YcFunctionTaskService ycFunctionTaskService;
+
     public YcFunctionManageController(YcFunctionMethodService ycFunctionMethodService,
-                                      YcFunctionGroovyService ycFunctionGroovyService) {
+                                      YcFunctionGroovyService ycFunctionGroovyService,
+                                      YcFunctionTaskService ycFunctionTaskService) {
         this.ycFunctionMethodService = ycFunctionMethodService;
         this.ycFunctionGroovyService = ycFunctionGroovyService;
+        this.ycFunctionTaskService = ycFunctionTaskService;
     }
 
     @PostMapping("/method/save")
@@ -64,5 +70,22 @@ public class YcFunctionManageController {
     public ResponseVo<Void> uploadFunctionGroovyScripts(@RequestParam("file") MultipartFile file,
                                                         @RequestParam("groovyUrl") String groovyUrl) {
         return this.ycFunctionGroovyService.uploadFunctionGroovyScripts(file, groovyUrl);
+    }
+
+    @PostMapping("/task/save")
+    public ResponseVo<Void> saveFunctionTask(@RequestBody FunctionTaskRequest request) {
+        return this.ycFunctionTaskService.saveFunctionTask(request);
+    }
+
+    @PostMapping("/task/update")
+    public ResponseVo<Void> updateFunctionTask(@RequestBody FunctionTaskRequest request) {
+        return this.ycFunctionTaskService.updateFunctionTask(request);
+    }
+
+    @PostMapping("/task/delete")
+    public ResponseVo<Void> deleteFunctionTask(@RequestParam("functionName") String functionName,
+                                                 @RequestParam(value = "taskName", required = false) String taskName,
+                                               @RequestParam(value = "userName", required = false) String userName) {
+        return this.ycFunctionTaskService.deleteFunctionTask(functionName, taskName,userName);
     }
 }

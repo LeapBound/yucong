@@ -20,6 +20,6 @@
         <module>yc-hub</module>
         <module>yc-process</module>
 
-        <module>examples</module>
+<!--        <module>examples</module>-->
     </modules>
 </project>
