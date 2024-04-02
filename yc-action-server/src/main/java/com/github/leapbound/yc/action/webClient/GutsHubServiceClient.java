@@ -16,7 +16,7 @@ import java.time.Duration;
 @Component
 public class GutsHubServiceClient {
 
-    @Value("${alpha.baseUrl}")
+    @Value("${alpha.baseUrl:https://alpha.geexfinance.com}")
     private String baseUrl;
 
     @Bean

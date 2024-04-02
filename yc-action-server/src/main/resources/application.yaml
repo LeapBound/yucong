@@ -17,6 +17,8 @@ server:
     context-path: /yc-action
 
 spring:
+  application:
+    name: yc-action
   data:
     redis:
       host: 127.0.0.1

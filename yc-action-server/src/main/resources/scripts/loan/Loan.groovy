@@ -99,6 +99,9 @@ static def execLoanMethod(String method, String arguments) {
         case 'check_old_identity':
             result = checkOldIdentity(arguments)
             break
+        case 'check_pay_protocol':
+            result = checkPayProtocol(arguments)
+            break
         case 'submit_pay_protocol':
             result = submitPayProtocol(method, arguments)
             break
@@ -638,7 +641,7 @@ static def checkOldIdentity(String arguments) {
 }
 
 // check 用户支付协议
-static def checkUserPayProtocol(String arguments) {
+static def checkPayProtocol(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String token = args.containsKey('token') ? args.getString('token') : ''
     String appId = args.containsKey('appId') ? args.getString('appId') : ''

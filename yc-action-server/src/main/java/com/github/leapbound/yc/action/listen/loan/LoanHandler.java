@@ -139,7 +139,7 @@ public class LoanHandler {
                 put("bankMobile", bankMobile);
                 put("bankCode", bankCode);
             }};
-            JSONObject checkProtocolResult = this.execute("check_userPay_protocol", args);
+            JSONObject checkProtocolResult = this.execute("check_pay_protocol", args);
             inputForm.put("payProtocolKey", checkProtocolResult.getString("makeProtocolKey"));
 
             externalTaskService.complete(externalTask, inputForm);
