@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023/7/17 10:37
  */
 @RestController
-@RequestMapping("/${yc.action.context-path:yc-action}/mock")
+@RequestMapping("/mock")
 public class MockController {
 
     @PostMapping("/account/close")

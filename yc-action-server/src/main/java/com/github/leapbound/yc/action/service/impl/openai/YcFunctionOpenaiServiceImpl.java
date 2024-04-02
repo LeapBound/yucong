@@ -3,12 +3,6 @@ package com.github.leapbound.yc.action.service.impl.openai;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.unfbx.chatgpt.entity.chat.Message;
-import groovy.util.GroovyScriptEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
 import com.github.leapbound.yc.action.config.RedisConfig;
 import com.github.leapbound.yc.action.func.FunctionExecutor;
 import com.github.leapbound.yc.action.func.FunctionGroovyExec;
@@ -19,6 +13,12 @@ import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
 import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
 import com.github.leapbound.yc.action.service.YcFunctionMethodService;
 import com.github.leapbound.yc.action.service.YcFunctionOpenaiService;
+import com.unfbx.chatgpt.entity.chat.Message;
+import groovy.util.GroovyScriptEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -104,41 +104,12 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
 
     @Override
     public Message executeGroovyForOpenai(FunctionExecuteRequest request) {
-        // if no parameter
-        if (StrUtil.isEmptyIfStr(request.getName())) {
-            return null;
-        }
         //
         LocalDateTime startTime = LocalDateTime.now();
         String executeResult = "";
-        //
         String functionName = request.getName();
-        // select function method
-        YcFunctionGroovyDto dto = this.ycFunctionGroovyService.getFunctionGroovyDto(functionName);
-        if (dto == null) {
-            logger.warn("no data found in [yc_function_groovy], function = {}", functionName);
-            return null;
-        }
-        //
+        JSONObject jsonObject = executeGroovy(request);
         try {
-            // execute
-            JSONObject arguments = JSON.parseObject(request.getArguments());
-            if (!StrUtil.isEmptyIfStr(request.getAccountId())) {
-                arguments.put("accountId", request.getAccountId());
-            }
-            // execute
-            JSONObject jsonObject = null;
-            String engineKey = dto.getGroovyName();
-            if (engineMap.containsKey(engineKey)) {
-                GroovyScriptEngine engine = engineMap.get(engineKey);
-                jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
-            } else {
-                GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
-                if (engine != null) {
-                    engineMap.put(engineKey, engine);
-                    jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
-                }
-            }
             // return result
             if (jsonObject != null) {
                 executeResult = JSON.toJSONString(jsonObject);
@@ -165,6 +136,50 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         } finally {
             this.saveFunctionExecuteRecord(request, startTime, executeResult);
         }
+    }
+
+    @Override
+    public JSONObject executeGroovy(FunctionExecuteRequest request) {
+        // if no function
+        if (StrUtil.isEmptyIfStr(request.getName())) {
+            return null;
+        }
+        //
+        String functionName = request.getName();
+        // select function method
+        YcFunctionGroovyDto dto = this.ycFunctionGroovyService.getFunctionGroovyDto(functionName);
+        if (dto == null) {
+            logger.warn("no data found in [yc_function_groovy], function = {}", functionName);
+            return null;
+        }
+        //
+        try {
+            // execute
+            JSONObject arguments = new JSONObject();
+            if (!StrUtil.isEmptyIfStr(request.getArguments())) {
+                arguments = JSON.parseObject(request.getArguments());
+            }
+            if (!StrUtil.isEmptyIfStr(request.getAccountId())) {
+                arguments.put("accountId", request.getAccountId());
+            }
+            // execute
+            JSONObject jsonObject = null;
+            String engineKey = dto.getGroovyName();
+            if (engineMap.containsKey(engineKey)) {
+                GroovyScriptEngine engine = engineMap.get(engineKey);
+                jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
+            } else {
+                GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
+                if (engine != null) {
+                    engineMap.put(engineKey, engine);
+                    jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
+                }
+            }
+            return jsonObject;
+        } catch (Exception ex) {
+            logger.error("execute groovy function error, function = {}, arguments = {}", functionName, request.getArguments(), ex);
+        }
+        return null;
     }
 
     private void saveFunctionExecuteRecord(FunctionExecuteRequest request, LocalDateTime startTime, String result) {

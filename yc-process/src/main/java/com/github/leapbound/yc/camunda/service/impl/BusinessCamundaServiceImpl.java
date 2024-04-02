@@ -226,6 +226,12 @@ public class BusinessCamundaServiceImpl implements BusinessCamundaService {
         return R.ok(variables);
     }
 
+    @Override
+    public R<Void> deleteProcessInstance(String processInstanceId, String reason) {
+        runtimeService.deleteProcessInstance(processInstanceId, reason);
+        return R.ok(null);
+    }
+
     private TaskReturn getCurrentTask(String processInstanceId, String businessKey) {
 
         if (StrUtil.isEmptyIfStr(processInstanceId) && StrUtil.isEmptyIfStr(businessKey)) {

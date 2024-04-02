@@ -15,7 +15,7 @@ import com.github.leapbound.yc.action.service.YcFunctionMethodService;
  * @since 2023/7/11 10:05
  */
 @RestController
-@RequestMapping("/${yc.hub.context-path:yc-action}/function")
+@RequestMapping("/function")
 public class YcFunctionManageController {
 
     private static final Logger logger = LoggerFactory.getLogger(YcFunctionManageController.class);

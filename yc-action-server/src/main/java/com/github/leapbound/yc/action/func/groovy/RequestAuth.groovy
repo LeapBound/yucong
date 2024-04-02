@@ -10,4 +10,12 @@ class RequestAuth {
     String username
     String password
     String token
+    Map<String, String> headers
+
+    RequestAuth(username, password, token, headers) {
+        this.username = username
+        this.password = password
+        this.token = token
+        this.headers = headers
+    }
 }
