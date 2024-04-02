@@ -3,7 +3,6 @@ package com.github.leapbound.yc.camunda.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.leapbound.yc.camunda.entities.ProcessFunctionManage;
 import com.github.leapbound.yc.camunda.model.bo.ProcessFunctionSaveRequest;
-import com.github.leapbound.yc.camunda.model.vo.ProcessFunction;
 import com.github.leapbound.yc.camunda.model.vo.R;
 
 /**
