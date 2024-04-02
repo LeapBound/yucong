@@ -5,8 +5,8 @@ import cn.hutool.extra.spring.SpringUtil
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
 import groovy.transform.Field
-import yzggy.yucong.action.func.groovy.RestClient
-import yzggy.yucong.action.utils.ldap.LdapAccountService
+import com.github.leapbound.yc.action.func.groovy.RestClient
+import com.github.leapbound.yc.action.utils.ldap.LdapAccountService
 
 /**
  *

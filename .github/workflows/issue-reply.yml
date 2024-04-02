@@ -23,9 +23,7 @@ jobs:
 
             Thank you for raising your pull request and contributing to our Community
             Please make sure you have followed our contributing guidelines. We will review it as soon as possible.
-            If you encounter any problems, please feel free to connect with us.\
-            非常感谢您提出拉取请求并为我们的社区做出贡献，请确保您已经遵循了我们的贡献指南，我们会尽快审查它。
-            如果您遇到任何问题，请随时与我们联系。
+            If you encounter any problems, please feel free to connect with us.
             
       - name: feature
         if: github.event.label.name == 'feature' || github.event.label.name == 'fix'
@@ -38,8 +36,7 @@ jobs:
             👀 @${{ github.event.issue.user.login }}
             
             Thank you for raising an issue. We will investigate into the matter and get back to you as soon as possible.
-            Please make sure you have given us as much context as possible.\
-            非常感谢您提交 issue。我们会尽快调查此事，并尽快回复您。 请确保您已经提供了尽可能多的背景信息。
+            Please make sure you have given us as much context as possible.
 
       - name: bug
         if: github.event.label.name == 'bug'
@@ -52,8 +49,7 @@ jobs:
             👀 @${{ github.event.issue.user.login }}
             
             Thank you for raising an issue. We will investigate into the matter and get back to you as soon as possible.
-            Please make sure you have given us as much context as possible.\
-            非常感谢您提交 issue。我们会尽快调查此事，并尽快回复您。 请确保您已经提供了尽可能多的背景信息。
+            Please make sure you have given us as much context as possible.
 
       - name: question
         if: github.event.label.name == 'question'
@@ -66,4 +62,3 @@ jobs:
             👀 @${{ github.event.issue.user.login }}
             
             Hello, We'll be happy to answer your questions. Just a moment.
-            你好，我们非常乐意为你解答提出的问题，稍等。

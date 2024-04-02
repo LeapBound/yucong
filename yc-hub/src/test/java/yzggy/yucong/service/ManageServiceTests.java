@@ -1,5 +1,7 @@
 package yzggy.yucong.service;
 
+import com.github.leapbound.yc.hub.service.BotService;
+import com.github.leapbound.yc.hub.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

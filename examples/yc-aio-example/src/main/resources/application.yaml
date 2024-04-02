@@ -1,0 +1,57 @@
+logging:
+  level:
+    root: info
+    _org.springframework.web: DEBUG
+
+spring:
+  data:
+    redis:
+      host: 192.168.117.199
+      port: 6379
+      database: 0
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.117.199:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true
+    username: root
+    password: 123456
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      minimum-idle: 10
+      idle-timeout: 18000
+      maximum-pool-size: 1000
+      auto-commit: true
+      max-lifetime: 1800000
+      connection-timeout: 300000
+      connection-test-query: SELECT 1
+
+#  camunda配置
+camunda:
+  bpm:
+    # 配置账户密码来访问Camunda自带的管理界面
+    admin-user:
+      id: admin
+      password: xxx
+      first-name: admin
+    filter:
+      create: All tasks
+
+milvus:
+  host: 127.0.0.1
+  port: 19530
+
+yucong:
+  action:
+    rest:
+      url: http://xx.xx.xx.xx:xxxx/yc-action-server
+  conversation:
+    expire: 300
+
+api2d:
+  api:
+    base: https://openai.api2d.net/
+    key: xxxxxxx
+
+bce:
+  client:
+    id: xxx
+    secret: xxx

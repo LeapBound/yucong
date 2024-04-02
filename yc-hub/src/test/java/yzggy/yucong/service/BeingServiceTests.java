@@ -1,15 +1,15 @@
 package yzggy.yucong.service;
 
+import com.github.leapbound.yc.hub.service.ConversationService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import yzggy.yucong.chat.dialog.MyMessage;
-import yzggy.yucong.model.SingleChatModel;
-import yzggy.yucong.service.gpt.GptService;
-import yzggy.yucong.service.gpt.MilvusService;
+import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
+import com.github.leapbound.yc.hub.model.SingleChatModel;
+import com.github.leapbound.yc.hub.service.gpt.MilvusService;
 
 import java.util.List;
 
