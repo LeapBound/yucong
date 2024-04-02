@@ -5,7 +5,7 @@ import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
 import groovy.transform.Field
-import yzggy.yucong.action.func.groovy.RestClient
+import com.github.leapbound.yc.action.func.groovy.RestClient
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
