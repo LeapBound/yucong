@@ -1,0 +1,65 @@
+# spring redis
+spring:
+  data:
+    redis:
+      host: 192.168.117.199
+      port: 6379
+      database: 0
+  # spring datasource
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.117.199:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&nullCatalogMeansCurrent=true
+    username: root
+    password: 123456
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      minimum-idle: 10
+      idle-timeout: 18000
+      maximum-pool-size: 1000
+      auto-commit: true
+      max-lifetime: 1800000
+      connection-timeout: 300000
+      connection-test-query: SELECT 1
+  # spring ldap
+  ldap:
+    urls: ldaps://GEEX-EQHPTJ02UMC.beta.geex.com:636/
+    base: dc=BETA,dc=GEEX,dc=COM
+    username: cn=Administrator,cn=Users,dc=BETA,dc=GEEX,dc=COM
+    password: Geex@2019
+  # camunda
+camunda:
+  bpm:
+    client:
+      base-url: http://localhost:${server.port}${server.servlet.context-path}/engine-rest
+      async-response-timeout: 120000
+      disable-backoff-strategy: true
+    # 配置账户密码来访问Camunda自带的管理界面
+    admin-user:
+      id: admin
+      password: admin
+      first-name: admin
+    filter:
+      create: All tasks
+server:
+  servlet:
+    context-path: /yc-action
+management:
+  endpoints:
+    web:
+      base-path: /metrics
+      exposure:
+        include: 'health, prometheus'
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  health:
+    camunda:
+      enabled: false
+    db:
+      enabled: false
+    ldap:
+      enabled: false
+    redis:
+      enabled: false

@@ -17,7 +17,7 @@ import com.github.leapbound.yc.action.service.YcFunctionOpenaiService;
  * @since 2023/7/12 9:48
  */
 @RestController
-@RequestMapping("/${yc.hub.context-path:yc-action}/function/openai")
+@RequestMapping("/function/openai")
 public class YcFunctionOpenaiController {
 
     private static final Logger logger = LoggerFactory.getLogger(YcFunctionOpenaiController.class);
