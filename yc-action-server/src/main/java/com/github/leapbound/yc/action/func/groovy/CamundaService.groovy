@@ -85,7 +85,7 @@ class CamundaService {
         JSONObject result = new JSONObject()
         TaskReturn task = queryCurrentTask(userId)
         if (task == null) {
-            result.put('结果', '请稍后')
+            result.put('result', 'Please wait...')
         }
         return result
     }
