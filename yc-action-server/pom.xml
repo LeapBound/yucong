@@ -194,7 +194,7 @@
                     <sourceEncoding>UTF-8</sourceEncoding>
                     <sources>
                         <source>
-                            <directory>${project.basedir}/src/main/java/yzggy/yucong/action/func/groovy</directory>
+                            <directory>${project.basedir}/src/main/java/com/github/leapbound/yc/action/func/groovy</directory>
                             <includes>
                                 <include>**/*.groovy</include>
                             </includes>
