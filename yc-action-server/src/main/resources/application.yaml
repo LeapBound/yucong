@@ -18,7 +18,7 @@ server:
 
 spring:
   application:
-    name: yc-action
+    name: yc-action-server
   data:
     redis:
       host: 127.0.0.1
