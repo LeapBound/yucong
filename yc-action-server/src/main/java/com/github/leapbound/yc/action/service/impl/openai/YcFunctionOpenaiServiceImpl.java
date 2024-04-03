@@ -182,6 +182,15 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         return null;
     }
 
+    @Override
+    public void resetEngineMap(String key) {
+        if (StrUtil.isEmptyIfStr(key)) {
+            engineMap.clear();
+            return;
+        }
+        engineMap.remove(key);
+    }
+
     private void saveFunctionExecuteRecord(FunctionExecuteRequest request, LocalDateTime startTime, String result) {
         try {
             LocalDateTime endTime = LocalDateTime.now();

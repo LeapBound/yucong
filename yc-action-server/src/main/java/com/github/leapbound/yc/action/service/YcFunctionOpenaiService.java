@@ -1,8 +1,8 @@
 package com.github.leapbound.yc.action.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.unfbx.chatgpt.entity.chat.Message;
 import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
+import com.unfbx.chatgpt.entity.chat.Message;
 
 /**
  * @author yamath
@@ -15,4 +15,6 @@ public interface YcFunctionOpenaiService {
     Message executeGroovyForOpenai(FunctionExecuteRequest request);
 
     JSONObject executeGroovy(FunctionExecuteRequest request);
+
+    void resetEngineMap(String key);
 }

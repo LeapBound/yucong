@@ -477,7 +477,7 @@ static def loadIdentity(String arguments) {
             logger.error('loadIdentity no response')
             return null
         }
-        logger.info('loadIdentity response: {}', response)
+        logger.info('loadIdentity response: {}', response.body())
         if (response.isOk()) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }

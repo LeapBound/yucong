@@ -3,21 +3,31 @@ package scripts.account
 import cn.hutool.core.util.StrUtil
 import cn.hutool.extra.spring.SpringUtil
 import com.alibaba.fastjson.JSON
+import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
-import groovy.transform.Field
-import com.github.leapbound.yc.action.func.groovy.RestClient
+import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import com.github.leapbound.yc.action.utils.ldap.LdapAccountService
+import groovy.transform.Field
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import scripts.alpha.Alpha
+
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  *
  * @author yamath
  * @since 2023/10/13 17:25
  */
-// geex-guts-hub 地址
-@Field static String gutsHubUrl = 'https://beta.geexfinance.com/geex-guts-hub'
-// 关闭销售账号 url
-@Field static String closeSalesAccountPath = '/alpha/bd/account/close'
 
+@Field static String alphaUrl = 'https://beta.geexfinance.com'
+@Field static String getSalesListPath = '/geex-platform-web/management/user/getSalesList'
+@Field static String getSalesDetailListPath = '/geex-platform-web/management/user/getSalesDetailList'
+@Field static String updateSalesInfoPath = '/geex-platform-web/management/user/updateSalesInfo'
+@Field static Logger logger = LoggerFactory.getLogger('scripts.account.Account');
+
+// call method
+execAccountMethod(method, arguments)
 /**
  * 执行 account 相关方法
  * @param method function method
@@ -85,33 +95,18 @@ static def closeUserAccount(String arguments) {
             result.put('LDAP操作结果', 'LDAP 用户账号已关闭')
             // init
             String commonName = ldapUser.getString('commonName')
-            def params = ['name': commonName, 'ldap': account]
             // call close sales account
-            def response = RestClient.doPostWithParams(gutsHubUrl, closeSalesAccountPath, params, null)
+            def response = closeSalesAccount(commonName, account)
             // no response
             if (response == null) {
-                result.put('销售账号操作错误', '没有关闭销售账号结果')
+                result.put('销售账号操作错误', '操作无响应，联系管理员')
                 return result
             }
-            // response status = 200
-            if (response.isOk()) {
-                JSONObject jsonObject = JSON.parseObject(response.body())
-                if (jsonObject != null) {
-                    if (jsonObject.containsKey('status')) {
-                        // close status
-                        if (jsonObject.getBooleanValue('status')) {
-                            result.put('销售账号操作结果', '销售账号已关闭')
-                        } else {
-                            result.put('销售账号操作结果', '销售账号关闭失败')
-                        }
-                    } else { // response no data
-                        result.put('销售账号操作结果', '销售账号关闭失败')
-                    }
-                } else { // no response
-                    result.put('销售账号操作结果', '没有关闭销售账号结果')
-                }
-            } else { // response status > 200
-                result.put('销售账号操作结果', response.status + ' 销售账号关闭失败')
+            // close status
+            if (response) {
+                result.put('销售账号操作结果', '销售账号已关闭')
+            } else {
+                result.put('销售账号操作结果', '销售账号关闭失败')
             }
         }
     } else { // ldap no response
@@ -198,5 +193,47 @@ static def getUserByName(String arguments) {
     return result
 }
 
-// call method
-execAccountMethod(method, arguments)
+static def closeSalesAccount(String name, String ldapAccount) {
+    //
+    String personId = ldapAccount.toUpperCase().replace('GEEX', '')
+    AtomicReference<Boolean> close = new AtomicReference<>(false)
+    //
+    def params = ['userName': name, 'status': '1', 'page': '1', 'rows': 50]
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doPostBodyWithLogin(alphaUrl, getSalesListPath, params, requestAuth, 1)
+    if (response == null) {
+        logger.error('closeSalesAccount no response')
+        return null
+    }
+    logger.info('closeSalesAccount response: {}', response.body())
+    if (response.isOk()) {
+        JSONArray rows = JSON.parseObject(response.body()).getJSONArray('rows')
+        for (int i = 0; i < rows.size(); i++) {
+            String userId = rows.getJSONObject(i).get('userId')
+            requestAuth = Alpha.setLoginRequestAuth()
+            def response1 = Alpha.doGetWithLogin(alphaUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
+            if (response1 == null) {
+                logger.warn('getSalesDetailList no response')
+                continue
+            }
+            if (response1.isOk()) {
+                JSONObject basicInfo = JSON.parseObject(response1.body()).getJSONObject('result').getJSONObject('basicInfo')
+                if (basicInfo.getString('personId') == personId) {
+                    logger.info('close sales account basicInfo: {}', basicInfo)
+                    basicInfo.put('status', 0)
+                    def closeMap = ['basicInfo': basicInfo, 'rolesList': new ArrayList<>(0), 'teamList': new ArrayList<>(0)]
+                    requestAuth = Alpha.setLoginRequestAuth()
+                    def response2 = Alpha.doPostBodyWithLogin(alphaUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
+                    if (response2 == null) {
+                        logger.warn('updateSalesInfo no response')
+                        continue
+                    }
+                    if (response2.isOk()) {
+                        close.set(JSON.parseObject(response2.body()).getBooleanValue('success'))
+                    }
+                }
+            }
+        }
+    }
+    return close.get()
+}

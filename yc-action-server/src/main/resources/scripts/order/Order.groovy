@@ -1,11 +1,11 @@
 package scripts.order
 
-
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
+import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import groovy.transform.Field
-import com.github.leapbound.yc.action.func.groovy.RestClient
+import scripts.alpha.Alpha
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -16,18 +16,18 @@ import java.time.format.DateTimeFormatter
  * @since 2023/10/9 14:42
  *
  */
-// geex-guts-hub 地址
-@Field static String gutsHubUrl = 'https://beta.geexfinance.com/geex-guts-hub'
+// alpha 地址
+@Field static String alphaUrl = 'https://beta.geexfinance.com'
 // 通过订单号获取还款计划 yrl
-@Field static String getRepayPlanByOrderPath = '/alpha/order/repay/plan'
+@Field static String getRepayPlanByOrderPath = '/geex-csorder/order/repayPlan/'
 // 查询订单放款状态 url
-@Field static String getLoanMakeInfoByOrderPath = '/alpha/order/loan/make/info'
+@Field static String getLoanMakeInfoByOrderPath = '/geex-fundOperate/fund/task/getApplyInfoList'
 // 查询订单借据状态 url
-@Field static String getLoanStatusByOrderPath = '/alpha/order/loan/status'
+@Field static String getLoanStatusByOrderPath = '/geex-core-web/loan/loanList'
 // 还款试算 url
-@Field static String tryOrderRepayPath = '/alpha/order/repay'
+@Field static String tryOrderRepayPath = '/geex-platform-web/repayment/try/repay'
 // 退款试算 url
-@Field static String tryOrderRefundPath = '/alpha/order/refund'
+@Field static String tryOrderRefundPath = '/geex-platform-web/repayment/try/refund'
 // 放款状态 map
 @Field static Map<String, String> loanOrderStatusMap = ['LOAN_WAIT' : '待放款(等待放款申请)',
                                                         'LOAN_ING'  : '放款中',
@@ -104,7 +104,8 @@ static def getUserRepaymentByOrder(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    def response = RestClient.doPostWithParams(gutsHubUrl, getRepayPlanByOrderPath, params, null)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doGetWithLogin(alphaUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '没有查询到用户的还款计划')
@@ -112,7 +113,7 @@ static def getUserRepaymentByOrder(String arguments) {
     }
     // response status = 200
     if (response.isOk()) {
-        JSONObject jsonObject = JSON.parseObject(response.body())
+        JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
         if (jsonObject != null) {
             // response data
             JSONArray array = jsonObject.getJSONArray('data')
@@ -172,7 +173,8 @@ static def getUserLoanTimeByOrder(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    def response = RestClient.doPostWithParams(gutsHubUrl, getLoanMakeInfoByOrderPath, params, null)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '没有查询到订单的放款信息')
@@ -180,7 +182,7 @@ static def getUserLoanTimeByOrder(String arguments) {
     }
     // response status = 200
     if (response.isOk()) {
-        JSONObject jsonObject = JSON.parseObject(response.body())
+        JSONObject jsonObject = JSON.parseObject(response.body()).getJSONArray('rows')[0]
         if (jsonObject != null) {
             JSONObject loanInfo = jsonObject.getJSONObject('data')
             if (loanInfo != null) {
@@ -247,7 +249,8 @@ static def getLoanStatusByOrder(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    def response = RestClient.doPostWithParams(gutsHubUrl, getLoanStatusByOrderPath, params, null)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '没有查询到订单借据状态信息')
@@ -255,7 +258,7 @@ static def getLoanStatusByOrder(String arguments) {
     }
     // response status = 200
     if (response.isOk()) {
-        JSONObject jsonObject = JSON.parseObject(response.body())
+        JSONObject jsonObject = JSON.parseObject(response.body()).getJSONArray('rows')[0]
         if (jsonObject != null) {
             JSONObject loanStatus = jsonObject.getJSONObject('data')
             if (loanStatus != null) {
@@ -303,7 +306,8 @@ static def tryOrderRepay(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    def response = RestClient.doPostWithParams(gutsHubUrl, tryOrderRepayPath, params, null)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRepayPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '获取还款试算结果失败')
@@ -311,7 +315,7 @@ static def tryOrderRepay(String arguments) {
     }
     // response status = 200
     if (response.isOk()) {
-        JSONObject jsonObject = JSON.parseObject(response.body())
+        JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
         if (jsonObject != null) {
             JSONObject tryOrder = jsonObject.getJSONObject('data')
             if (tryOrder != null) {
@@ -355,7 +359,8 @@ static def tryOrderRefund(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    def response = RestClient.doPostWithParams(gutsHubUrl, tryOrderRefundPath, params, null)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRefundPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '获取退款试算结果失败')
@@ -363,7 +368,7 @@ static def tryOrderRefund(String arguments) {
     }
     // response status = 200
     if (response.isOk()) {
-        JSONObject jsonObject = JSON.parseObject(response.body())
+        JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
         if (jsonObject != null) {
             JSONObject tryOrder = jsonObject.getJSONObject('data')
             if (tryOrder != null) {
