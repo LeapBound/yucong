@@ -87,7 +87,7 @@ class RestClient {
         def urlString = buildUrl(url, path, null)
         // create get request
         def request = HttpUtil.createPost(urlString)
-                .contentType("application/json")
+                .contentType("application/x-www-form-urlencoded")
                 .form(params)
                 .setConnectionTimeout(10000).setReadTimeout(10000)
         // check auth
@@ -162,6 +162,7 @@ class RestClient {
         def username = auth.username
         def password = auth.password
         def token = auth.token
+        def headers = auth.headers
         //
         if (StrUtil.isBlankIfStr(username) && !StrUtil.isBlankIfStr(token)) {
             return request.bearerAuth(token)
@@ -174,6 +175,10 @@ class RestClient {
             if (!StrUtil.isBlankIfStr(token)) {
                 return request.basicAuth(username, token)
             }
+        }
+        //
+        if (headers != null && !headers.isEmpty()) {
+            request.addHeaders(headers)
         }
         return request
     }

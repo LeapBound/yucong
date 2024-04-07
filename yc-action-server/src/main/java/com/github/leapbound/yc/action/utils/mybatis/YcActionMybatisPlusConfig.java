@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.camunda.mybatis;
+package com.github.leapbound.yc.action.utils.mybatis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
  * @since 2023/7/10 13:11
  */
 @Configuration
-public class MybatisPlusConfig {
+public class YcActionMybatisPlusConfig {
 
     @Bean
     public EasySqlInjector sqlInjector() {

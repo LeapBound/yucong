@@ -111,6 +111,16 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.13</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.leapbound</groupId>
+            <artifactId>yc-process</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework.apollo</groupId>
+            <artifactId>apollo-client</artifactId>
+            <version>2.1.0</version>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -127,10 +137,10 @@
     <build>
         <plugins>
 <!-- if package the dependent jar, comment out the code  -->
-<!--            <plugin>-->
-<!--                <groupId>org.springframework.boot</groupId>-->
-<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -161,7 +171,7 @@
                     <sourceEncoding>UTF-8</sourceEncoding>
                     <sources>
                         <source>
-                            <directory>${project.basedir}/src/main/java/yzggy/yucong/action/func/groovy</directory>
+                            <directory>${project.basedir}/src/main/java/com/github/leapbound/yc/action/func/groovy</directory>
                             <includes>
                                 <include>**/*.groovy</include>
                             </includes>
