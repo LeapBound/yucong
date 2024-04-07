@@ -18,6 +18,8 @@ public class FunctionTaskRequest extends BaseRequest {
 
     private Integer id;
 
+    private String processId;
+
     /**
      * 方法名
      */

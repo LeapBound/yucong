@@ -17,6 +17,7 @@ import com.unfbx.chatgpt.entity.chat.Message;
 import groovy.util.GroovyScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +39,9 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
     private final YcFunctionGroovyService ycFunctionGroovyService;
     private final RedisTemplate redisTemplate;
     private final ConcurrentHashMap<String, GroovyScriptEngine> engineMap = new ConcurrentHashMap<>();
+
+    @Value("${yc.action.external.host:}")
+    private String externalHost;
 
     public YcFunctionOpenaiServiceImpl(
             YcFunctionMethodService ycFunctionMethodService,
@@ -162,20 +166,23 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             if (!StrUtil.isEmptyIfStr(request.getAccountId())) {
                 arguments.put("accountId", request.getAccountId());
             }
+            if (!StrUtil.isEmptyIfStr(externalHost)) {
+                arguments.put("externalHost", externalHost);
+            }
             // execute
-            JSONObject jsonObject = null;
+            JSONObject result = null;
             String engineKey = dto.getGroovyName();
             if (engineMap.containsKey(engineKey)) {
                 GroovyScriptEngine engine = engineMap.get(engineKey);
-                jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
+                result = FunctionGroovyExec.runScript(engine, dto, arguments);
             } else {
                 GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
                 if (engine != null) {
                     engineMap.put(engineKey, engine);
-                    jsonObject = FunctionGroovyExec.runScript(engine, dto, arguments);
+                    result = FunctionGroovyExec.runScript(engine, dto, arguments);
                 }
             }
-            return jsonObject;
+            return result;
         } catch (Exception ex) {
             logger.error("execute groovy function error, function = {}, arguments = {}", functionName, request.getArguments(), ex);
         }

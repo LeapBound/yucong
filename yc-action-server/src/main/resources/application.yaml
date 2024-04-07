@@ -38,8 +38,6 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 300000
       connection-test-query: SELECT 1
-  main:
-    allow-bean-definition-overriding: true
 
 #  camunda配置
 camunda:

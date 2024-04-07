@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.loan.Loan');
 
-
 execLoanMethod(method, arguments)
 
 static def execLoanMethod(String method, String arguments) {
@@ -49,6 +48,10 @@ static def execLoanMethod(String method, String arguments) {
     if (arguments == null || arguments.isEmpty()) {
         result.put('错误', '没有提供必要的信息')
         return result
+    }
+    def externalUrl = getExternalUrl(arguments)
+    if (!StrUtil.isEmptyIfStr(externalUrl)) {
+        frontUrl = externalUrl
     }
     switch (method) {
         case 'start_loan_process':
@@ -60,14 +63,8 @@ static def execLoanMethod(String method, String arguments) {
         case 'bind_mobile':
             result = bindMobile(arguments)
             break
-        case 'get_app_token':
-            result = getAppToken(arguments)
-            break
-        case 'send_login_sms':
-            sendLoginSms(arguments)
-            break
-        case 'notify_user':
-            notifyUser(arguments)
+        case 'send_code': // service task called by java delegate
+            result = sendCode(arguments)
             break
         case 'verify_mobile_code':
             result = verifyMobileCode(arguments)
@@ -81,8 +78,8 @@ static def execLoanMethod(String method, String arguments) {
         case 'loan_term':
             result = loanTerm(method, arguments)
             break
-        case 'load_identity':
-            result = loadIdentity(arguments)
+        case 'load_client_identity': // service task called by java delegate
+            loadClientIdentity(arguments)
             break
         case 'id_photo_front':
             result = doIdCardOcr(method, arguments)
@@ -93,20 +90,14 @@ static def execLoanMethod(String method, String arguments) {
         case 'bank_card':
             result = bankCard(method, arguments)
             break
-        case 'check_bankCard_limit':
-            result = checkBankCardLimit(arguments)
-            break
-        case 'check_old_identity':
-            result = checkOldIdentity(arguments)
-            break
-        case 'check_pay_protocol':
-            result = checkPayProtocol(arguments)
+        case 'check_bank_card': // service task called by java delegate
+            result = checkBankCard(arguments)
             break
         case 'submit_pay_protocol':
             result = submitPayProtocol(method, arguments)
             break
-        case 'submit_apply_step':
-            result = submitApplyStep(arguments)
+        case 'second_step': // service task called by java delegate
+            result = secondStep(arguments)
             break
         case 'third_step':
             result = thirdStep(method, arguments)
@@ -114,11 +105,20 @@ static def execLoanMethod(String method, String arguments) {
         case 'forth_step':
             result = forthStep(method, arguments)
             break
+        case 'submit_audit': // service task called by java delegate
+            result = submitAudit(arguments)
+            break
         default:
             result.put('结果', '没有执行方法')
             break
     }
     return result
+}
+
+static def getExternalUrl(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
+    return externalHost
 }
 
 //
@@ -164,6 +164,20 @@ static def bindMobile(String arguments) {
         CamundaService.completeTask(taskId, inputForm)
     }
     return result
+}
+
+static def sendCode(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    JSONObject result = new JSONObject()
+    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    sendLoginSms(mobile)
+    notifyUser(mobile, '验证码已经发送，请在收到验证码后发送给我')
+    // set send_code output
+    return new JSONObject() {
+        {
+            put('z_sendUserMobileVerifyCode', true)
+        }
+    }
 }
 
 // 登录app
@@ -230,21 +244,6 @@ static def getAppToken(String mobile, String verifyCode, String deviceId) {
     return appToken
 }
 
-// 获取app token
-static def getAppToken(String arguments) {
-    JSONObject args = JSON.parseObject(arguments);
-    String userMobile = args.containsKey('userMobile') ? args.getString('userMobile') : ''
-    String verifyCode = args.containsKey('verifyCode') ? args.getString('verifyCode') : ''
-    String deviceId = args.containsKey('deviceId') ? args.getString('deviceId') : ''
-    String appToken = getAppToken(userMobile, verifyCode, deviceId)
-
-    return new JSONObject() {
-        {
-            put('token', appToken)
-        }
-    }
-}
-
 static def getCommonVerifyCode() {
     def response = RestClient.doGet(frontUrl, getCommonVerifyCodePath, null, null)
     if (response == null) {
@@ -255,10 +254,9 @@ static def getCommonVerifyCode() {
 }
 
 // 发送登录验证码
-static def sendLoginSms(String arguments) {
-    JSONObject args = JSON.parseObject(arguments);
+static def sendLoginSms(String userMobile) {
+
     JSONObject result = new JSONObject()
-    String userMobile = args.containsKey('userMobile') ? args.getString('userMobile') : ''
     int randomInt = RandomUtil.getSecureRandom().nextInt(10)
     String checkKey = DigestUtil.md5Hex(('verify_code_check' + userMobile + randomInt).getBytes())
     def params = ['mobile': userMobile, 'random': String.valueOf(randomInt), 'requestKey': checkKey]
@@ -270,10 +268,7 @@ static def sendLoginSms(String arguments) {
 }
 
 // 通知用户
-static def notifyUser(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String userId = args.containsKey('userId') ? args.getString('userId') : ''
-    String content = args.containsKey('content') ? args.getString('content') : ''
+static def notifyUser(String userId, String content) {
     logger.info('notify user: {}, content: {}', userId, content)
     return new JSONObject() {
         {
@@ -319,8 +314,6 @@ static def configByBdMobile(String arguments) {
     String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
     String bdMobile = args.containsKey('bdMobile') ? args.getString('bdMobile') : ''
     try {
-
-
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('configByBdMobile no current task, businessKey: {}', userId)
@@ -366,14 +359,6 @@ static def preApply(String token, String mobile) {
     return null
 }
 
-// 预申请
-static def preApply(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String token = args.containsKey('token') ? args.getString('token') : ''
-    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
-    return preApply(token, mobile)
-}
-
 static def productInfo(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
@@ -385,8 +370,6 @@ static def productInfo(String method, String arguments) {
         return result
     }
     try {
-
-
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('productInfo no current task, businessKey: {}', userId)
@@ -462,10 +445,16 @@ static def loanTerm(String method, String arguments) {
 }
 
 // 加载用户信息
-static def loadIdentity(String arguments) {
+static def loadClientIdentity(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    String token = args.containsKey('token') ? args.getString('token') : ''
+    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    //
+    String appToken = getAppToken(mobile, null, null)
+    return loadIdentity(appId, appToken);
+}
+
+static def loadIdentity(String appId, String token) {
     // post params body
     def params = ['appId': appId]
     // post headers
@@ -581,14 +570,38 @@ static def bankCard(String method, String arguments) {
     return result
 }
 
-// check bank card limit
-static def checkBankCardLimit(String arguments) {
+static def checkBankCard(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    String token = args.containsKey('token') ? args.getString('token') : ''
-    String name = args.containsKey('name') ? args.getString('name') : ''
-    String idNo = args.containsKey('idNo') ? args.getString('idNo') : ''
+    String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    Integer amount = args.containsKey('applyAmount') ? args.getInteger('applyAmount') : null
     String bankCard = args.containsKey('bankCard') ? args.getString('bankCard') : ''
-    Integer amount = args.containsKey('amount') ? args.getInteger('amount') : null
+    String bankMobile = args.containsKey('bankMobile') ? args.getString('bankMobile') : ''
+    String bankCode = args.containsKey('bankCode') ? args.getString('bankCode') : ''
+    JSONObject ocrFront = args.containsKey('ocridnoFront') ? args.getJSONObject('ocridnoFront') : null
+    JSONObject ocrFrontDetail = (ocrFront != null && ocrFront.containsKey('ocrDetail')) ? ocrFront.getJSONObject('ocrDetail') : null
+    String name = (ocrFrontDetail != null && ocrFrontDetail.containsKey('name')) ? ocrFrontDetail.getString('name') : ''
+    String idNo = (ocrFrontDetail != null && ocrFrontDetail.containsKey('idCardNumber')) ? ocrFrontDetail.getString('idCardNumber') : ''
+    JSONObject ocrBack = args.containsKey('ocridnoBack') ? args.getJSONObject('ocridnoBack') : null
+    JSONObject ocrBackDetail = (ocrBack != null && ocrBack.containsKey('ocrDetail')) ? ocrBack.getJSONObject('ocrDetail') : null
+    String idValid = (ocrBackDetail != null && ocrBackDetail.containsKey('validDate')) ? ocrBackDetail.getString('validDate') : ''
+
+    String appToken = getAppToken(mobile, null, null)
+    checkBankCardLimit(appToken, name, idNo, bankCard, amount)
+
+    checkOldIdentity(appToken, name, idNo)
+
+    JSONObject checkProtocolResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode)
+    String protocolKey = checkProtocolResult != null && checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
+    return new JSONObject() {
+        {
+            put('payProtocolKey', protocolKey)
+        }
+    }
+}
+
+// check bank card limit
+static def checkBankCardLimit(String token, String name, String idNo, String bankCard, Integer amount) {
     // post params body
     def params = ['name': name, 'idNo': idNo, 'bankCard': bankCard, 'loanAmt': amount]
     // post headers
@@ -616,11 +629,7 @@ static def checkBankCardLimit(String arguments) {
 }
 
 // check 老客户信息
-static def checkOldIdentity(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String token = args.containsKey('token') ? args.getString('token') : ''
-    String name = args.containsKey('name') ? args.getString('name') : ''
-    String idNo = args.containsKey('idNo') ? args.getString('idNo') : ''
+static def checkOldIdentity(String token, String name, String idNo) {
     def params = ['name': name, 'idNo': idNo]
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
@@ -641,15 +650,7 @@ static def checkOldIdentity(String arguments) {
 }
 
 // check 用户支付协议
-static def checkPayProtocol(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String token = args.containsKey('token') ? args.getString('token') : ''
-    String appId = args.containsKey('appId') ? args.getString('appId') : ''
-    String name = args.containsKey('name') ? args.getString('name') : ''
-    String idNo = args.containsKey('idNo') ? args.getString('idNo') : ''
-    String bankCard = args.containsKey('bankCard') ? args.getString('bankCard') : ''
-    String bankMobile = args.containsKey('bankMobile') ? args.getString('bankMobile') : ''
-    String bankCode = args.containsKey('bankCode') ? args.getString('bankCode') : ''
+static def checkPayProtocol(String token, String appId, String name, String idNo, String bankCard, String bankMobile, String bankCode) {
     // post params body
     def params = ['appId': appId, 'name': name, 'idNo': idNo, 'bankCode': bankCode, 'accountId': bankCard, 'rsvPhone': bankMobile, 'type': '1', 'pageUrl': 'https://www.baidu.com']
     def headers = wrapHeadersWithToken(token)
@@ -677,8 +678,6 @@ static def submitPayProtocol(String method, String arguments) {
     String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
     String verifyCode = args.containsKey('payProtocolVerifyCode') ? args.getString('payProtocolVerifyCode') : ''
     try {
-
-
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('submitUserPayProtocol no current task, businessKey: {}', userId)
@@ -744,7 +743,7 @@ static def submitPayProtocol(String appId, String bankCode, String bankMobile, S
 
 static def submitIdentity(String appId, String name, String idNo, String idValid, String bankCode,
                           String storeCode, String bankCard, String bankMobile, String token) {
-// post params body
+    // post params body
     def params = ['C_APP_ID': appId, 'name': name, 'C_ID_VALID': idValid, 'idNo': idNo, 'bankCode': bankCode, 'storeCode': storeCode, 'accountId': bankCard, 'rsvPhone': bankMobile]
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
@@ -764,6 +763,23 @@ static def submitIdentity(String appId, String name, String idNo, String idValid
     return null
 }
 
+static def secondStep(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    String appToken = getAppToken(mobile, null, null)
+    JSONObject info = new JSONObject() {
+        {
+            put('C_APP_ID', appId)
+            put('C_STEP_ID', 'NYB01_02')
+            put('C_DEVICE_TYPE', 'bot')
+            put('C_FORM_ID', 'NYB01')
+        }
+    }
+    return submitApplyStep(appToken, info)
+}
+
+// 提交申请
 static def submitApplyStep(String token, JSONObject info) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
@@ -781,14 +797,6 @@ static def submitApplyStep(String token, JSONObject info) {
         logger.error('submitApplyStep error,', ex)
     }
     return null
-}
-
-// 提交申请
-static def submitApplyStep(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String token = args.containsKey('token') ? args.getString('token') : ''
-    JSONObject info = args.containsKey('info') ? args.getJSONObject('info') : null
-    return submitApplyStep(token, info)
 }
 
 static def thirdStep(String method, String arguments) {
@@ -871,6 +879,20 @@ static def forthStep(String method, String arguments) {
         result.put('错误', '系统错误，请联系管理员')
     }
     return result
+}
+
+static def submitAudit(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    String appToken = getAppToken(mobile, null, null)
+    JSONObject info = new JSONObject() {
+        {
+            put('C_APP_ID', appId)
+            put('C_STEP_ID', 'PREVIEW')
+        }
+    }
+    return submitApplyStep(appToken, info)
 }
 
 static def wrapHeadersWithToken(String token) {

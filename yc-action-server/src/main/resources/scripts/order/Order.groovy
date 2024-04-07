@@ -1,5 +1,6 @@
 package scripts.order
 
+import cn.hutool.core.util.StrUtil
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
@@ -60,6 +61,11 @@ static def execOrderMethod(String method, String arguments) {
         return result
     }
     //
+    def externalUrl = getExternalUrl(arguments)
+    if (!StrUtil.isEmptyIfStr(externalUrl)) {
+        alphaUrl = externalUrl
+    }
+    //
     switch (method) {
         case 'get_user_repayment_by_order': // 订单号查询用户还款计划
             result = getUserRepaymentByOrder(arguments)
@@ -81,6 +87,12 @@ static def execOrderMethod(String method, String arguments) {
             break
     }
     return result
+}
+
+static def getExternalUrl(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
+    return externalHost
 }
 
 /**

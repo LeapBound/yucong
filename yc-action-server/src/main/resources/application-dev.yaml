@@ -40,3 +40,7 @@ camunda:
       first-name: admin
     filter:
       create: All tasks
+yc:
+  action:
+    external:
+      host: https://beta.geexfinance.com
