@@ -1,4 +1,5 @@
 -- DDL
+create schema yucong collate utf8mb4_general_ci;
 -- yc_function_groovy
 create table yc_function_groovy
 (
