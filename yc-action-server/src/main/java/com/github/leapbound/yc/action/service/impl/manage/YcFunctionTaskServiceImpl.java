@@ -15,8 +15,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 /**
- *
- *
  * @author tangxu
  * @since 2024/3/29 15:17
  */
@@ -27,8 +25,9 @@ public class YcFunctionTaskServiceImpl
     private static final Logger logger = LoggerFactory.getLogger(YcFunctionTaskServiceImpl.class);
 
     @Override
-    public YcFunctionTask queryFunctionTask(String functionName) {
+    public YcFunctionTask queryFunctionTask(String processId, String functionName) {
         LambdaQueryWrapper<YcFunctionTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(YcFunctionTask::getProcessId, processId);
         wrapper.eq(YcFunctionTask::getFunctionName, functionName);
         wrapper.eq(YcFunctionTask::getDelFlag, 0);
         YcFunctionTask functionTask = baseMapper.selectOne(wrapper);
@@ -46,6 +45,7 @@ public class YcFunctionTaskServiceImpl
             return ResponseVo.fail(null, "缺少 task 信息");
         }
         LambdaQueryWrapper<YcFunctionTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(YcFunctionTask::getProcessId, request.getProcessId());
         wrapper.eq(YcFunctionTask::getFunctionName, request.getFunctionName());
         wrapper.eq(YcFunctionTask::getTaskName, request.getTaskName());
         wrapper.eq(YcFunctionTask::getDelFlag, 0);
@@ -70,6 +70,7 @@ public class YcFunctionTaskServiceImpl
             return ResponseVo.fail(null, "缺少 task 信息");
         }
         LambdaQueryWrapper<YcFunctionTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(YcFunctionTask::getProcessId, request.getProcessId());
         wrapper.eq(YcFunctionTask::getFunctionName, request.getFunctionName());
         wrapper.eq(YcFunctionTask::getTaskName, request.getTaskName());
         wrapper.eq(YcFunctionTask::getDelFlag, 0);
@@ -91,10 +92,13 @@ public class YcFunctionTaskServiceImpl
     }
 
     @Override
-    public ResponseVo<Void> deleteFunctionTask(String functionName, String taskName, String userName) {
+    public ResponseVo<Void> deleteFunctionTask(String processId, String functionName, String taskName, String userName) {
         LambdaQueryWrapper<YcFunctionTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(YcFunctionTask::getProcessId, processId);
         wrapper.eq(YcFunctionTask::getFunctionName, functionName);
-        wrapper.eq(YcFunctionTask::getTaskName, taskName);
+        if (!StrUtil.isEmptyIfStr(taskName)) {
+            wrapper.eq(YcFunctionTask::getTaskName, taskName);
+        }
         wrapper.eq(YcFunctionTask::getDelFlag, 0);
         YcFunctionTask functionTask = baseMapper.selectOne(wrapper);
         if (null == functionTask) {
@@ -115,9 +119,10 @@ public class YcFunctionTaskServiceImpl
 
 
     private static boolean checkFunctionGroovyRequest(FunctionTaskRequest request) {
-        if (StrUtil.isEmptyIfStr(request.getFunctionName())
+        if (StrUtil.isEmptyIfStr(request.getProcessId())
+                || StrUtil.isEmptyIfStr(request.getFunctionName())
                 || StrUtil.isEmptyIfStr(request.getTaskName())) {
-            logger.error("function task is empty");
+            logger.error("process/function/task is empty");
             return true;
         }
         return false;
@@ -126,6 +131,7 @@ public class YcFunctionTaskServiceImpl
 
     private int insertFunctionTask(FunctionTaskRequest request) {
         YcFunctionTask functionTask = new YcFunctionTask();
+        functionTask.setProcessId(request.getProcessId());
         functionTask.setFunctionName(request.getFunctionName());
         functionTask.setTaskName(request.getTaskName());
         functionTask.setScript(request.scriptJson());

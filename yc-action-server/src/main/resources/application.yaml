@@ -13,8 +13,12 @@ server:
     includeException: true
     includeStacktrace: ALWAYS
     includeMessage: ALWAYS
+  servlet:
+    context-path: /yc-action
 
 spring:
+  application:
+    name: yc-action-server
   data:
     redis:
       host: 127.0.0.1
@@ -34,8 +38,6 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 300000
       connection-test-query: SELECT 1
-  main:
-    allow-bean-definition-overriding: true
 
 #  camunda配置
 camunda:
@@ -51,3 +53,24 @@ camunda:
       first-name: admin
     filter:
       create: All tasks
+
+management:
+  endpoints:
+    web:
+      base-path: /metrics
+      exposure:
+        include: 'health, prometheus'
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  health:
+    camunda:
+      enabled: false
+    db:
+      enabled: false
+    ldap:
+      enabled: false
+    redis:
+      enabled: false

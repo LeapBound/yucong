@@ -22,6 +22,11 @@ public class YcFunctionTask implements Serializable {
     private Integer id;
 
     /**
+     * process id
+     */
+    private String processId;
+
+    /**
      * 方法名
      */
     private String functionName;
