@@ -14,17 +14,17 @@ import java.util.Map;
  */
 public class MybatisGenerator {
 
-    private static final String URL = "jdbc:mysql://192.168.117.199:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "123456";
+    private static final String URL = "jdbc:mysql://127.0.0.1:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true";
+    private static final String USERNAME = "";
+    private static final String PASSWORD = "";
 
     private static String[] tables = {"yc_function_groovy"};
 
     private static String projectPath = System.getProperty("user.dir");
     private static String outputDir = projectPath;
 //    private static String outputDirMapperXml = projectPath + "/src/main/resources/mapper";
-    private static String outputDirEntity = projectPath + "/src/main/java/yzggy/yucong/action/entities";
-    private static String outputDirMapper = projectPath + "/src/main/java/yzggy/yucong/action/mapper";
+    private static String outputDirEntity = projectPath + "/src/main/java/com/github/leapbound/yc/action/entities";
+    private static String outputDirMapper = projectPath + "/src/main/java/com/github/leapbound/yc/action/mapper";
 
     private static Map<OutputFile, String> MAP = Maps.newHashMap();
 
@@ -43,7 +43,7 @@ public class MybatisGenerator {
                     builder.author("yamath").outputDir(outputDir);
                 })
                 .packageConfig(builder -> {
-                    builder.parent("yzggy.yucong.action")
+                    builder.parent("com.github.leapbound.yc.action")
                             .entity("entities")
                             .mapper("mapper")
                             .pathInfo(MAP);
