@@ -23,7 +23,7 @@ import com.github.leapbound.yc.hub.entities.MessageSummaryEntity;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
-import com.github.leapbound.yc.hub.model.SingleChatModel;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.gpt.GptService;
 import com.github.leapbound.yc.hub.service.gpt.MilvusService;
 
@@ -81,7 +81,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public String chat(SingleChatModel singleChatModel) {
+    public String chat(SingleChatDto singleChatModel) {
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
         String content = singleChatModel.getContent();

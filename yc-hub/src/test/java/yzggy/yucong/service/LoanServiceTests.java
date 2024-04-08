@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.model.SingleChatModel;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
 
 import java.util.List;
 
@@ -39,7 +39,7 @@ public class LoanServiceTests {
 
     @Test
     void applyLoan() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("我要申请一笔贷款");
@@ -54,7 +54,7 @@ public class LoanServiceTests {
 
     @Test
     void applyStatus() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
 
@@ -67,7 +67,7 @@ public class LoanServiceTests {
 
     @Test
     void bindCard() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
 
@@ -80,7 +80,7 @@ public class LoanServiceTests {
 
     @Test
     void withdraw() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
 
@@ -93,7 +93,7 @@ public class LoanServiceTests {
 
     @Test
     void currentRepay() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看一下这个订单要还多少钱");
@@ -104,7 +104,7 @@ public class LoanServiceTests {
 
     @Test
     void makeLoanStatus() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看下这个订单什么时候放款");
@@ -115,7 +115,7 @@ public class LoanServiceTests {
 
     @Test
     void loanStatus() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("看下这个订单现在什么状态");
@@ -126,7 +126,7 @@ public class LoanServiceTests {
 
     @Test
     void tryRepay() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("提前还款费用");
@@ -137,7 +137,7 @@ public class LoanServiceTests {
 
     @Test
     void tryRefund() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(botId);
         singleChatModel.setAccountId(accountId);
         singleChatModel.setContent("麻烦看下这个订单退贷费用");

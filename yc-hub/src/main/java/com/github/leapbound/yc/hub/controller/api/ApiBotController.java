@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.github.leapbound.yc.hub.model.BotModel;
+import com.github.leapbound.yc.hub.model.BotDto;
 import com.github.leapbound.yc.hub.model.R;
 import com.github.leapbound.yc.hub.service.BotService;
 
@@ -19,7 +19,7 @@ public class ApiBotController {
     private final BotService botService;
 
     @PostMapping("/bot/create")
-    public R<String> createBot(@RequestBody BotModel botModel) {
+    public R<String> createBot(@RequestBody BotDto botModel) {
         this.botService.create(botModel);
         return R.ok();
     }
