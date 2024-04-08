@@ -31,12 +31,12 @@ class CamundaService {
      * @param userId
      * @return String processInstanceId
      */
-    static def startProcess(String userId) {
+    static def startProcess(String processKey, String userId) {
         TaskReturn taskReturn = queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.info('user {} current no task', userId)
             ProcessStartRequest processStartRequest = new ProcessStartRequest()
-            processStartRequest.setProcessKey('Process_chatin')
+            processStartRequest.setProcessKey(processKey)
             processStartRequest.setBusinessKey(userId)
             def r = businessCamundaService.startProcess(processStartRequest)
             if (R.isOk(r)) {
@@ -85,7 +85,7 @@ class CamundaService {
         JSONObject result = new JSONObject()
         TaskReturn task = queryCurrentTask(userId)
         if (task == null) {
-            result.put('结果', '请稍后')
+            result.put('result', 'Please wait a moment ...')
         }
         return result
     }

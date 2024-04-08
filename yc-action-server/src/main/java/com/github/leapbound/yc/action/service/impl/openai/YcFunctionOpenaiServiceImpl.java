@@ -52,6 +52,7 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         this.redisTemplate = redisTemplate;
     }
 
+    @Deprecated
     @Override
     public Message executeFunctionForOpenai(FunctionExecuteRequest request) {
         // if no parameter

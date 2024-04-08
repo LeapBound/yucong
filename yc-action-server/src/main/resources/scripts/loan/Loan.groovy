@@ -126,7 +126,8 @@ static def startLoanProcess(String arguments) {
     JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
     String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String processInstanceId = CamundaService.startProcess(userId)
+    // process key = 'Process_chatin'
+    String processInstanceId = CamundaService.startProcess('Process_chatin', userId)
     if (StrUtil.isEmptyIfStr(processInstanceId)) {
         result.put('错误', '后台错误，联系管理员')
     } else {
