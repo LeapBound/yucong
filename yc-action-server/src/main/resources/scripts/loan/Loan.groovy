@@ -7,6 +7,7 @@ import cn.hutool.crypto.digest.DigestUtil
 import cn.hutool.extra.spring.SpringUtil
 import cn.hutool.http.HttpUtil
 import com.alibaba.fastjson.JSON
+import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.CamundaService
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
@@ -37,6 +38,8 @@ import java.util.concurrent.TimeUnit
 @Field static String submitProtocolPath = '/front-api/geex_capp/v1/user/submitProtocol/'
 @Field static String submitIdentityPath = '/front-api/geex_capp/v1/user/submitIdentity/'
 @Field static String submitApplyStepPath = '/front-api/geex_capp/v1/apply/submitApplyStep/'
+@Field static String hubUrl = 'http://192.168.8.232:8088'
+@Field static String noticeHubPath = '/yc-hub/api/conversation/notice'
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.loan.Loan');
 
@@ -74,6 +77,9 @@ static def execLoanMethod(String method, String arguments) {
             break
         case 'product_info':
             result = productInfo(method, arguments)
+            break
+        case 'term_config':
+            result = termConfig(arguments)
             break
         case 'loan_term':
             result = loanTerm(method, arguments)
@@ -271,11 +277,8 @@ static def sendLoginSms(String userMobile) {
 // 通知用户
 static def notifyUser(String userId, String content) {
     logger.info('notify user: {}, content: {}', userId, content)
-    return new JSONObject() {
-        {
-            put('结果', content)
-        }
-    }
+    def result = ['accountId': userId, 'content': content]
+    noticeHub(result)
 }
 
 static def verifyMobileCode(String arguments) {
@@ -389,6 +392,28 @@ static def productInfo(String method, String arguments) {
         result.put('错误', '系统错误，请联系管理员')
     }
     return result
+}
+
+static def termConfig(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    JSONObject loanConfig = args.containsKey('loanConfig') ? args.getJSONObject('loanConfig') : null
+    JSONArray stages = (loanConfig != null && loanConfig.containsKey('StageCount')) ? loanConfig.getJSONArray('StageCount') : null
+    if (stages == null || stages.isEmpty()) {
+        logger.error('no StageCount found in loanConfig')
+        return null
+    }
+    Set<String> terms = new HashSet<>()
+    for (JSONObject stage : stages) {
+        String value = stage.getString('value')
+        if ('请选择' != value) {
+            terms.add(value)
+        }
+    }
+    return new JSONObject() {
+        {
+            put('termConfig', terms)
+        }
+    }
 }
 
 static def loanTerm(String method, String arguments) {
@@ -906,4 +931,8 @@ static def wrapHeadersWithToken(String token) {
 
 static def checkTaskPosition(String method, String taskName) {
     return method == taskName
+}
+
+static def noticeHub(Map<String, Object> result) {
+    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, result, null)
 }
