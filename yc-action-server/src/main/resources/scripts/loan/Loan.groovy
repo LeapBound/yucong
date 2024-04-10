@@ -134,11 +134,10 @@ static def startLoanProcess(String arguments) {
     String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
     // process key = 'Process_chatin'
     String processInstanceId = CamundaService.startProcess('Process_chatin', userId)
-    if (StrUtil.isEmptyIfStr(processInstanceId)) {
-        result.put('错误', '后台错误，联系管理员')
-    } else {
-        result.put('结果', '好的，请提供您的手机号')
-    }
+    TaskReturn taskReturn = CamundaService.queryCurrentTask(userId); // next task
+    def preContent = '好的，请提供您的手机号'
+    CamundaService.setTaskVariableLocal(['preContent': preContent], processInstanceId, taskReturn.getTaskId())
+    result.put('functionContent', preContent)
     return result
 }
 
@@ -148,10 +147,10 @@ static def deleteLoanProcess(String arguments) {
     String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
     try {
         CamundaService.deleteProcess(userId)
-        result.put('结果', '好的，您的贷款申请已取消')
+        result.put('functionContent', '好的，您的贷款申请已取消')
     } catch (Exception ex) {
         logger.error('deleteLoanProcess error, ', ex)
-        result.put('错误', '后台错误，联系管理员')
+        result.put('functionContent', '后台错误，联系管理员')
     }
     return result
 }
@@ -164,7 +163,7 @@ static def bindMobile(String arguments) {
     TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
     if (taskReturn == null) {
         logger.error('bindMobile no current task, businessKey: {}', userId)
-        result.put('错误', '获取流程失败，请联系管理员')
+        result.put('functionContent', '获取流程失败，请联系管理员')
     } else {
         def taskId = taskReturn.getTaskId()
         def inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
@@ -175,7 +174,6 @@ static def bindMobile(String arguments) {
 
 static def sendCode(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     sendLoginSms(mobile)
     notifyUser(mobile, '验证码已经发送，请在收到验证码后发送给我')
@@ -188,19 +186,6 @@ static def sendCode(String arguments) {
 }
 
 // 登录app
-static def loginApp(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String userMobile = args.containsKey('userMobile') ? args.getString('userMobile') : ''
-    String verifyCode = args.containsKey('verifyCode') ? args.getString('verifyCode') : ''
-    String deviceId = args.containsKey('deviceId') ? args.getString('deviceId') : ''
-    String appToken = loginApp(userMobile, verifyCode, deviceId)
-    return new JSONObject() {
-        {
-            put('token', appToken)
-        }
-    }
-}
-
 static def loginApp(String userMobile, String verifyCode, String deviceId) {
     def params = ['deviceId': deviceId, 'account': userMobile, 'veriCode': verifyCode]
     def token = '';
@@ -291,7 +276,7 @@ static def verifyMobileCode(String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('verifyMobileCode no current task, businessKey: {}', userId)
-            result.put('错误', '获取当前流程失败，请联系管理员')
+            result.put('functionContent', '获取当前流程失败，请联系管理员')
         } else {
             def taskId = taskReturn.getTaskId()
             def processInstanceId = taskReturn.getProcessInstanceId()
@@ -307,7 +292,7 @@ static def verifyMobileCode(String arguments) {
         }
     } catch (Exception ex) {
         logger.error('verifyMobileCode error, ', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result // 通用话术
 }
@@ -321,7 +306,7 @@ static def configByBdMobile(String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('configByBdMobile no current task, businessKey: {}', userId)
-            result.put('错误', '获取当前流程失败，请联系管理员')
+            result.put('functionContent', '获取当前流程失败，请联系管理员')
         } else {
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -336,7 +321,7 @@ static def configByBdMobile(String arguments) {
         }
     } catch (Exception ex) {
         logger.error('configByBdMobile error, ', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }
@@ -370,17 +355,17 @@ static def productInfo(String method, String arguments) {
     String productName = args.containsKey('productName') ? args.getString('productName') : ''
     Integer applyAmount = args.containsKey('productAmount') ? args.getInteger('productAmount') : null
     if (StrUtil.isEmptyIfStr(productName) || null == applyAmount) {
-        result.put('错误', '获取产品失败，联系管理员')
+        result.put('functionContent', '获取产品失败，联系管理员')
         return result
     }
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('productInfo no current task, businessKey: {}', userId)
-            result.put('错误', '获取当前流程失败，请联系管理员')
+            result.put('functionContent', '获取当前流程失败，请联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程操作失败，请联系管理员')
+                result.put('functionContent', '当前流程操作失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -389,7 +374,7 @@ static def productInfo(String method, String arguments) {
         }
     } catch (Exception ex) {
         logger.error('productInfo error,', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }
@@ -425,10 +410,10 @@ static def loanTerm(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('loanTerm no current task, businessKey: {}', userId)
-            result.put('错误', '获取当前流程失败，请联系管理员')
+            result.put('functionContent', '获取当前流程失败，请联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程操作失败，请联系管理员')
+                result.put('functionContent', '当前流程操作失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -465,7 +450,7 @@ static def loanTerm(String method, String arguments) {
         }
     } catch (Exception ex) {
         logger.error('loanTerm error, ', ex)
-        result.put('结果', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }
@@ -512,10 +497,10 @@ static def doIdCardOcr(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('doIdCardOcr no current task, businessKey: {}', userId)
-            result.put('错误', '获取当前流程失败，请联系管理员')
+            result.put('functionContent', '获取当前流程失败，请联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程操作失败，请联系管理员')
+                result.put('functionContent', '当前流程操作失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -579,10 +564,10 @@ static def bankCard(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId);
         if (taskReturn == null) {
             logger.error('bankCard no current task, businessKey: {}', userId)
-            result.put('错误', '无法获取当前流程，联系管理员')
+            result.put('functionContent', '无法获取当前流程，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程失败，请联系管理员')
+                result.put('functionContent', '当前流程失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -591,7 +576,7 @@ static def bankCard(String method, String arguments) {
         }
     } catch (Exception ex) {
         logger.error('bankCard error,', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }
@@ -707,10 +692,10 @@ static def submitPayProtocol(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('submitUserPayProtocol no current task, businessKey: {}', userId)
-            result.put('错误', '提交支付协议失败， 联系管理员')
+            result.put('functionContent', '提交支付协议失败， 联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程失败，请联系管理员')
+                result.put('functionContent', '当前流程失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -739,7 +724,7 @@ static def submitPayProtocol(String method, String arguments) {
         }
     } catch (Exception ex) {
         logger.error('processPayProtocol error, ', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }
@@ -836,10 +821,10 @@ static def thirdStep(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('thirdStep no current task, businessKey: {}', userId)
-            result.put('错误', '当前流程失败，联系管理员')
+            result.put('functionContent', '当前流程失败，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程失败，请联系管理员')
+                result.put('functionContent', '当前流程失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -860,7 +845,7 @@ static def thirdStep(String method, String arguments) {
         }
     } catch (Exception ex) {
         logger.error('thirdStep error,', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }
@@ -877,10 +862,10 @@ static def forthStep(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('thirdStep no current task, businessKey: {}', userId)
-            result.put('错误', '当前流程失败，联系管理员')
+            result.put('functionContent', '当前流程失败，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('错误', '当前流程失败，请联系管理员')
+                result.put('functionContent', '当前流程失败，请联系管理员')
                 return result
             }
             String taskId = taskReturn.getTaskId()
@@ -902,7 +887,7 @@ static def forthStep(String method, String arguments) {
         }
     } catch (Exception ex) {
         logger.error('forthStep error, ', ex)
-        result.put('错误', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，请联系管理员')
     }
     return result
 }

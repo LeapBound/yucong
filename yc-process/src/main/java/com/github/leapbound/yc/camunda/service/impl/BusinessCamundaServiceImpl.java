@@ -227,6 +227,42 @@ public class BusinessCamundaServiceImpl implements BusinessCamundaService {
     }
 
     @Override
+    public R<?> inputTaskVariablesLocal(TaskCompleteRequest taskCompleteRequest) {
+        String processInstanceId = taskCompleteRequest.getProcessInstanceId();
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(processInstanceId)
+//                .processInstanceBusinessKey(businessKey)
+                .active()
+                .singleResult();
+        if (processInstance == null) {
+            return R.error(9905, "No process instance active, process instance [" + processInstanceId + "]");
+        }
+        String taskId = taskCompleteRequest.getTaskId();
+        Map<String, Object> inputVariables = taskCompleteRequest.getTaskInputVariables();
+        if (inputVariables != null && !inputVariables.isEmpty()) {
+            taskService.setVariablesLocal(taskId, inputVariables);
+        }
+        Map<String, Object> variables = taskService.getVariablesLocal(taskId);
+        return R.ok(variables);
+    }
+
+    @Override
+    public R<?> getTaskVariablesLocal(TaskCompleteRequest taskCompleteRequest) {
+        String processInstanceId = taskCompleteRequest.getProcessInstanceId();
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(processInstanceId)
+//                .processInstanceBusinessKey(businessKey)
+                .active()
+                .singleResult();
+        if (processInstance == null) {
+            return R.error(9905, "No process instance active, process instance [" + processInstanceId + "]");
+        }
+        String taskId = taskCompleteRequest.getTaskId();
+        Map<String, Object> variables = taskService.getVariablesLocal(taskId);
+        return R.ok(variables);
+    }
+
+    @Override
     public R<Void> deleteProcessInstance(String processInstanceId, String reason) {
         runtimeService.deleteProcessInstance(processInstanceId, reason);
         return R.ok(null);

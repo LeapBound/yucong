@@ -58,5 +58,9 @@ public interface BusinessCamundaService {
 
     R<?> getProcessVariables(ProcessVariablesRequest processVariablesRequest);
 
+    R<?> inputTaskVariablesLocal(TaskCompleteRequest taskCompleteRequest);
+
+    R<?> getTaskVariablesLocal(TaskCompleteRequest taskCompleteRequest);
+
     R<Void> deleteProcessInstance(String processInstanceId, String reason);
 }

@@ -117,7 +117,11 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         try {
             // return result
             if (jsonObject != null) {
-                executeResult = JSON.toJSONString(jsonObject);
+                if (jsonObject.containsKey("functionContent")) {
+                    executeResult = jsonObject.getString("functionContent");
+                } else {
+                    executeResult = JSON.toJSONString(jsonObject);
+                }
                 //
                 return Message.builder().name(functionName)
                         .role(Message.Role.FUNCTION)

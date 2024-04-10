@@ -6,6 +6,7 @@ import com.github.leapbound.yc.camunda.model.bo.ProcessStartRequest
 import com.github.leapbound.yc.camunda.model.bo.ProcessVariablesRequest
 import com.github.leapbound.yc.camunda.model.bo.TaskCompleteRequest
 import com.github.leapbound.yc.camunda.model.bo.TaskFindRequest
+import com.github.leapbound.yc.camunda.model.vo.ProcessStep
 import com.github.leapbound.yc.camunda.model.vo.ProcessStepInputForm
 import com.github.leapbound.yc.camunda.model.vo.R
 import com.github.leapbound.yc.camunda.model.vo.TaskReturn
@@ -81,6 +82,20 @@ class CamundaService {
         }
     }
 
+    static def completeTaskWithReturn(String processInstanceId, String taskId, Map<String, Object> taskInputVariable) {
+        TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest()
+        taskCompleteRequest.setProcessInstanceId(processInstanceId)
+        taskCompleteRequest.setTaskId(taskId)
+        taskCompleteRequest.setTaskInputVariables(taskInputVariable)
+        def r = businessCamundaService.completeTaskWithReturn(taskCompleteRequest)
+        if (R.isOk(r)) {
+            logger.info('task completed, {}', taskId)
+            return r.getData() as ProcessStep
+        }
+        logger.error('complete task error, {}', r.getMsg())
+        return null
+    }
+
     static def nextForm(String userId) {
         JSONObject result = new JSONObject()
         TaskReturn task = queryCurrentTask(userId)
@@ -129,4 +144,28 @@ class CamundaService {
         return null
     }
 
+    static def getTaskVariableLocal(String processInstanceId, String taskId) {
+        TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest()
+        taskCompleteRequest.setProcessInstanceId(processInstanceId)
+        taskCompleteRequest.setTaskId(taskId)
+        def r = businessCamundaService.getTaskVariablesLocal(taskCompleteRequest)
+        if (R.isOk(r)) {
+            return r.getData() as JSONObject
+        }
+        logger.error("get process variable local error, {}", r.getMsg())
+        return null
+    }
+
+    static def setTaskVariableLocal(Map<String, Object> variablesLocal, String processInstanceId, String taskId) {
+        TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest();
+        taskCompleteRequest.setProcessInstanceId(processInstanceId)
+        taskCompleteRequest.setTaskId(taskId)
+        taskCompleteRequest.setTaskInputVariables(variablesLocal)
+        def r = businessCamundaService.inputTaskVariablesLocal(taskCompleteRequest)
+        if (R.isOk(r)) {
+            return r.getData() as JSONObject
+        }
+        logger.error("set task variable local error, {}", r.getMsg())
+        return null
+    }
 }
