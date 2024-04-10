@@ -1,16 +1,13 @@
 package com.github.leapbound.yc.action.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
+import com.github.leapbound.yc.action.service.YcFunctionOpenaiService;
 import com.unfbx.chatgpt.entity.chat.Message;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
-import com.github.leapbound.yc.action.service.YcFunctionOpenaiService;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author yamath
@@ -44,7 +41,12 @@ public class YcFunctionOpenaiController {
         if (!StrUtil.isEmptyIfStr(deviceId)) {
             request.setDeviceId(deviceId);
         }
-//        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request); // java class
-        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request); // groovy script
+//        return this.ycFunctionOpenaiService.executeFunctionForOpenai(request);
+        return this.ycFunctionOpenaiService.executeGroovyForOpenai(request);
+    }
+
+    @PostMapping("/engineMap/reset")
+    public void resetEngineMap(@RequestParam(value = "key", required = false) String key) {
+        this.ycFunctionOpenaiService.resetEngineMap(key);
     }
 }

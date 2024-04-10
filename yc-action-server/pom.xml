@@ -116,11 +116,6 @@
             <artifactId>yc-process</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.ctrip.framework.apollo</groupId>
-            <artifactId>apollo-client</artifactId>
-            <version>2.1.0</version>
-        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -152,6 +147,11 @@
                             <version>${org.mapstruct.version}</version>
                         </path>
                         <!-- other annotation processors -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.28</version>
+                        </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>

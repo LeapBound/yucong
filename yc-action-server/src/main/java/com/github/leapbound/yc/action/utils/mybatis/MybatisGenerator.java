@@ -23,8 +23,8 @@ public class MybatisGenerator {
     private static String projectPath = System.getProperty("user.dir");
     private static String outputDir = projectPath;
 //    private static String outputDirMapperXml = projectPath + "/src/main/resources/mapper";
-    private static String outputDirEntity = projectPath + "/src/main/java/yzggy/yucong/action/entities";
-    private static String outputDirMapper = projectPath + "/src/main/java/yzggy/yucong/action/mapper";
+    private static String outputDirEntity = projectPath + "/src/main/java/com/github/leapbound/yc/action/entities";
+    private static String outputDirMapper = projectPath + "/src/main/java/com/github/leapbound/yc/action/mapper";
 
     private static Map<OutputFile, String> MAP = Maps.newHashMap();
 
@@ -43,7 +43,7 @@ public class MybatisGenerator {
                     builder.author("yamath").outputDir(outputDir);
                 })
                 .packageConfig(builder -> {
-                    builder.parent("yzggy.yucong.action")
+                    builder.parent("com.github.leapbound.yc.action")
                             .entity("entities")
                             .mapper("mapper")
                             .pathInfo(MAP);

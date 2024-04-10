@@ -11,11 +11,11 @@ import com.github.leapbound.yc.action.model.vo.request.FunctionTaskRequest;
  * @since 2024/3/29 15:16
  */
 public interface YcFunctionTaskService {
-    YcFunctionTask queryFunctionTask(String functionName);
+    YcFunctionTask queryFunctionTask(String processId, String functionName);
     ResponseVo<Void> saveFunctionTask(FunctionTaskRequest request);
 
     ResponseVo<Void> updateFunctionTask(FunctionTaskRequest request);
 
-    ResponseVo<Void> deleteFunctionTask(String functionName, String taskName, String userName);
+    ResponseVo<Void> deleteFunctionTask(String processId, String functionName, String taskName, String userName);
 
 }
