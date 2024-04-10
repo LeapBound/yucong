@@ -134,10 +134,7 @@ static def startLoanProcess(String arguments) {
     String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
     // process key = 'Process_chatin'
     String processInstanceId = CamundaService.startProcess('Process_chatin', userId)
-    TaskReturn taskReturn = CamundaService.queryCurrentTask(userId); // next task
-    def preContent = '好的，请提供您的手机号'
-    CamundaService.setTaskVariableLocal(['preContent': preContent], processInstanceId, taskReturn.getTaskId())
-    result.put('functionContent', preContent)
+    result.put('functionContent', '好的，请提供您的手机号')
     return result
 }
 
