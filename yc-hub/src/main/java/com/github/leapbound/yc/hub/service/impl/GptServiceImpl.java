@@ -2,20 +2,19 @@ package com.github.leapbound.yc.hub.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
 import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
+import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
 import com.github.leapbound.yc.hub.service.gpt.GptHandler;
 import com.github.leapbound.yc.hub.service.gpt.GptService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,30 +28,22 @@ import java.util.Map;
 public class GptServiceImpl implements GptService {
 
     private final FuncService funcService;
+    private final ActionServerService actionServerService;
     private final GptHandler openAiHandler;
     private final GptHandler qianfanHandler;
-    private final RestTemplate actionRestTemplate;
 
     @Override
     public List<MyMessage> completions(String botId, String accountId, List<MyMessage> messageList) {
-        ProcessTaskDto task = queryNextTask(accountId);
+        ProcessTaskDto task = this.actionServerService.queryNextTask(accountId);
 
-        MyChatCompletionResponse response = null;
+        MyChatCompletionResponse response;
         switch (messageList.get(messageList.size() - 1).getType()) {
             case "image":
                 MyMessage inMessage = messageList.get(messageList.size() - 1);
 
                 MyFunctionCall myFunctionCall = new MyFunctionCall();
                 Map<String, String> args = new HashMap<>();
-                if ("id_photo_front".equals(task.getTaskName())) {
-                    myFunctionCall.setName("id_photo_front");
-                    args.put("idPhotoType", "idnoFront");
-                    args.put("idPhotoUrl", inMessage.getPicUrl());
-                } else if ("id_photo_back".equals(task.getTaskName())) {
-                    myFunctionCall.setName("id_photo_back");
-                    args.put("idPhotoType", "idnoBack");
-                    args.put("idPhotoUrl", inMessage.getPicUrl());
-                }
+                args.put("imgUrl", inMessage.getPicUrl());
                 myFunctionCall.setArguments(JSON.toJSONString(args));
 
                 MyMessage outMessage = new MyMessage();
@@ -62,9 +53,9 @@ public class GptServiceImpl implements GptService {
                 response.setMessage(outMessage);
                 break;
             case "text":
+            case "video":
             default:
                 response = sendToChatServer(botId, accountId, messageList, task);
-
         }
         List<MyMessage> gptMessageList = new ArrayList<>(2);
 
@@ -75,8 +66,8 @@ public class GptServiceImpl implements GptService {
             messageList.add(message);
             gptMessageList.add(message);
 
-            response = getProcessTaskRemind(queryNextTask(accountId));
-        } else if (task != null) {
+            response = getProcessTaskRemind(actionServerService.queryNextTask(accountId));
+        } else if (task != null && task.getTaskId() != null) {
             response = getProcessTaskRemind(task);
         }
 
@@ -93,13 +84,13 @@ public class GptServiceImpl implements GptService {
 
     MyChatCompletionResponse getProcessTaskRemind(ProcessTaskDto task) {
         StringBuilder sb = new StringBuilder();
-        if (task != null) {
+        if (task != null && task.getCurrentInputForm() != null) {
             sb.append("请提供以下信息:\n\n");
             task.getCurrentInputForm().forEach(input -> {
                 if (!StringUtils.startsWithIgnoreCase(input.getId(), "z_")) {
                     switch (input.getType()) {
                         case "enum":
-                            JSONObject config = loadProcessConfig(task.getProcessInstanceId());
+                            JSONObject config = actionServerService.loadProcessConfig(task.getProcessInstanceId());
                             if ("loanTerm".equals(input.getId())) {
                                 sb.append(input.getLabel()).append("\n");
                                 int i = 1;
@@ -140,44 +131,6 @@ public class GptServiceImpl implements GptService {
         MyChatCompletionResponse taskResponse = new MyChatCompletionResponse();
         taskResponse.setMessage(taskMessage);
         return taskResponse;
-    }
-
-    private ProcessTaskDto queryNextTask(String accountId) {
-        // 查询是否存在进行中的流程
-        ProcessTaskDto task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("accountId", accountId);
-            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
-            ResponseEntity<ProcessTaskDto> entity = this.actionRestTemplate.exchange("/yc/business/task/next", HttpMethod.GET, requestEntity, ProcessTaskDto.class);
-
-            task = entity.getBody();
-        } catch (Exception e) {
-            log.error("getTask error", e);
-        }
-
-        return task;
-    }
-
-    private JSONObject loadProcessConfig(String processInstanceId) {
-        // 查询是否存在进行中的流程
-        JSONObject task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("processInstanceId", processInstanceId);
-            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
-            ResponseEntity<JSONObject> entity = this.actionRestTemplate.exchange("/yc/business/process/config", HttpMethod.GET, requestEntity, JSONObject.class);
-
-            task = entity.getBody();
-        } catch (Exception e) {
-            log.error("getTask error", e);
-        }
-
-        return task;
     }
 
     @Override

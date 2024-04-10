@@ -8,7 +8,7 @@ import me.chanjar.weixin.mp.api.WxMpService;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlOutMessage;
 import org.springframework.stereotype.Component;
-import com.github.leapbound.yc.hub.model.SingleChatModel;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.BotService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 
@@ -30,7 +30,7 @@ public class MpMsgHandler extends AbstractHandler {
         String content = wxMessage.getContent();
         log.info("MpMsgHandler 接收到请求消息 username: {} content: {}", username, content);
 
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(this.botService.getBotId(wxMpService.getWxMpConfigStorage().getAppId()));
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);

@@ -3,20 +3,19 @@ package com.github.leapbound.yc.hub.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.unfbx.chatgpt.entity.chat.Message;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
+import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
+import com.unfbx.chatgpt.entity.chat.Message;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -25,8 +24,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FuncServiceImpl implements FuncService {
 
+    private final ActionServerService actionServerService;
     private final FunctionMapper functionMapper;
-    private final RestTemplate actionRestTemplate;
 
     @Override
     public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId, ProcessTaskDto task) {
@@ -42,7 +41,7 @@ public class FuncServiceImpl implements FuncService {
             ObjectMapper mapper = new ObjectMapper();
             List<MyFunctions> functions = new ArrayList<>(functionList.size());
             if (task != null) {
-                JSONObject config = loadProcessConfig(task.getProcessInstanceId());
+                JSONObject config = this.actionServerService.loadProcessConfig(task.getProcessInstanceId());
                 functionList.forEach(entity -> {
                     try {
                         MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
@@ -87,41 +86,10 @@ public class FuncServiceImpl implements FuncService {
         return null;
     }
 
-    private JSONObject loadProcessConfig(String processInstanceId) {
-        // 查询是否存在进行中的流程
-        JSONObject task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("processInstanceId", processInstanceId);
-            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
-            ResponseEntity<JSONObject> entity = this.actionRestTemplate.exchange("/yc/business/process/config", HttpMethod.GET, requestEntity, JSONObject.class);
-
-            task = entity.getBody();
-        } catch (Exception e) {
-            log.error("getTask error", e);
-        }
-
-        return task;
-    }
-
     @Override
     public MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("accountId", accountId);
-            requestHeaders.add("deviceId", "deviceId001");
-            // body
-            ObjectMapper mapper = new ObjectMapper();
-            String json = mapper.writeValueAsString(functionCall);
-            log.debug("invokeFunc json: {}", json);
-            HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<MyMessage> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, MyMessage.class);
-
-            MyMessage message = entity.getBody();
+            MyMessage message = this.actionServerService.invokeFunc(botId, accountId, functionCall);
             if (message != null) {
                 log.info("执行方法返回: {}", message);
                 return message;

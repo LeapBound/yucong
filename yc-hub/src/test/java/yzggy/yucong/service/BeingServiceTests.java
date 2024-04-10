@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.model.SingleChatModel;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.gpt.MilvusService;
 
 import java.util.List;
@@ -53,7 +53,7 @@ public class BeingServiceTests {
 
     @Test
     void chatWithHistory() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(this.botId);
         singleChatModel.setAccountId(this.accountId);
 
@@ -63,7 +63,7 @@ public class BeingServiceTests {
 
     @Test
     void startChat() {
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(this.botId);
         singleChatModel.setAccountId(this.accountId);
 

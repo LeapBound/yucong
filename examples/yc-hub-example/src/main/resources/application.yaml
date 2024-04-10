@@ -1,1 +1,34 @@
+server:
+  port: 8088
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/yucong_dev?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: xxx
+    password: xxx
+milvus:
+  host: 127.0.0.1
+  port: 19530
+
+yucong:
+  action:
+    rest:
+      url: http://x.x.x.x:8180/yc-action-server
+  conversation:
+    expire: 300
+
+api2d:
+  api:
+    base: https://openai.api2d.net/
+    key: xxx
+
+bce:
+  client:
+    id: xxx
+    secret: xxx
+
+xfyun:
+  asr:
+    appId: xxx
+    apiKey: xxx
 

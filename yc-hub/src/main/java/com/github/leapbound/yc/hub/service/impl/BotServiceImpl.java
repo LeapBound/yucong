@@ -10,7 +10,7 @@ import com.github.leapbound.yc.hub.entities.BotEntity;
 import com.github.leapbound.yc.hub.entities.ChannelEntity;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.ChannelMapper;
-import com.github.leapbound.yc.hub.model.BotModel;
+import com.github.leapbound.yc.hub.model.BotDto;
 import com.github.leapbound.yc.hub.utils.bean.BotBeanMapper;
 
 import java.util.ArrayList;
@@ -26,11 +26,11 @@ public class BotServiceImpl implements BotService {
     private final ChannelMapper channelMapper;
 
     @Override
-    public List<BotModel> listAll() {
+    public List<BotDto> listAll() {
         QueryWrapper<BotEntity> qw = new QueryWrapper<>();
         List<BotEntity> botEntityList = this.botMapper.selectList(qw);
         if (botEntityList != null && !botEntityList.isEmpty()) {
-            List<BotModel> botModelList = new ArrayList<>(botEntityList.size());
+            List<BotDto> botModelList = new ArrayList<>(botEntityList.size());
             botEntityList.forEach(botEntity -> botModelList.add(mapBotEntityToModel(botEntity)));
             return botModelList;
         }
@@ -78,14 +78,14 @@ public class BotServiceImpl implements BotService {
     }
 
     @Override
-    public void create(BotModel botModel) {
+    public void create(BotDto botModel) {
         BotEntity botEntity = BotBeanMapper.mapModelToEntity(botModel);
         botEntity.setCreateTime(new Date());
         this.botMapper.insert(botEntity);
     }
 
-    private BotModel mapBotEntityToModel(BotEntity botEntity) {
-        BotModel botModel = new BotModel();
+    private BotDto mapBotEntityToModel(BotEntity botEntity) {
+        BotDto botModel = new BotDto();
         botModel.setBotId(botEntity.getBotId());
         botModel.setBotName(botEntity.getBotName());
         botModel.setInitContent(botEntity.getInitRoleContent());

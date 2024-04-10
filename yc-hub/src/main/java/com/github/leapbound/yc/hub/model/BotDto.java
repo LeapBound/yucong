@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-public class BotModel {
+public class BotDto {
 
     private String botId;
     private String botName;

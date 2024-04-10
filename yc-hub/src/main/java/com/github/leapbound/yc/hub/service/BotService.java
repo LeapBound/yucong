@@ -1,12 +1,12 @@
 package com.github.leapbound.yc.hub.service;
 
-import com.github.leapbound.yc.hub.model.BotModel;
+import com.github.leapbound.yc.hub.model.BotDto;
 
 import java.util.List;
 
 public interface BotService {
 
-    List<BotModel> listAll();
+    List<BotDto> listAll();
 
     String getBotId(String corpId, String agentId);
 
@@ -14,7 +14,7 @@ public interface BotService {
 
     Long getBotNIdByBotId(String botId);
 
-    void create(BotModel botModel);
+    void create(BotDto botModel);
 
 
 }
