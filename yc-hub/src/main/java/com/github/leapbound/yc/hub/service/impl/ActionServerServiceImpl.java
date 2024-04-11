@@ -3,6 +3,7 @@ package com.github.leapbound.yc.hub.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.yc.hub.consts.ProcessConsts;
 import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
@@ -14,7 +15,11 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Fred
@@ -26,6 +31,7 @@ import org.springframework.web.client.RestTemplate;
 public class ActionServerServiceImpl implements ActionServerService {
 
     private final RestTemplate actionRestTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public ProcessTaskDto queryNextTask(String accountId) {
@@ -51,6 +57,59 @@ public class ActionServerServiceImpl implements ActionServerService {
         }
 
         return task;
+    }
+
+    @Override
+    public String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, Boolean functionExecuteResult) {
+        if (functionExecuteResult != null) {
+            // 用户触发了开始流程前的function，currentTask为空
+            if (currentTask == null) {
+                return getNextTaskRemind(queryNextTask(accountId));
+            }
+
+            // 触发了流程中的function
+            if (functionExecuteResult) {
+                String afterRemindSuccess = getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_SUCCESS);
+                // 判断当前task是否有结束提醒
+                if (StringUtils.hasText(afterRemindSuccess)) {
+                    return afterRemindSuccess;
+                } else {
+                    return getNextTaskRemind(queryNextTask(accountId));
+                }
+            } else {
+                return getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_FAIL);
+            }
+        } else {
+            if (currentTask == null) {
+                // 没有执行function，没有需要完成的task
+                return null;
+            } else {
+                // 没有执行function，但是有需要完成的task
+                return null;
+            }
+        }
+    }
+
+    private String getNextTaskRemind(ProcessTaskDto nextTask) {
+        String beforeRemind = getTaskProperty(nextTask, ProcessConsts.TASK_REMIND_BEFORE);
+
+        Set<String> optionSet = loadTaskFunctionOptions(nextTask);
+        if (optionSet != null && !optionSet.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(beforeRemind).append(":\n\n");
+
+            int i = 1;
+            for (String stage : optionSet) {
+                if (!"请选择".equals(stage)) {
+                    sb.append(i).append(". ").append(stage).append("\n");
+                    i++;
+                }
+            }
+
+            return sb.toString();
+        }
+
+        return beforeRemind;
     }
 
     @Override
@@ -105,13 +164,17 @@ public class ActionServerServiceImpl implements ActionServerService {
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_JSON);
             requestHeaders.add("accountId", accountId);
+            requestHeaders.add("botId", botId);
+            // todo
             requestHeaders.add("deviceId", "deviceId001");
             // body
-            ObjectMapper mapper = new ObjectMapper();
-            String json = mapper.writeValueAsString(functionCall);
+            String json = this.objectMapper.writeValueAsString(functionCall);
             log.debug("invokeFunc json {}", json);
             HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity("/function/openai/execute", requestEntity, ProcessResponseDto.class);
+            ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity(
+                    "/function/openai/execute",
+                    requestEntity,
+                    ProcessResponseDto.class);
 
             log.debug("invokeFunc {}", entity.getBody());
             return entity.getBody().getSuccess();
@@ -121,4 +184,26 @@ public class ActionServerServiceImpl implements ActionServerService {
 
         return false;
     }
+
+    @Override
+    public Set<String> loadTaskFunctionOptions(ProcessTaskDto task) {
+        String showVariable = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
+        JSONObject config = loadProcessVariables(task.getProcessInstanceId());
+        return config.getObject(showVariable, Set.class);
+    }
+
+    private String getTaskProperty(ProcessTaskDto task, String name) {
+        AtomicReference<String> type = new AtomicReference<>();
+
+        task.getTaskProperties().stream()
+                .filter(property -> {
+                    String propertyName = (String) property.get("name");
+                    return propertyName.equals(name);
+                })
+                .findFirst()
+                .ifPresent(property -> type.set((String) property.get("type")));
+
+        return type.get();
+    }
+
 }

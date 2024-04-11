@@ -1,6 +1,7 @@
 package com.github.leapbound.yc.hub.controller.api;
 
 import com.github.leapbound.yc.hub.model.SingleChatDto;
+import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.service.ConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +29,8 @@ public class ApiConversationController {
     }
 
     @PostMapping("/notice")
-    public void noticeUser(@RequestBody SingleChatDto chatModel) {
-        log.debug("noticeUser {}", chatModel);
+    public void noticeUser(@RequestBody ProcessResponseDto<SingleChatDto> responseDto) {
+        log.debug("noticeUser {}", responseDto);
+        this.conversationService.notifyUser(responseDto.getData());
     }
-
 }

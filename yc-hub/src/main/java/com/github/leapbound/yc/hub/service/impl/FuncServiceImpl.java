@@ -1,9 +1,7 @@
 package com.github.leapbound.yc.hub.service.impl;
 
-import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
@@ -11,7 +9,6 @@ import com.github.leapbound.yc.hub.mapper.FunctionMapper;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
-import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,64 +23,61 @@ public class FuncServiceImpl implements FuncService {
 
     private final ActionServerService actionServerService;
     private final FunctionMapper functionMapper;
+    private final ObjectMapper mapper;
 
     @Override
-    public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId, ProcessTaskDto task) {
+    public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId, ProcessTaskDto currentTask) {
         // 获取账号function列表
         List<FunctionEntity> functionList = null;
-        if (task == null) {
+        if (currentTask == null) {
             functionList = this.functionMapper.listByBotId(botId);
-        } else if (StringUtils.hasText(task.getTaskName())) {
-            functionList = this.functionMapper.listByTaskName(task.getTaskName());
+        } else if (StringUtils.hasText(currentTask.getTaskName())) {
+            functionList = this.functionMapper.listByTaskName(currentTask.getTaskName());
         }
 
-        if (functionList != null && !functionList.isEmpty()) {
-            ObjectMapper mapper = new ObjectMapper();
-            List<MyFunctions> functions = new ArrayList<>(functionList.size());
-            if (task != null) {
-                JSONObject config = this.actionServerService.loadProcessVariables(task.getProcessInstanceId());
-                functionList.forEach(entity -> {
-                    try {
-                        MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                        // 填充枚举
-                        myFunctions.getParameters().getProperties().forEach((k, v) -> {
-                            switch (k) {
-                                case "loanTerm":
-                                    Map<String, Object> property = (Map<String, Object>) v;
-                                    Set<String> termSet = new HashSet<>();
-                                    for (Object stage : config.getJSONArray("StageCount")) {
-                                        Map<String, Object> stageObject = (Map<String, Object>) stage;
-                                        String value = stageObject.get("value").toString();
-                                        if (!"请选择".equals(value)) {
-                                            termSet.add(value);
-                                        }
-                                    }
-                                    property.put("enum", termSet);
-                                    break;
-                            }
+        if (functionList == null || functionList.isEmpty()) {
+            return null;
+        }
 
-                        });
-                        log.info("可以执行的function: {}", myFunctions);
-                        functions.add(myFunctions);
-                    } catch (JsonProcessingException e) {
-                        log.error("getListByAccountIdAndBotId error", e);
-                    }
-                });
-            } else {
-                functionList.forEach(entity -> {
-                    try {
-                        MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                        log.info("可以执行的function: {}", myFunctions.getName());
-                        functions.add(myFunctions);
-                    } catch (JsonProcessingException e) {
-                        log.error("getListByAccountIdAndBotId error", e);
-                    }
-                });
+        List<MyFunctions> functions = new ArrayList<>(functionList.size());
+        functionList.forEach(entity -> {
+            try {
+                MyFunctions myFunctions = this.mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
+                myFunctions = fillFunctionEnum(myFunctions, currentTask);
+                log.info("可以执行的function: {}", myFunctions);
+                functions.add(myFunctions);
+            } catch (JsonProcessingException e) {
+                log.error("getListByAccountIdAndBotId error", e);
             }
-            return functions;
+        });
+
+        return functions;
+    }
+
+    private MyFunctions fillFunctionEnum(MyFunctions myFunctions, ProcessTaskDto currentTask) {
+        if (currentTask == null) {
+            return myFunctions;
         }
 
-        return null;
+        // 获取需要填充的enum
+        Set<String> needFillEnum = new HashSet<>();
+        currentTask.getCurrentInputForm().forEach(inputForm -> {
+            if (inputForm.getType().equals("enum")) {
+                needFillEnum.add(inputForm.getLabel());
+            }
+        });
+
+        // 填充enum
+        if (!needFillEnum.isEmpty()) {
+            myFunctions.getParameters().getProperties().forEach((k, v) -> {
+                if (needFillEnum.contains(k)) {
+                    Map<String, Object> property = (Map<String, Object>) v;
+                    property.put("enum", this.actionServerService.loadTaskFunctionOptions(currentTask));
+                }
+            });
+        }
+
+        return myFunctions;
     }
 
     @Override

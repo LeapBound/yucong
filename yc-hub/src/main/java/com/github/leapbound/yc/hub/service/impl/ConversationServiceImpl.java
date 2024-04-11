@@ -14,6 +14,7 @@ import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
+import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 import com.github.leapbound.yc.hub.service.gpt.GptService;
 import com.github.leapbound.yc.hub.service.gpt.MilvusService;
@@ -43,6 +44,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final MessageSummaryMapper messageSummaryMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final GptService gptService;
+    private final ActionServerService actionServerService;
     private final MilvusService milvusService;
     private final AmqpTemplate amqpTemplate;
 
@@ -124,6 +126,16 @@ public class ConversationServiceImpl implements ConversationService {
         gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
 
         return gptMessageList.get(gptMessageList.size() - 1);
+    }
+
+    @Override
+    public void notifyUser(SingleChatDto singleChatModel) {
+        String botId = singleChatModel.getBotId();
+        String accountId = singleChatModel.getAccountId();
+        String content = singleChatModel.getContent();
+        String conversationId = getConversationId(botId, accountId);
+
+        String remind = this.actionServerService.getProcessTaskRemind(accountId, null, true);
     }
 
     @Override

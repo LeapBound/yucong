@@ -14,6 +14,8 @@ public interface ConversationService {
 
     MyMessage chat(SingleChatDto singleChatModel);
 
+    void notifyUser(SingleChatDto singleChatModel);
+
     void summaryDialog(String conversationId);
 
     void clearMessageHistory(String botId, String accountId);

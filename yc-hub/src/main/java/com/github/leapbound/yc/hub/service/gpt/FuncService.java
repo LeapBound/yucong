@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface FuncService {
 
-    List<MyFunctions> getListByAccountIdAndBotId(String accountName, String botId, ProcessTaskDto task);
+    List<MyFunctions> getListByAccountIdAndBotId(String accountName, String botId, ProcessTaskDto currentTask);
 
     Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
 }
