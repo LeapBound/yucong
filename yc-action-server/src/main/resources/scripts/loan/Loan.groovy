@@ -55,6 +55,7 @@ static def execLoanMethod(String method, String arguments) {
     def externalUrl = getExternalUrl(arguments)
     if (!StrUtil.isEmptyIfStr(externalUrl)) {
         frontUrl = externalUrl
+        hubUrl = externalUrl
     }
     switch (method) {
         case 'start_loan_process':
@@ -174,9 +175,12 @@ static def bindMobile(String arguments) {
 static def sendCode(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
     sendLoginSms(mobile)
     // 通知 hub
-    noticeHub(noticeResponse(true, method))
+    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
+    noticeHub(noticeResponse(true, chatRes))
     // set send_code output
     return new JSONObject() {
         {
@@ -375,6 +379,8 @@ static def productInfo(String method, String arguments) {
 static def termConfig(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject loanConfig = args.containsKey('loanConfig') ? args.getJSONObject('loanConfig') : null
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
     JSONArray stages = (loanConfig != null && loanConfig.containsKey('StageCount')) ? loanConfig.getJSONArray('StageCount') : null
     if (stages == null || stages.isEmpty()) {
         logger.error('no StageCount found in loanConfig')
@@ -387,7 +393,8 @@ static def termConfig(String method, String arguments) {
             terms.add(value)
         }
     }
-    noticeHub(noticeResponse(true, method))
+    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
+    noticeHub(noticeResponse(true, chatRes))
     return new JSONObject() {
         {
             put('termConfig', terms)
@@ -454,10 +461,13 @@ static def loadClientIdentity(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
     //
     String appToken = getAppToken(mobile, null, null)
     def response = loadIdentity(appId, appToken);
-    noticeHub(noticeResponse(true, method))
+    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
+    noticeHub(noticeResponse(true, chatRes))
     return response
 }
 
@@ -592,6 +602,8 @@ static def checkBankCard(String method, String arguments) {
     JSONObject ocrBack = args.containsKey('ocridnoBack') ? args.getJSONObject('ocridnoBack') : null
     JSONObject ocrBackDetail = (ocrBack != null && ocrBack.containsKey('ocrDetail')) ? ocrBack.getJSONObject('ocrDetail') : null
     String idValid = (ocrBackDetail != null && ocrBackDetail.containsKey('validDate')) ? ocrBackDetail.getString('validDate') : ''
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
 
     String appToken = getAppToken(mobile, null, null)
     checkBankCardLimit(appToken, name, idNo, bankCard, amount)
@@ -601,7 +613,8 @@ static def checkBankCard(String method, String arguments) {
     JSONObject checkProtocolResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode)
     String protocolKey = checkProtocolResult != null && checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
     //
-    noticeHub(noticeResponse(true, method))
+    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
+    noticeHub(noticeResponse(true, chatRes))
     return new JSONObject() {
         {
             put('payProtocolKey', protocolKey)
@@ -917,10 +930,11 @@ static def checkTaskPosition(String method, String taskName) {
 }
 
 static def noticeHub(Map<String, Object> result) {
+    logger.info('noticeHub result: {}', result)
     def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, result, null)
 }
 
-static def noticeResponse(boolean success, String response) {
+static def noticeResponse(boolean success, Map<String, Object> response) {
     Map<String, Object> result = new HashMap() {
         {
             put('success', success)
