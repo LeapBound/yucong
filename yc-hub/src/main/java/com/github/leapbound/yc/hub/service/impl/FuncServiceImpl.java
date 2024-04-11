@@ -41,7 +41,7 @@ public class FuncServiceImpl implements FuncService {
             ObjectMapper mapper = new ObjectMapper();
             List<MyFunctions> functions = new ArrayList<>(functionList.size());
             if (task != null) {
-                JSONObject config = this.actionServerService.loadProcessConfig(task.getProcessInstanceId());
+                JSONObject config = this.actionServerService.loadProcessVariables(task.getProcessInstanceId());
                 functionList.forEach(entity -> {
                     try {
                         MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
@@ -87,20 +87,7 @@ public class FuncServiceImpl implements FuncService {
     }
 
     @Override
-    public MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
-        try {
-            MyMessage message = this.actionServerService.invokeFunc(botId, accountId, functionCall);
-            if (message != null) {
-                log.info("执行方法返回: {}", message);
-                return message;
-            }
-        } catch (Exception e) {
-            log.error("invokeFunc error", e);
-        }
-
-        MyMessage message = new MyMessage();
-        message.setRole(Message.Role.SYSTEM.getName());
-        message.setContent("处理失败");
-        return message;
+    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+        return this.actionServerService.invokeFunc(botId, accountId, functionCall);
     }
 }

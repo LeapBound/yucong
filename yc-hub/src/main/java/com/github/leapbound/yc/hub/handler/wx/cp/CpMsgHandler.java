@@ -36,7 +36,7 @@ public class CpMsgHandler extends AbstractHandler {
         singleChatModel.setBotId(this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), wxMessage.getAgentId()));
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
-        String msg = this.conversationService.chat(singleChatModel);
+        String msg = this.conversationService.chat(singleChatModel).getContent();
 
         try {
             WxCpMessage message = WxCpMessage

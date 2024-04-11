@@ -6,6 +6,7 @@ import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
+import com.github.leapbound.yc.hub.consts.ProcessConsts;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
@@ -29,16 +31,18 @@ public class GptServiceImpl implements GptService {
 
     private final FuncService funcService;
     private final ActionServerService actionServerService;
+
     private final GptHandler openAiHandler;
     private final GptHandler qianfanHandler;
 
     @Override
     public List<MyMessage> completions(String botId, String accountId, List<MyMessage> messageList) {
-        ProcessTaskDto task = this.actionServerService.queryNextTask(accountId);
+        ProcessTaskDto currentTask = this.actionServerService.queryNextTask(accountId);
 
         MyChatCompletionResponse response;
         switch (messageList.get(messageList.size() - 1).getType()) {
             case "image":
+            case "video":
                 MyMessage inMessage = messageList.get(messageList.size() - 1);
 
                 MyFunctionCall myFunctionCall = new MyFunctionCall();
@@ -53,99 +57,115 @@ public class GptServiceImpl implements GptService {
                 response.setMessage(outMessage);
                 break;
             case "text":
-            case "video":
             default:
-                response = sendToChatServer(botId, accountId, messageList, task);
+                response = sendToChatServer(botId, accountId, messageList, currentTask);
         }
         List<MyMessage> gptMessageList = new ArrayList<>(2);
 
         // 处理function
+        Boolean functionExecuteResult = null;
         if (response.getMessage().getFunctionCall() != null) {
             // 执行function
-            MyMessage message = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());
-            messageList.add(message);
-            gptMessageList.add(message);
-
-            response = getProcessTaskRemind(actionServerService.queryNextTask(accountId));
-        } else if (task != null && task.getTaskId() != null) {
-            response = getProcessTaskRemind(task);
+            functionExecuteResult = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());
         }
+        String remind = getProcessTaskRemind(accountId, currentTask, functionExecuteResult);
+        log.debug("remind {}", remind);
 
         // 助理消息
         MyMessage assistantMsg = new MyMessage();
         assistantMsg.setRole(response.getMessage().getRole());
-        assistantMsg.setContent(response.getMessage().getContent());
+        if (StringUtils.hasText(remind)) {
+            assistantMsg.setContent(remind);
+        } else {
+            assistantMsg.setContent(response.getMessage().getContent());
+        }
 
-        messageList.add(assistantMsg);
         gptMessageList.add(assistantMsg);
-
         return gptMessageList;
     }
 
-    MyChatCompletionResponse getProcessTaskRemind(ProcessTaskDto task) {
-        StringBuilder sb = new StringBuilder();
-        if (task != null && task.getCurrentInputForm() != null) {
-            sb.append("请提供以下信息:\n\n");
-            task.getCurrentInputForm().forEach(input -> {
-                if (!StringUtils.startsWithIgnoreCase(input.getId(), "z_")) {
-                    switch (input.getType()) {
-                        case "enum":
-                            JSONObject config = actionServerService.loadProcessConfig(task.getProcessInstanceId());
-                            if ("loanTerm".equals(input.getId())) {
-                                sb.append(input.getLabel()).append("\n");
-                                int i = 1;
-                                for (Object stage : config.getJSONArray("StageCount")) {
-                                    Map<String, Object> stageObject = (Map<String, Object>) stage;
-                                    String value = stageObject.get("value").toString();
-                                    if (!"请选择".equals(value)) {
-                                        sb.append(i).append(". ").append(value).append("\n");
-                                        i++;
-                                    }
-                                }
-                            } else if ("maritalStatus".equals(input.getId())) {
-                                sb.append(input.getLabel()).append("\n");
-                                int i = 1;
-                                for (Object stage : config.getJSONArray("Married")) {
-                                    Map<String, Object> stageObject = (Map<String, Object>) stage;
-                                    String value = stageObject.get("value").toString();
-                                    if (!"请选择".equals(value)) {
-                                        sb.append(i).append(". ").append(value).append("\n");
-                                        i++;
-                                    }
-                                }
-                            }
-                            break;
-                        default:
-                            sb.append(input.getLabel()).append("\n");
-                    }
-                }
-            });
-        } else {
-            sb.append("请稍等");
-        }
-        log.info("下一个任务需要的字段： \n{}", sb);
+    String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, Boolean functionExecuteResult) {
+        if (functionExecuteResult != null) {
+            // 用户触发了开始流程前的function，currentTask为空
+            if (currentTask == null) {
+                return getTaskProperty(this.actionServerService.queryNextTask(accountId), ProcessConsts.TASK_REMIND_BEFORE);
+            }
 
-        MyMessage taskMessage = new MyMessage();
-        taskMessage.setRole(MyMessage.Role.ASSISTANT.getName());
-        taskMessage.setContent(sb.toString());
-        MyChatCompletionResponse taskResponse = new MyChatCompletionResponse();
-        taskResponse.setMessage(taskMessage);
-        return taskResponse;
+            // 触发了流程中的function
+            if (functionExecuteResult) {
+                String afterRemindSuccess = getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_SUCCESS);
+                // 判断当前task是否有结束提醒
+                if (StringUtils.hasText(afterRemindSuccess)) {
+                    return afterRemindSuccess;
+                } else {
+                    ProcessTaskDto nextTask = this.actionServerService.queryNextTask(accountId);
+                    String beforeRemind = getTaskProperty(nextTask, ProcessConsts.TASK_REMIND_BEFORE);
+
+                    String showVariable = getTaskProperty(nextTask, ProcessConsts.TASK_SHOW_VARIABLE);
+                    if (StringUtils.hasText(showVariable)) {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(beforeRemind).append(":\n\n");
+
+                        JSONObject variables = this.actionServerService.loadProcessVariables(nextTask.getProcessInstanceId());
+                        int i = 1;
+                        for (Object stage : variables.getJSONArray(showVariable)) {
+                            String stageObject = (String) stage;
+                            if (!"请选择".equals(stageObject)) {
+                                sb.append(i).append(". ").append(stageObject).append("\n");
+                                i++;
+                            }
+                        }
+
+                        return sb.toString();
+                    }
+
+                    return beforeRemind;
+                }
+            } else {
+                return getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_FAIL);
+            }
+        } else {
+            if (currentTask == null) {
+                // 没有执行function，没有需要完成的task
+                return null;
+            } else {
+                // 没有执行function，但是有需要完成的task
+                return null;
+            }
+        }
+    }
+
+    private String getTaskProperty(ProcessTaskDto task, String name) {
+        AtomicReference<String> type = new AtomicReference<>();
+
+        task.getTaskProperties().stream()
+                .filter(property -> {
+                    String propertyName = (String) property.get("name");
+                    return propertyName.equals(name);
+                })
+                .findFirst()
+                .ifPresent(property -> type.set((String) property.get("type")));
+
+        return type.get();
     }
 
     @Override
     public String summary(String content) {
-        return this.openAiHandler.summary(content).getMessage().getContent();
+        return getHandler().summary(content).getMessage().getContent();
     }
 
     @Override
     public List<BigDecimal> embedding(String content) {
-        return this.openAiHandler.embedding(content);
+        return getHandler().embedding(content);
     }
 
     private MyChatCompletionResponse sendToChatServer(String botId, String accountId, List<MyMessage> messageList, ProcessTaskDto task) {
         List<MyFunctions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId, task);
-        return this.openAiHandler.chatCompletion(messageList, functionsList);
-//        return this.qianfanHandler.chatCompletion(messageList, functionsList);
+        return getHandler().chatCompletion(messageList, functionsList);
+//        return getHandler().chatCompletion(messageList, functionsList);
+    }
+
+    private GptHandler getHandler() {
+        return this.openAiHandler;
     }
 }

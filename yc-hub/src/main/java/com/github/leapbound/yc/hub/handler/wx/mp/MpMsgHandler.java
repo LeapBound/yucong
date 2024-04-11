@@ -1,5 +1,8 @@
 package com.github.leapbound.yc.hub.handler.wx.mp;
 
+import com.github.leapbound.yc.hub.model.SingleChatDto;
+import com.github.leapbound.yc.hub.service.BotService;
+import com.github.leapbound.yc.hub.service.ConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -8,9 +11,6 @@ import me.chanjar.weixin.mp.api.WxMpService;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlOutMessage;
 import org.springframework.stereotype.Component;
-import com.github.leapbound.yc.hub.model.SingleChatDto;
-import com.github.leapbound.yc.hub.service.BotService;
-import com.github.leapbound.yc.hub.service.ConversationService;
 
 import java.util.Map;
 
@@ -36,7 +36,7 @@ public class MpMsgHandler extends AbstractHandler {
         singleChatModel.setContent(content);
         singleChatModel.setPicUrl(wxMessage.getPicUrl());
         singleChatModel.setType(wxMessage.getMsgType());
-        String msg = this.conversationService.chat(singleChatModel);
+        String msg = this.conversationService.chat(singleChatModel).getContent();
 
         return WxMpXmlOutMessage
                 .TEXT()

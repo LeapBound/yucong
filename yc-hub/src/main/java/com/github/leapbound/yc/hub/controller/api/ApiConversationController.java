@@ -19,12 +19,17 @@ public class ApiConversationController {
 
     @PostMapping("/chat")
     public String chat(@RequestBody SingleChatDto chatModel) {
-        return this.conversationService.chat(chatModel);
+        return this.conversationService.chat(chatModel).getContent();
     }
 
     @PostMapping("/clear")
     public void clearMsgHistory(@RequestBody SingleChatDto chatModel) {
         this.conversationService.clearMessageHistory(chatModel.getBotId(), chatModel.getAccountId());
+    }
+
+    @PostMapping("/notice")
+    public void noticeUser(@RequestBody SingleChatDto chatModel) {
+        log.debug("noticeUser {}", chatModel);
     }
 
 }

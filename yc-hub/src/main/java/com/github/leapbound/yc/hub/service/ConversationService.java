@@ -12,7 +12,7 @@ public interface ConversationService {
 
     List<MyMessage> getByBotIdAndAccountId(String botId, String accountId);
 
-    String chat(SingleChatDto singleChatModel);
+    MyMessage chat(SingleChatDto singleChatModel);
 
     void summaryDialog(String conversationId);
 

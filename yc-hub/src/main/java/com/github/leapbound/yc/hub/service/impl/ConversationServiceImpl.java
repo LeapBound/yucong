@@ -3,16 +3,6 @@ package com.github.leapbound.yc.hub.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.leapbound.yc.hub.service.ConversationService;
-import com.unfbx.chatgpt.entity.chat.Message;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
 import com.github.leapbound.yc.hub.chat.dialog.MessageMqTrans;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.consts.MqConsts;
@@ -24,8 +14,17 @@ import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
+import com.github.leapbound.yc.hub.service.ConversationService;
 import com.github.leapbound.yc.hub.service.gpt.GptService;
 import com.github.leapbound.yc.hub.service.gpt.MilvusService;
+import com.unfbx.chatgpt.entity.chat.Message;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -46,7 +45,6 @@ public class ConversationServiceImpl implements ConversationService {
     private final GptService gptService;
     private final MilvusService milvusService;
     private final AmqpTemplate amqpTemplate;
-    private final RestTemplate actionRestTemplate;
 
     private final ObjectMapper mapper;
     @Value("${yucong.conversation.expire:300}")
@@ -81,7 +79,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public String chat(SingleChatDto singleChatModel) {
+    public MyMessage chat(SingleChatDto singleChatModel) {
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
         String content = singleChatModel.getContent();
@@ -89,7 +87,9 @@ public class ConversationServiceImpl implements ConversationService {
         List<MyMessage> messageList = getByBotIdAndAccountId(botId, accountId);
         if (messageList == null) {
             if (!start(botId, accountId)) {
-                return "该bot没有调用权限";
+                MyMessage userMsg = new MyMessage();
+                userMsg.setContent("该bot没有调用权限");
+                return userMsg;
             }
         }
         String conversationId = getConversationId(botId, accountId);
@@ -123,7 +123,7 @@ public class ConversationServiceImpl implements ConversationService {
         List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, messageList);
         gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
 
-        return gptMessageList.get(gptMessageList.size() - 1).getContent();
+        return gptMessageList.get(gptMessageList.size() - 1);
     }
 
     @Override

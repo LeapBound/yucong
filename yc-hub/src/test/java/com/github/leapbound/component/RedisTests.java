@@ -1,4 +1,4 @@
-package yzggy.yucong.component;
+package com.github.leapbound.component;
 
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.extern.slf4j.Slf4j;

@@ -47,11 +47,6 @@
             <artifactId>yc-action-server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.leapbound</groupId>
-            <artifactId>yc-process</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
     <build>

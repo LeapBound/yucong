@@ -2,18 +2,18 @@ package com.github.leapbound.yc.hub.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
+import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
-import com.github.leapbound.yc.hub.model.process.ProcessVariablesRequestDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -33,13 +33,16 @@ public class ActionServerServiceImpl implements ActionServerService {
         ProcessTaskDto task = null;
         try {
             // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("accountId", accountId);
-            HttpEntity<ProcessVariablesRequestDto> requestEntity = new HttpEntity<>(new ProcessVariablesRequestDto(), requestHeaders);
-            ResponseEntity<ProcessTaskDto> entity = this.actionRestTemplate.postForEntity("/business/task", requestEntity, ProcessTaskDto.class);
+            ProcessRequestDto processRequestDto = new ProcessRequestDto();
+            processRequestDto.setBusinessKey(accountId);
+            HttpEntity<ProcessRequestDto> requestEntity = new HttpEntity<>(processRequestDto);
+            ResponseEntity<ProcessResponseDto<ProcessTaskDto>> entity = this.actionRestTemplate.exchange(
+                    "/business/task", HttpMethod.POST, requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    });
 
-            task = entity.getBody();
+            task = entity.getBody().getData();
+            log.debug("queryNextTask {}", task);
             if (task != null && task.getTaskId() == null) {
                 task = null;
             }
@@ -51,27 +54,52 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public JSONObject loadProcessConfig(String processInstanceId) {
+    public JSONObject loadProcessVariables(String processInstanceId) {
         // 查询是否存在进行中的流程
         JSONObject task = null;
         try {
             // 请求action server执行方法
-            ProcessVariablesRequestDto processVariablesRequestDto = new ProcessVariablesRequestDto();
-            processVariablesRequestDto.setProcessInstanceId(processInstanceId);
-            HttpEntity<String> requestEntity = new HttpEntity<>(processInstanceId);
-            ResponseEntity<JSONObject> entity = this.actionRestTemplate.postForEntity("/business/process/variables", requestEntity, JSONObject.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ProcessRequestDto processRequestDto = new ProcessRequestDto();
+            processRequestDto.setProcessInstanceId(processInstanceId);
+            HttpEntity<ProcessRequestDto> requestEntity = new HttpEntity<>(processRequestDto, headers);
+            ResponseEntity<ProcessResponseDto<JSONObject>> entity = this.actionRestTemplate.exchange(
+                    "/business/process/variables", HttpMethod.POST, requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    });
 
-            task = entity.getBody();
+            task = entity.getBody().getData();
+            log.debug("loadProcessVariables {}", task);
         } catch (Exception e) {
-            log.error("getTask error", e);
+            log.error("loadProcessVariables error", e);
         }
 
         return task;
     }
 
     @Override
-    public MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
-        MyMessage message = null;
+    public void deleteProcess(String processInstanceId) {
+        // 请求action server执行方法
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            // 创建表单数据
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("processInstanceId", processInstanceId);
+            HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(formData, headers);
+            ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity(
+                    "/business/process/delete", requestEntity, ProcessResponseDto.class
+            );
+
+            log.debug("deleteProcess {}", entity.getBody());
+        } catch (Exception e) {
+            log.error("deleteProcess error", e);
+        }
+    }
+
+    @Override
+    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
@@ -81,18 +109,16 @@ public class ActionServerServiceImpl implements ActionServerService {
             // body
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(functionCall);
-            log.debug("invokeFunc json: {}", json);
+            log.debug("invokeFunc json {}", json);
             HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<MyMessage> entity = this.actionRestTemplate.postForEntity("/function/openai/execute", requestEntity, MyMessage.class);
+            ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity("/function/openai/execute", requestEntity, ProcessResponseDto.class);
 
-            message = entity.getBody();
-            if (message != null) {
-                log.info("执行方法返回: {}", message);
-            }
+            log.debug("invokeFunc {}", entity.getBody());
+            return entity.getBody().getSuccess();
         } catch (Exception e) {
             log.error("invokeFunc error", e);
         }
 
-        return message;
+        return false;
     }
 }

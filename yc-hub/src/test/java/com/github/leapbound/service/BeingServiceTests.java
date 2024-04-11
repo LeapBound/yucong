@@ -1,4 +1,4 @@
-package yzggy.yucong.service;
+package com.github.leapbound.service;
 
 import com.github.leapbound.yc.hub.service.ConversationService;
 import lombok.extern.slf4j.Slf4j;

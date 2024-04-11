@@ -11,5 +11,5 @@ public interface FuncService {
 
     List<MyFunctions> getListByAccountIdAndBotId(String accountName, String botId, ProcessTaskDto task);
 
-    MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
+    Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
 }

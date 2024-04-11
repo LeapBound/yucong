@@ -7,8 +7,9 @@ import lombok.Data;
  * @date 2024/4/8 10:45
  */
 @Data
-public class ProcessVariablesRequestDto {
+public class ProcessRequestDto {
 
     private String processInstanceId;
+    private String businessKey;
 
 }

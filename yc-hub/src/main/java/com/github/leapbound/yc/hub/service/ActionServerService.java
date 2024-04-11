@@ -1,7 +1,6 @@
 package com.github.leapbound.yc.hub.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 
@@ -13,7 +12,9 @@ public interface ActionServerService {
 
     ProcessTaskDto queryNextTask(String accountId);
 
-    JSONObject loadProcessConfig(String processInstanceId);
+    JSONObject loadProcessVariables(String processInstanceId);
 
-    MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
+    void deleteProcess(String processInstanceId);
+
+    Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
 }
