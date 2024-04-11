@@ -176,6 +176,7 @@ public class BusinessCamundaServiceImpl implements BusinessCamundaService {
         if (taskReturn == null) {
             return R.error(9903, "No task found, process instance [" + processInstanceId + "]");
         }
+
         // jump to specific activity
         runtimeService.createProcessInstanceModification(processInstanceId)
                 .cancelAllForActivity(taskReturn.getActivityId())

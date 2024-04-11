@@ -1,6 +1,6 @@
 package com.github.leapbound.yc.action.controller;
 
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.Header;
 import com.alibaba.fastjson.JSONObject;
 import com.github.leapbound.yc.action.model.vo.ResponseVo;
 import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
@@ -10,6 +10,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
 
 /**
  * @author yamath
@@ -50,19 +53,31 @@ public class YcFunctionOpenaiController {
     }
 
     private void setRequest(FunctionExecuteRequest request, HttpServletRequest httpServletRequest) {
-        String userName = httpServletRequest.getHeader("userName");
-        String accountId = httpServletRequest.getHeader("accountId");
-        String deviceId = httpServletRequest.getHeader("deviceId");
-        logger.info("function execute request: {}, userName: {}, accountId: {}", request, userName, accountId);
+        JSONObject header = enumHeaders(httpServletRequest);
+        JSONObject args = JSONObject.parseObject(request.getArguments());
+        if (args == null) {
+            args = header;
+        } else {
+            args.putAll(header);
+        }
+        request.setArguments(args.toJSONString());
+    }
 
-        if (!StrUtil.isEmptyIfStr(userName)) {
-            request.setUserName(userName);
+    private static JSONObject enumHeaders(HttpServletRequest httpServletRequest) {
+        JSONObject jsonObject = new JSONObject();
+        Enumeration<String> enumHeaders = httpServletRequest.getHeaderNames();
+        final LinkedHashMap<String, Header> map = new LinkedHashMap<>();
+        for (final Header e : Header.class.getEnumConstants()) {
+            map.put(e.getValue().toLowerCase(), e);
         }
-        if (!StrUtil.isEmptyIfStr(accountId)) {
-            request.setAccountId(accountId);
+        while (enumHeaders.hasMoreElements()) {
+            String headerName = enumHeaders.nextElement();
+            if (map.containsKey(headerName.toLowerCase())) {
+                continue;
+            }
+            String headerValue = httpServletRequest.getHeader(headerName);
+            jsonObject.put(headerName.toLowerCase(), headerValue);
         }
-        if (!StrUtil.isEmptyIfStr(deviceId)) {
-            request.setDeviceId(deviceId);
-        }
+        return jsonObject;
     }
 }

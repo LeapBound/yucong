@@ -16,5 +16,7 @@ public interface YcFunctionOpenaiService {
 
     JSONObject executeGroovy(FunctionExecuteRequest request);
 
+    JSONObject executeGroovy(String name, String arguments) throws Exception;
+
     void resetEngineMap(String key);
 }

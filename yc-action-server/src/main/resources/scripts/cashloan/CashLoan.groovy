@@ -99,7 +99,7 @@ static def applyLoan(String arguments) {
         return result
     }
     //
-    String accountId = args.getString('accountId')
+    String accountId = args.getString('accountid')
     // init call parameters
     def params = ['name': name, 'idNo': idNo, 'mobile': mobile, 'accountId': accountId]
     // call
@@ -144,7 +144,7 @@ static def applyAuditStatus(String arguments) {
         result.put('错误', '需要提供查询的订单类型')
         return result
     }
-    String accountId = args.getString('accountId')
+    String accountId = args.getString('accountid')
     //
     if ('提现' == orderType) {
         result.put('结果', '正在放款中')

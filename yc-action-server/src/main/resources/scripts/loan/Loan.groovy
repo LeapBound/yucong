@@ -67,7 +67,7 @@ static def execLoanMethod(String method, String arguments) {
             result = bindMobile(arguments)
             break
         case 'send_code': // service task called by java delegate
-            result = sendCode(arguments)
+            result = sendCode(method, arguments)
             break
         case 'verify_mobile_code':
             result = verifyMobileCode(arguments)
@@ -79,13 +79,13 @@ static def execLoanMethod(String method, String arguments) {
             result = productInfo(method, arguments)
             break
         case 'term_config':
-            result = termConfig(arguments)
+            result = termConfig(method, arguments)
             break
         case 'loan_term':
             result = loanTerm(method, arguments)
             break
         case 'load_client_identity': // service task called by java delegate
-            loadClientIdentity(arguments)
+            loadClientIdentity(method, arguments)
             break
         case 'id_photo_front':
             result = doIdCardOcr(method, arguments)
@@ -97,7 +97,7 @@ static def execLoanMethod(String method, String arguments) {
             result = bankCard(method, arguments)
             break
         case 'check_bank_card': // service task called by java delegate
-            result = checkBankCard(arguments)
+            result = checkBankCard(method, arguments)
             break
         case 'submit_pay_protocol':
             result = submitPayProtocol(method, arguments)
@@ -131,9 +131,11 @@ static def getExternalUrl(String arguments) {
 static def startLoanProcess(String arguments) {
     JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
+    String botId = args.containsKey('botid') ? args.getString('botid') : ''
+    def startFormVariables = ['accountId': userId, 'botId': botId]
     // process key = 'Process_chatin'
-    String processInstanceId = CamundaService.startProcess('Process_chatin', userId)
+    String processInstanceId = CamundaService.startProcess('Process_chatin', userId, startFormVariables)
     result.put('functionContent', '好的，请提供您的手机号')
     return result
 }
@@ -141,7 +143,7 @@ static def startLoanProcess(String arguments) {
 static def deleteLoanProcess(String arguments) {
     JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     try {
         CamundaService.deleteProcess(userId)
         result.put('functionContent', '好的，您的贷款申请已取消')
@@ -156,7 +158,7 @@ static def deleteLoanProcess(String arguments) {
 static def bindMobile(String arguments) {
     JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
     if (taskReturn == null) {
         logger.error('bindMobile no current task, businessKey: {}', userId)
@@ -169,11 +171,12 @@ static def bindMobile(String arguments) {
     return result
 }
 
-static def sendCode(String arguments) {
+static def sendCode(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     sendLoginSms(mobile)
-    notifyUser(mobile, '验证码已经发送，请在收到验证码后发送给我')
+    // 通知 hub
+    noticeHub(noticeResponse(true, method))
     // set send_code output
     return new JSONObject() {
         {
@@ -256,17 +259,10 @@ static def sendLoginSms(String userMobile) {
     logger.info('send login sms response: {}', response.body()) // 回调hub通知接口
 }
 
-// 通知用户
-static def notifyUser(String userId, String content) {
-    logger.info('notify user: {}, content: {}', userId, content)
-    def result = ['accountId': userId, 'content': content]
-    noticeHub(result)
-}
-
 static def verifyMobileCode(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String verifyCode = args.containsKey('smsCode') ? args.getString('smsCode') : ''
     String deviceId = args.containsKey('deviceId') ? args.getString('deviceId') : ''
     try {
@@ -297,7 +293,7 @@ static def verifyMobileCode(String arguments) {
 static def configByBdMobile(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String bdMobile = args.containsKey('bdMobile') ? args.getString('bdMobile') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
@@ -348,7 +344,7 @@ static def preApply(String token, String mobile) {
 static def productInfo(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String productName = args.containsKey('productName') ? args.getString('productName') : ''
     Integer applyAmount = args.containsKey('productAmount') ? args.getInteger('productAmount') : null
     if (StrUtil.isEmptyIfStr(productName) || null == applyAmount) {
@@ -376,7 +372,7 @@ static def productInfo(String method, String arguments) {
     return result
 }
 
-static def termConfig(String arguments) {
+static def termConfig(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject loanConfig = args.containsKey('loanConfig') ? args.getJSONObject('loanConfig') : null
     JSONArray stages = (loanConfig != null && loanConfig.containsKey('StageCount')) ? loanConfig.getJSONArray('StageCount') : null
@@ -391,6 +387,7 @@ static def termConfig(String arguments) {
             terms.add(value)
         }
     }
+    noticeHub(noticeResponse(true, method))
     return new JSONObject() {
         {
             put('termConfig', terms)
@@ -401,7 +398,7 @@ static def termConfig(String arguments) {
 static def loanTerm(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String loanTerm = args.containsKey('loanTerm') ? args.getString('loanTerm') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
@@ -453,13 +450,15 @@ static def loanTerm(String method, String arguments) {
 }
 
 // 加载用户信息
-static def loadClientIdentity(String arguments) {
+static def loadClientIdentity(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     //
     String appToken = getAppToken(mobile, null, null)
-    return loadIdentity(appId, appToken);
+    def response = loadIdentity(appId, appToken);
+    noticeHub(noticeResponse(true, method))
+    return response
 }
 
 static def loadIdentity(String appId, String token) {
@@ -487,7 +486,7 @@ static def loadIdentity(String appId, String token) {
 static def doIdCardOcr(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String url = args.containsKey('idPhotoUrl') ? args.getString('idPhotoUrl') : ''
     String fileType = args.containsKey('idPhotoType') ? args.getString('idPhotoType') : ''
     try {
@@ -554,7 +553,7 @@ static def doIdCardOcr(String url, String fileType, String token) {
 static def bankCard(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String bankCard = args.containsKey('bankCard') ? args.getString('bankCard') : ''
     String bankMobile = args.containsKey('bankMobile') ? args.getString('bankMobile') : ''
     try {
@@ -578,7 +577,7 @@ static def bankCard(String method, String arguments) {
     return result
 }
 
-static def checkBankCard(String arguments) {
+static def checkBankCard(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
@@ -601,6 +600,8 @@ static def checkBankCard(String arguments) {
 
     JSONObject checkProtocolResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode)
     String protocolKey = checkProtocolResult != null && checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
+    //
+    noticeHub(noticeResponse(true, method))
     return new JSONObject() {
         {
             put('payProtocolKey', protocolKey)
@@ -683,7 +684,7 @@ static def checkPayProtocol(String token, String appId, String name, String idNo
 static def submitPayProtocol(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String verifyCode = args.containsKey('payProtocolVerifyCode') ? args.getString('payProtocolVerifyCode') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
@@ -810,7 +811,7 @@ static def submitApplyStep(String token, JSONObject info) {
 static def thirdStep(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String maritalStatus = args.containsKey('maritalStatus') ? args.getString('maritalStatus') : ''
     try {
 
@@ -850,7 +851,7 @@ static def thirdStep(String method, String arguments) {
 static def forthStep(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String userId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String companyName = args.containsKey('companyName') ? args.getString('companyName') : ''
     String mailAddr = args.containsKey('mailAddr') ? args.getString('mailAddr') : ''
     try {
@@ -917,4 +918,17 @@ static def checkTaskPosition(String method, String taskName) {
 
 static def noticeHub(Map<String, Object> result) {
     def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, result, null)
+}
+
+static def noticeResponse(boolean success, String response) {
+    Map<String, Object> result = new HashMap() {
+        {
+            put('success', success)
+            put('code', null)
+            put('msg', '')
+            put('data', response)
+        }
+    }
+    return result
+
 }

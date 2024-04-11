@@ -74,9 +74,6 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         try {
             JSONObject arguments = JSON.parseObject(request.getArguments());
             arguments.put("functionName", request.getName());
-            if (!StrUtil.isEmptyIfStr(request.getAccountId())) {
-                arguments.put("accountId", request.getAccountId());
-            }
             // execute
             JSONObject jsonObject = FunctionExecutor.execute(dto, arguments);
             // return result
@@ -113,8 +110,9 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         LocalDateTime startTime = LocalDateTime.now();
         String executeResult = "";
         String functionName = request.getName();
-        JSONObject jsonObject = executeGroovy(request);
+        //
         try {
+            JSONObject jsonObject = executeGroovy(request);
             // return result
             if (jsonObject != null) {
                 if (jsonObject.containsKey("functionContent")) {
@@ -168,9 +166,7 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             if (!StrUtil.isEmptyIfStr(request.getArguments())) {
                 arguments = JSON.parseObject(request.getArguments());
             }
-            if (!StrUtil.isEmptyIfStr(request.getAccountId())) {
-                arguments.put("accountId", request.getAccountId());
-            }
+            // groovy external host
             if (!StrUtil.isEmptyIfStr(externalHost)) {
                 arguments.put("externalHost", externalHost);
             }
@@ -190,6 +186,30 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             return result;
         } catch (Exception ex) {
             logger.error("execute groovy function error, function = {}, arguments = {}", functionName, request.getArguments(), ex);
+        }
+        return null;
+    }
+
+    @Override
+    public JSONObject executeGroovy(String name, String arguments) throws Exception {
+        YcFunctionGroovyDto dto = this.ycFunctionGroovyService.getFunctionGroovyDto(name);
+        if (dto == null) {
+            logger.warn("no data found in [yc_function_groovy], function = {}", name);
+            throw new Exception("no data found in [yc_function_groovy], function = " + name);
+        }
+        JSONObject args = JSON.parseObject(arguments);
+        if (!StrUtil.isEmptyIfStr(externalHost)) {
+            args.put("externalHost", externalHost);
+        }
+        String engineKey = dto.getGroovyName();
+        if (engineMap.containsKey(engineKey)) {
+            GroovyScriptEngine engine = engineMap.get(engineKey);
+            return FunctionGroovyExec.runScript(engine, dto, args);
+        }
+        GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
+        if (engine != null) {
+            engineMap.put(engineKey, engine);
+            return FunctionGroovyExec.runScript(engine, dto, args);
         }
         return null;
     }

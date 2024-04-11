@@ -37,13 +37,13 @@ class RestClient {
         // http request
         try (def response = request.execute()) {
             if (response != null && !StrUtil.isBlankIfStr(response.body())) {
-                log.info("execute doGet {} and response = {}", path, response.body());
+                log.debug("execute doGet {} and response = {}", path, response.body());
             }
             return response
         } catch (Exception ex) {
             log.error('post url {} error', url + path, ex)
+            throw new Exception(ex)
         }
-        return null
     }
 
     /**
@@ -65,13 +65,13 @@ class RestClient {
         request = authType(request, auth)
         try (def response = request.execute()) {
             if (response != null && !StrUtil.isBlankIfStr(response.body())) {
-                log.info("execute doPostWithParams {} and response = {}", path, response.body());
+                log.debug("execute doPostWithParams {} and response = {}", path, response.body());
             }
             return response
         } catch (Exception ex) {
             log.error('post url {} error', url + path, ex)
+            throw new Exception(ex)
         }
-        return null;
     }
 
     /**
@@ -94,13 +94,13 @@ class RestClient {
         request = authType(request, auth)
         try (def response = request.execute()) {
             if (response != null && !StrUtil.isBlankIfStr(response.body())) {
-                log.info("execute doPostWithForm {} and response = {}", path, response.body());
+                log.debug("execute doPostWithForm {} and response = {}", path, response.body());
             }
             return response
         } catch (Exception ex) {
             log.error('post url {} error', url + path, ex)
+            throw new Exception(ex)
         }
-        return null;
     }
 
     /**
@@ -123,13 +123,13 @@ class RestClient {
         request = authType(request, auth)
         try (def response = request.execute()) {
             if (response != null && !StrUtil.isBlankIfStr(response.body())) {
-                log.info("execute doPostWithBody {} and response = {}", path, response.body());
+                log.debug("execute doPostWithBody {} and response = {}", path, response.body());
             }
             return response
         } catch (Exception ex) {
             log.error('post url {} error', url + path, ex)
+            throw new Exception(ex)
         }
-        return null;
     }
 
     /**

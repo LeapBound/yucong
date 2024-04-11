@@ -39,11 +39,16 @@ public class ServiceTaskDelegate implements JavaDelegate {
             Map<String, Object> arguments = execution.getVariables();
             // has subService
             if (subService != null) {
-                JSONObject result = subService.execute(function, JSON.toJSONString(arguments));
-                logger.info("subService function [{}]  execute completed ", function);
-                if (result != null && !result.isEmpty()) {
-                    // reset variables
-                    result.forEach(execution::setVariable);
+                try {
+                    JSONObject result = subService.execute(function, JSON.toJSONString(arguments));
+                    logger.info("subService function [{}]  execute completed ", function);
+                    if (result != null && !result.isEmpty()) {
+                        // reset variables
+                        result.forEach(execution::setVariable);
+                    }
+                } catch (Exception ex) {
+                    logger.error("subService function [{}]  execute failed ", function, ex);
+//                    throw new BpmnError("subService function [" + function + "] execute failed", ex);
                 }
             } else {
                 logger.warn("no [subService] found in the task");

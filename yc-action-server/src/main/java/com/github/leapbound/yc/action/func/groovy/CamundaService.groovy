@@ -32,13 +32,14 @@ class CamundaService {
      * @param userId
      * @return String processInstanceId
      */
-    static def startProcess(String processKey, String userId) {
+    static def startProcess(String processKey, String userId, Map<String, Object> startFormVariables) {
         TaskReturn taskReturn = queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.info('user {} current no task', userId)
             ProcessStartRequest processStartRequest = new ProcessStartRequest()
             processStartRequest.setProcessKey(processKey)
             processStartRequest.setBusinessKey(userId)
+            processStartRequest.setStartFormVariables(startFormVariables)
             def r = businessCamundaService.startProcess(processStartRequest)
             if (R.isOk(r)) {
                 return r.getData() as String
