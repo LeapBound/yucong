@@ -40,7 +40,7 @@ public class GptServiceImpl implements GptService {
         switch (messageList.get(messageList.size() - 1).getType()) {
             case "image":
             case "video":
-                response = processImg(messageList.get(messageList.size() - 1), currentTask);
+                response = processImg(botId, accountId, messageList.get(messageList.size() - 1), currentTask);
                 break;
             case "text":
             default:
@@ -70,10 +70,12 @@ public class GptServiceImpl implements GptService {
         return gptMessageList;
     }
 
-    private MyChatCompletionResponse processImg(MyMessage inMessage, ProcessTaskDto currentTask) {
+    private MyChatCompletionResponse processImg(String botId, String accountId, MyMessage inMessage, ProcessTaskDto currentTask) {
         String id = currentTask.getCurrentInputForm().get(0).getId();
+        MyFunctions functions = this.funcService.getListByAccountIdAndBotId(accountId, botId, currentTask).get(0);
 
         MyFunctionCall myFunctionCall = new MyFunctionCall();
+        myFunctionCall.setName(functions.getName());
         Map<String, String> args = new HashMap<>();
         args.put(id, inMessage.getPicUrl());
         myFunctionCall.setArguments(JSON.toJSONString(args));

@@ -91,7 +91,7 @@ public class LoanServiceTests {
         singleChatModel.setBotId(this.botId);
         singleChatModel.setAccountId(this.accountId);
         singleChatModel.setType("text");
-        singleChatModel.setContent("13666666666");
+        singleChatModel.setContent("13801234567");
         log.info("bindMobile {}", this.conversationService.chat(singleChatModel));
     }
 
@@ -146,8 +146,41 @@ public class LoanServiceTests {
         singleChatModel.setBotId(this.botId);
         singleChatModel.setAccountId(this.accountId);
         singleChatModel.setType("image");
-        singleChatModel.setPicUrl("https://beta.geexfinance.com/group2/M00/AA/FB/wKhvEmYXVbmABLFmAAN9kWkAg44108.jpg");
+        singleChatModel.setPicUrl("https://beta.geexfinance.com/group2/M00/AA/AA/wKhvEmYLaduAPH4aAAYwDFtNjj8213.jpg");
         log.info("idPhotoFront {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void idPhotoBack() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("image");
+        singleChatModel.setPicUrl("https://beta.geexfinance.com/group2/M00/AA/AB/wKhvEmYLgcOAUhZFAAJmq0Eow-0052.jpg");
+        log.info("idPhotoBack {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void bankCard() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("8703003892904753 15913175493");
+        log.info("bankCard {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void protocolVerifyCode() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("123456");
+        log.info("protocolVerifyCode {}", this.conversationService.chat(singleChatModel));
     }
 
     @Test
@@ -167,5 +200,10 @@ public class LoanServiceTests {
         checkProcessAvailable();
 
         idPhotoFront();
+        idPhotoBack();
+        bankCard();
+        checkProcessAvailable();
+
+        protocolVerifyCode();
     }
 }
