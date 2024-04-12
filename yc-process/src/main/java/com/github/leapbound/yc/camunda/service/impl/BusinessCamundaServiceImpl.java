@@ -278,11 +278,14 @@ public class BusinessCamundaServiceImpl implements BusinessCamundaService {
         TaskQuery taskQuery = taskService.createTaskQuery();
 
         if (StrUtil.isEmptyIfStr(processInstanceId)) {
-            taskQuery = taskQuery.processInstanceBusinessKey(businessKey).active();
+//            taskQuery = taskQuery.processInstanceBusinessKey(businessKey).active();
+            taskQuery = taskQuery.processInstanceBusinessKey(businessKey);
         } else if (StrUtil.isEmptyIfStr(businessKey)) {
-            taskQuery = taskQuery.processInstanceId(processInstanceId).active();
+//            taskQuery = taskQuery.processInstanceId(processInstanceId).active();
+            taskQuery = taskQuery.processInstanceId(processInstanceId);
         } else {
-            taskQuery = taskQuery.processInstanceId(processInstanceId).processInstanceBusinessKey(businessKey).active();
+//            taskQuery = taskQuery.processInstanceId(processInstanceId).processInstanceBusinessKey(businessKey).active();
+            taskQuery = taskQuery.processInstanceId(processInstanceId).processInstanceBusinessKey(businessKey);
         }
         Task task = taskQuery.singleResult();
         if (task == null || StrUtil.isEmptyIfStr(task.getId())) {
