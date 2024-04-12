@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
  * @author yamath
  * @since 2024/3/26 9:42
  */
-@Field static String frontUrl = 'https://beta.geexfinance.com'
+@Field static String frontUrl = ''
 @Field static String loginAppPath = '/front-api/geex_capp/v1/user/loginApp'
 @Field static String getAppVerifyCodeCheckPath = '/front-api/geex_capp/v1/sms/getAppVerifyCodeCheck'
 @Field static String getCommonVerifyCodePath = '/front-api/geex_capp/v1/newOrder/inner/alpha/common/verification/code'
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit
 @Field static String submitProtocolPath = '/front-api/geex_capp/v1/user/submitProtocol/'
 @Field static String submitIdentityPath = '/front-api/geex_capp/v1/user/submitIdentity/'
 @Field static String submitApplyStepPath = '/front-api/geex_capp/v1/apply/submitApplyStep/'
-@Field static String hubUrl = 'http://192.168.8.232:8088'
+@Field static String hubUrl = ''
 @Field static String noticeHubPath = '/yc-hub/api/conversation/notice'
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.loan.Loan');
@@ -52,11 +52,9 @@ static def execLoanMethod(String method, String arguments) {
         result.put('错误', '没有提供必要的信息')
         return result
     }
-    def externalUrl = getExternalUrl(arguments)
-    if (!StrUtil.isEmptyIfStr(externalUrl)) {
-        frontUrl = externalUrl
-        hubUrl = externalUrl
-    }
+    // get external args
+    getExternal(arguments)
+    //
     switch (method) {
         case 'start_loan_process':
             result = startLoanProcess(arguments)
@@ -115,6 +113,9 @@ static def execLoanMethod(String method, String arguments) {
         case 'submit_audit': // service task called by java delegate
             result = submitAudit(arguments)
             break
+        case 'notice_hub':
+            noticeHub(arguments)
+            break
         default:
             result.put('结果', '没有执行方法')
             break
@@ -122,10 +123,12 @@ static def execLoanMethod(String method, String arguments) {
     return result
 }
 
-static def getExternalUrl(String arguments) {
+static def getExternal(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
-    return externalHost
+    String externalFrontUrl = args.containsKey('frontUrl') ? args.getString('frontUrl') : ''
+    String externalHubUrl = args.containsKey('hubUrl') ? args.getString('hubUrl') : ''
+    frontUrl = externalFrontUrl
+    hubUrl = externalHubUrl
 }
 
 //
@@ -179,12 +182,13 @@ static def sendCode(String method, String arguments) {
     String botId = args.containsKey('botId') ? args.getString('botId') : ''
     sendLoginSms(mobile)
     // 通知 hub
-    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
-    noticeHub(noticeResponse(true, chatRes))
-    // set send_code output
+    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
+    def afterFunction = ['notice_hub': chatRes]
+// set send_code output
     return new JSONObject() {
         {
             put('z_sendUserMobileVerifyCode', true)
+            put('afterFunction', afterFunction)
         }
     }
 }
@@ -393,11 +397,12 @@ static def termConfig(String method, String arguments) {
             terms.add(value)
         }
     }
-    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
-    noticeHub(noticeResponse(true, chatRes))
+    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
+    def afterFunction = ['notice_hub': chatRes]
     return new JSONObject() {
         {
             put('termConfig', terms)
+            put('afterFunction', afterFunction)
         }
     }
 }
@@ -466,8 +471,11 @@ static def loadClientIdentity(String method, String arguments) {
     //
     String appToken = getAppToken(mobile, null, null)
     def response = loadIdentity(appId, appToken);
-    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
-    noticeHub(noticeResponse(true, chatRes))
+    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
+    def afterFunction = ['notice_hub': chatRes]
+    if (response != null) {
+        response.put('afterFunction', afterFunction)
+    }
     return response
 }
 
@@ -613,11 +621,12 @@ static def checkBankCard(String method, String arguments) {
     JSONObject checkProtocolResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode)
     String protocolKey = checkProtocolResult != null && checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
     //
-    def chatRes = ['accountId': accountId, 'botId': botId, 'content': method]
-    noticeHub(noticeResponse(true, chatRes))
+    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
+    def afterFunction = ['notice_hub': chatRes]
     return new JSONObject() {
         {
             put('payProtocolKey', protocolKey)
+            put('afterFunction', afterFunction)
         }
     }
 }
@@ -917,6 +926,18 @@ static def submitAudit(String arguments) {
     return submitApplyStep(appToken, info)
 }
 
+static def noticeHub(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    if (args.containsKey('frontUrl')) {
+        args.remove('frontUrl')
+    }
+    if (args.containsKey('hubUrl')) {
+        args.remove('hubUrl')
+    }
+    logger.info('notice_hub arguments: {}', args)
+    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, args, null)
+}
+
 static def wrapHeadersWithToken(String token) {
     def defaultHeaders = ['platform': 'wechat']
     if (!StrUtil.isEmptyIfStr(token)) {
@@ -927,11 +948,6 @@ static def wrapHeadersWithToken(String token) {
 
 static def checkTaskPosition(String method, String taskName) {
     return method == taskName
-}
-
-static def noticeHub(Map<String, Object> result) {
-    logger.info('noticeHub result: {}', result)
-    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, result, null)
 }
 
 static def noticeResponse(boolean success, Map<String, Object> response) {

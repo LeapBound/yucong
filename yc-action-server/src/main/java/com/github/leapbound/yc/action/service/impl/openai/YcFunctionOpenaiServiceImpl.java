@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -40,8 +41,8 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
     private final RedisTemplate redisTemplate;
     private final ConcurrentHashMap<String, GroovyScriptEngine> engineMap = new ConcurrentHashMap<>();
 
-    @Value("${yc.action.external.host:}")
-    private String externalHost;
+    @Value("#{${yc.action.external.args:null}}")
+    private Map<String, String> externalArgs;
 
     public YcFunctionOpenaiServiceImpl(
             YcFunctionMethodService ycFunctionMethodService,
@@ -166,9 +167,9 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             if (!StrUtil.isEmptyIfStr(request.getArguments())) {
                 arguments = JSON.parseObject(request.getArguments());
             }
-            // groovy external host
-            if (!StrUtil.isEmptyIfStr(externalHost)) {
-                arguments.put("externalHost", externalHost);
+            // groovy external args
+            if (externalArgs != null && !externalArgs.isEmpty()) {
+                arguments.putAll(externalArgs);
             }
             // execute
             JSONObject result = null;
@@ -198,8 +199,8 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             throw new Exception("no data found in [yc_function_groovy], function = " + name);
         }
         JSONObject args = JSON.parseObject(arguments);
-        if (!StrUtil.isEmptyIfStr(externalHost)) {
-            args.put("externalHost", externalHost);
+        if (externalArgs != null && !externalArgs.isEmpty()) {
+            args.putAll(externalArgs);
         }
         String engineKey = dto.getGroovyName();
         if (engineMap.containsKey(engineKey)) {

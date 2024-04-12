@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -43,8 +44,26 @@ public class ServiceTaskDelegate implements JavaDelegate {
                     JSONObject result = subService.execute(function, JSON.toJSONString(arguments));
                     logger.info("subService function [{}]  execute completed ", function);
                     if (result != null && !result.isEmpty()) {
+                        //
+                        Map<String, Object> afterArgs = new HashMap<>();
                         // reset variables
-                        result.forEach(execution::setVariable);
+                        for (Map.Entry<String, Object> entry : result.entrySet()) {
+                            //  execute functions after that service task completed
+                            if (entry.getKey().equals("afterFunction")) {
+                                if (entry.getValue() instanceof Map<?, ?>) {
+                                    afterArgs = (Map<String, Object>) entry.getValue();
+                                }
+                                continue;
+                            }
+                            // set variables
+                            execution.setVariable(entry.getKey(), entry.getValue());
+                        }
+                        // execute after functions
+                        if (!afterArgs.isEmpty()) {
+                            for (Map.Entry<String, Object> entry : afterArgs.entrySet()) {
+                                subService.execute(entry.getKey(), JSON.toJSONString(entry.getValue()));
+                            }
+                        }
                     }
                 } catch (Exception ex) {
                     logger.error("subService function [{}]  execute failed ", function, ex);
