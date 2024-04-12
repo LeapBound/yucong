@@ -504,15 +504,18 @@ static def doIdCardOcr(String method, String arguments) {
     JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String url = ''
+    String fileType = ''
     if ('id_photo_front' == method) {
         url = args.containsKey('idPhotoFrontUrl') ? args.getString('idPhotoFrontUrl') : ''
+        fileType = 'idnoFront'
     } else if ('id_photo_back' == method) {
         url = args.containsKey('idPhotoBackUrl') ? args.getString('idPhotoBackUrl') : ''
+        fileType = 'idnoBack'
     }
-    if (StrUtil.isEmpty(url)) {
-        return makeResponseVo(false, '[' + method + ']没有照片', result)
+    if (StrUtil.isEmpty(url) || StrUtil.isEmpty(fileType)) {
+        return makeResponseVo(false, '[' + method + ']没有照片參數', result)
     }
-    String fileType = args.containsKey('idPhotoType') ? args.getString('idPhotoType') : ''
+    //
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
