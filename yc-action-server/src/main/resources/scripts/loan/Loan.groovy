@@ -141,7 +141,7 @@ static def startLoanProcess(String arguments) {
     // process key = 'Process_chatin'
     String processInstanceId = CamundaService.startProcess('Process_chatin', userId, startFormVariables)
     result.put('functionContent', '好的，请提供您的手机号')
-    return result
+    return makeResponseVo(true, null, result)
 }
 
 static def deleteLoanProcess(String arguments) {
@@ -151,11 +151,12 @@ static def deleteLoanProcess(String arguments) {
     try {
         CamundaService.deleteProcess(userId)
         result.put('functionContent', '好的，您的贷款申请已取消')
+        return makeResponseVo(true, null, result)
     } catch (Exception ex) {
         logger.error('deleteLoanProcess error, ', ex)
-        result.put('functionContent', '后台错误，联系管理员')
+        result.put('functionContent', '[delete_loan_process]后台错误，联系管理员')
+        return makeResponseVo(false, '[delete_loan_process]后台错误，联系管理员', result)
     }
-    return result
 }
 
 // 绑定手机号
@@ -167,19 +168,18 @@ static def bindMobile(String arguments) {
     if (taskReturn == null) {
         logger.error('bindMobile no current task, businessKey: {}', userId)
         result.put('functionContent', '获取流程失败，请联系管理员')
+        return makeResponseVo(false, '[bind_mobile]获取流程失败，联系管理员', result)
     } else {
         def taskId = taskReturn.getTaskId()
         def inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
         CamundaService.completeTask(taskId, inputForm)
+        return makeResponseVo(true, null, result)
     }
-    return result
 }
 
 static def sendCode(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
-    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String botId = args.containsKey('botId') ? args.getString('botId') : ''
     sendLoginSms(mobile)
 // set send_code output
     return new JSONObject() {
@@ -274,6 +274,7 @@ static def verifyMobileCode(String arguments) {
         if (taskReturn == null) {
             logger.error('verifyMobileCode no current task, businessKey: {}', userId)
             result.put('functionContent', '获取当前流程失败，请联系管理员')
+            return makeResponseVo(false, '[verify_mobile_code]获取当前流程失败，联系管理员', result)
         } else {
             def taskId = taskReturn.getTaskId()
             def processInstanceId = taskReturn.getProcessInstanceId()
@@ -285,13 +286,14 @@ static def verifyMobileCode(String arguments) {
                 args.put('z_userMobileVerify', true)
                 def inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
                 CamundaService.completeTask(taskId, inputForm)
+                return makeResponseVo(true, null, result)
             }
         }
     } catch (Exception ex) {
         logger.error('verifyMobileCode error, ', ex)
         result.put('functionContent', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[verify_mobile_code]系统错误，联系管理员', result)
     }
-    return result // 通用话术
 }
 
 static def configByBdMobile(String arguments) {
@@ -304,6 +306,7 @@ static def configByBdMobile(String arguments) {
         if (taskReturn == null) {
             logger.error('configByBdMobile no current task, businessKey: {}', userId)
             result.put('functionContent', '获取当前流程失败，请联系管理员')
+            return makeResponseVo(false, '[config_bd_mobile]获取当前流程失败，联系管理员', result)
         } else {
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -312,18 +315,19 @@ static def configByBdMobile(String arguments) {
             String appToken = getAppToken(mobile, null, null)
             JSONObject storeConfig = preApply(appToken, bdMobile)
             if (storeConfig == null) {
-                return result
+                return makeResponseVo(false, '[config_bd_mobile]没有门店配置，联系管理员', result)
             }
             String storeCode = storeConfig.containsKey('storeCode') ? storeConfig.getString('storeCode') : ''
             JSONObject config = storeConfig.containsKey('config') ? storeConfig.getJSONObject('config') : null
             def configForm = ['bdMobile': bdMobile, 'storeCode': storeCode, 'loanConfig': config]
             CamundaService.completeTask(taskId, configForm)
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('configByBdMobile error, ', ex)
         result.put('functionContent', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[config_bd_mobile]系统错误，联系管理员', result)
     }
-    return result
 }
 
 static def preApply(String token, String mobile) {
@@ -355,35 +359,35 @@ static def productInfo(String method, String arguments) {
     String productName = args.containsKey('productName') ? args.getString('productName') : ''
     Integer applyAmount = args.containsKey('productAmount') ? args.getInteger('productAmount') : null
     if (StrUtil.isEmptyIfStr(productName) || null == applyAmount) {
-        result.put('functionContent', '获取产品失败，联系管理员')
-        return result
+        result.put('functionContent', '[product_info]获取产品失败，联系管理员')
+        return makeResponseVo(false, '[product_info]获取产品失败，联系管理员', result)
     }
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('productInfo no current task, businessKey: {}', userId)
             result.put('functionContent', '获取当前流程失败，请联系管理员')
+            return makeResponseVo(false, '[product_info]获取当前流程失败，联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
                 result.put('functionContent', '当前流程操作失败，请联系管理员')
-                return result
+                return makeResponseVo(false, '[product_info]当前流程操作失败，请联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             def loanInfoForm = ['applyAmount': applyAmount, 'productName': productName]
             CamundaService.completeTask(taskId, loanInfoForm)
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('productInfo error,', ex)
         result.put('functionContent', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[product_info]系统错误，联系管理员', result)
     }
-    return result
 }
 
 static def termConfig(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject loanConfig = args.containsKey('loanConfig') ? args.getJSONObject('loanConfig') : null
-    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String botId = args.containsKey('botId') ? args.getString('botId') : ''
     JSONArray stages = (loanConfig != null && loanConfig.containsKey('StageCount')) ? loanConfig.getJSONArray('StageCount') : null
     if (stages == null || stages.isEmpty()) {
         logger.error('no StageCount found in loanConfig')
@@ -413,10 +417,11 @@ static def loanTerm(String method, String arguments) {
         if (taskReturn == null) {
             logger.error('loanTerm no current task, businessKey: {}', userId)
             result.put('functionContent', '获取当前流程失败，请联系管理员')
+            return makeResponseVo(false, '[loan_term]获取当前流程失败，联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
                 result.put('functionContent', '当前流程操作失败，请联系管理员')
-                return result
+                return makeResponseVo(false, '[loan_term]当前流程操作失败，请联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -447,17 +452,18 @@ static def loanTerm(String method, String arguments) {
             }
             def firstSubmit = submitApplyStep(appToken, firstSubmitObj)
             if (firstSubmit == null) {
-                return result
+                return makeResponseVo(false, '[loan_term]获取配置失败，联系管理员', result)
             }
             String appId = firstSubmit.containsKey('C_APP_ID') ? firstSubmit.getString('C_APP_ID') : ''
             def appIdForm = ['appId': appId, 'loanTerm': loanTerm]
             CamundaService.completeTask(taskId, appIdForm)
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('loanTerm error, ', ex)
         result.put('functionContent', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[loan_term]系统错误，联系管理员', result)
     }
-    return result
 }
 
 // 加载用户信息
@@ -504,10 +510,11 @@ static def doIdCardOcr(String method, String arguments) {
         if (taskReturn == null) {
             logger.error('doIdCardOcr no current task, businessKey: {}', userId)
             result.put('functionContent', '获取当前流程失败，请联系管理员')
+            return makeResponseVo(false, '[' + method + ']获取当前流程失败，联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
                 result.put('functionContent', '当前流程操作失败，请联系管理员')
-                return result
+                return makeResponseVo(false, '[' + method + ']当前流程操作失败，联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -516,7 +523,7 @@ static def doIdCardOcr(String method, String arguments) {
             String appToken = getAppToken(mobile, null, null)
             JSONObject ocrResult = doIdCardOcr(url, fileType, appToken)
             if (ocrResult == null) {
-                return result
+                return makeResponseVo(false, '[' + method + ']身份证 ocr 失败，联系管理员', result)
             }
             def inputForm = new HashMap() {
                 {
@@ -524,12 +531,13 @@ static def doIdCardOcr(String method, String arguments) {
                 }
             }
             CamundaService.completeTask(taskId, inputForm)
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('doIdCardOcr error', ex)
         result.put('错误', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[' + method + ']系统错误，联系管理员', result)
     }
-    return result
 }
 
 // 识别身份证
@@ -574,20 +582,22 @@ static def bankCard(String method, String arguments) {
         if (taskReturn == null) {
             logger.error('bankCard no current task, businessKey: {}', userId)
             result.put('functionContent', '无法获取当前流程，联系管理员')
+            return makeResponseVo(false, '[back_card]无法获取当前流程，联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
                 result.put('functionContent', '当前流程失败，请联系管理员')
-                return result
+                return makeResponseVo(false, '[back_card]当前流程失败，请联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             def inputForm = ['bankCard': bankCard, 'bankMobile': bankMobile]
             CamundaService.completeTask(taskId, inputForm)
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('bankCard error,', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，联系管理员')
+        return makeResponseVo(false, '[back_card]系统错误，联系管理员', result)
     }
-    return result
 }
 
 static def checkBankCard(String method, String arguments) {
@@ -605,8 +615,6 @@ static def checkBankCard(String method, String arguments) {
     JSONObject ocrBack = args.containsKey('ocridnoBack') ? args.getJSONObject('ocridnoBack') : null
     JSONObject ocrBackDetail = (ocrBack != null && ocrBack.containsKey('ocrDetail')) ? ocrBack.getJSONObject('ocrDetail') : null
     String idValid = (ocrBackDetail != null && ocrBackDetail.containsKey('validDate')) ? ocrBackDetail.getString('validDate') : ''
-    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String botId = args.containsKey('botId') ? args.getString('botId') : ''
 
     String appToken = getAppToken(mobile, null, null)
     checkBankCardLimit(appToken, name, idNo, bankCard, amount)
@@ -705,10 +713,11 @@ static def submitPayProtocol(String method, String arguments) {
         if (taskReturn == null) {
             logger.error('submitUserPayProtocol no current task, businessKey: {}', userId)
             result.put('functionContent', '提交支付协议失败， 联系管理员')
+            return makeResponseVo(false, '[submit_pay_protocol]提交支付协议失败， 联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，请联系管理员')
-                return result
+                result.put('functionContent', '当前流程失败，联系管理员')
+                return makeResponseVo(false, '[submit_pay_protocol]当前流程失败，联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -732,16 +741,17 @@ static def submitPayProtocol(String method, String arguments) {
             logger.info('submitPayProtocol result: {}', submitResult)
             def submitIdentityResult = submitIdentity(appId, name, idNo, idValid, bankCode, storeCode, bankCard, bankMobile, appToken)
             if (submitIdentityResult == null) {
-                return result
+                return makeResponseVo(false, '[submit_pay_protocol]提交身份信息失败， 联系管理员', result)
             }
             logger.info('submitIdentity result: {}', submitIdentityResult)
             CamundaService.completeTask(taskId, [:])
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('processPayProtocol error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
+        result.put('functionContent', '系统错误，联系管理员')
+        return makeResponseVo(false, '[submit_pay_protocol]系统错误，联系管理员', result)
     }
-    return result
 }
 
 static def submitPayProtocol(String appId, String bankCode, String bankMobile, String verifyCode, String payProtocolKey, String bankCard, String token) {
@@ -831,16 +841,15 @@ static def thirdStep(String method, String arguments) {
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String maritalStatus = args.containsKey('maritalStatus') ? args.getString('maritalStatus') : ''
     try {
-
-
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('thirdStep no current task, businessKey: {}', userId)
             result.put('functionContent', '当前流程失败，联系管理员')
+            return makeResponseVo(false, '[third_step]失败， 联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，请联系管理员')
-                return result
+                result.put('functionContent', '当前流程失败，联系管理员')
+                return makeResponseVo(false, '[third_step]当前流程失败， 联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -857,15 +866,16 @@ static def thirdStep(String method, String arguments) {
             String appToken = getAppToken(mobile, null, null)
             result = submitApplyStep(appToken, stepInputForm)
             if (result == null) {
-                return result
+                return makeResponseVo(false, '[third_step]提交失败， 联系管理员', result)
             }
             CamundaService.completeTask(taskId, [:])
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('thirdStep error,', ex)
         result.put('functionContent', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[third_step]系统错误， 联系管理员', result)
     }
-    return result
 }
 
 static def forthStep(String method, String arguments) {
@@ -875,16 +885,15 @@ static def forthStep(String method, String arguments) {
     String companyName = args.containsKey('companyName') ? args.getString('companyName') : ''
     String mailAddr = args.containsKey('mailAddr') ? args.getString('mailAddr') : ''
     try {
-
-
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('thirdStep no current task, businessKey: {}', userId)
             result.put('functionContent', '当前流程失败，联系管理员')
+            return makeResponseVo(false, '[forth_step]失败， 联系管理员', result)
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
                 result.put('functionContent', '当前流程失败，请联系管理员')
-                return result
+                return makeResponseVo(false, '[forth_step]当前流程失败， 联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -902,15 +911,16 @@ static def forthStep(String method, String arguments) {
             String appToken = getAppToken(mobile, null, null)
             result = submitApplyStep(appToken, stepInputForm)
             if (result == null) {
-                return result
+                return makeResponseVo(false, '[forth_step]提交失败， 联系管理员', result)
             }
             CamundaService.completeTask(taskId, [:])
+            return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
         logger.error('forthStep error, ', ex)
         result.put('functionContent', '系统错误，请联系管理员')
+        return makeResponseVo(false, '[forth_step]系统错误， 联系管理员', result)
     }
-    return result
 }
 
 static def submitAudit(String arguments) {
@@ -946,6 +956,17 @@ static def wrapHeadersWithToken(String token) {
 
 static def checkTaskPosition(String method, String taskName) {
     return method == taskName
+}
+
+static def makeResponseVo(boolean success, String msg, Object data) {
+    return new JSONObject() {
+        {
+            put('success', success)
+            put('code', null)
+            put('msg', msg)
+            put('data', data)
+        }
+    }
 }
 
 static def noticeResponse(boolean success, Map<String, Object> response) {

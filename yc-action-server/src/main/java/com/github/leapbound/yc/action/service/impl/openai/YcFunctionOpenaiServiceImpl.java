@@ -8,11 +8,13 @@ import com.github.leapbound.yc.action.func.FunctionExecutor;
 import com.github.leapbound.yc.action.func.FunctionGroovyExec;
 import com.github.leapbound.yc.action.model.dto.YcFunctionGroovyDto;
 import com.github.leapbound.yc.action.model.dto.YcFunctionMethodDto;
+import com.github.leapbound.yc.action.model.vo.ResponseVo;
 import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRecordSaveRequest;
 import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
 import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
 import com.github.leapbound.yc.action.service.YcFunctionMethodService;
 import com.github.leapbound.yc.action.service.YcFunctionOpenaiService;
+import com.unfbx.chatgpt.entity.chat.BaseMessage;
 import com.unfbx.chatgpt.entity.chat.Message;
 import groovy.util.GroovyScriptEngine;
 import org.slf4j.Logger;
@@ -113,9 +115,16 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         String functionName = request.getName();
         //
         try {
-            JSONObject jsonObject = executeGroovy(request);
+            ResponseVo<?> vo = executeGroovy(request);
+            if (!vo.isSuccess()) {
+                return Message.builder().name(functionName)
+                        .role(BaseMessage.Role.FUNCTION)
+                        .content(vo.getMsg())
+                        .build();
+            }
             // return result
-            if (jsonObject != null) {
+            if (vo.getData() != null) {
+                JSONObject jsonObject = JSON.parseObject(JSON.toJSONString(vo.getData()));
                 if (jsonObject.containsKey("functionContent")) {
                     executeResult = jsonObject.getString("functionContent");
                 } else {
@@ -147,10 +156,10 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
     }
 
     @Override
-    public JSONObject executeGroovy(FunctionExecuteRequest request) {
+    public ResponseVo<?> executeGroovy(FunctionExecuteRequest request) {
         // if no function
         if (StrUtil.isEmptyIfStr(request.getName())) {
-            return null;
+            return ResponseVo.fail(null, "no function name，请联系管理员");
         }
         //
         String functionName = request.getName();
@@ -158,7 +167,7 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
         YcFunctionGroovyDto dto = this.ycFunctionGroovyService.getFunctionGroovyDto(functionName);
         if (dto == null) {
             logger.warn("no data found in [yc_function_groovy], function = {}", functionName);
-            return null;
+            return ResponseVo.fail(null, "no function found， 请联系管理员");
         }
         //
         try {
@@ -184,11 +193,11 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
                     result = FunctionGroovyExec.runScript(engine, dto, arguments);
                 }
             }
-            return result;
+            return JSON.toJavaObject(result, ResponseVo.class);
         } catch (Exception ex) {
             logger.error("execute groovy function error, function = {}, arguments = {}", functionName, request.getArguments(), ex);
+            return ResponseVo.fail(null, "execute function error，请联系管理员");
         }
-        return null;
     }
 
     @Override

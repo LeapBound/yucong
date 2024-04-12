@@ -33,11 +33,7 @@ public class YcFunctionOpenaiController {
     @PostMapping("/execute")
     public ResponseVo<?> executeGroovy(@RequestBody FunctionExecuteRequest request, HttpServletRequest httpServletRequest) {
         setRequest(request, httpServletRequest);
-        JSONObject result = this.ycFunctionOpenaiService.executeGroovy(request);
-        if (result == null) {
-            return ResponseVo.fail(null, "流程执行失败，联系管理员");
-        }
-        return ResponseVo.success(result);
+        return this.ycFunctionOpenaiService.executeGroovy(request);
     }
 
     @PostMapping("/message")
