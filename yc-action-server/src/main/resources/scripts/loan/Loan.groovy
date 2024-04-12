@@ -181,14 +181,10 @@ static def sendCode(String method, String arguments) {
     String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
     String botId = args.containsKey('botId') ? args.getString('botId') : ''
     sendLoginSms(mobile)
-    // 通知 hub
-    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
-    def afterFunction = ['notice_hub': chatRes]
 // set send_code output
     return new JSONObject() {
         {
             put('z_sendUserMobileVerifyCode', true)
-            put('afterFunction', afterFunction)
         }
     }
 }
@@ -315,6 +311,9 @@ static def configByBdMobile(String arguments) {
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
             JSONObject storeConfig = preApply(appToken, bdMobile)
+            if (storeConfig == null) {
+                return result
+            }
             String storeCode = storeConfig.containsKey('storeCode') ? storeConfig.getString('storeCode') : ''
             JSONObject config = storeConfig.containsKey('config') ? storeConfig.getJSONObject('config') : null
             def configForm = ['bdMobile': bdMobile, 'storeCode': storeCode, 'loanConfig': config]
@@ -397,12 +396,9 @@ static def termConfig(String method, String arguments) {
             terms.add(value)
         }
     }
-    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
-    def afterFunction = ['notice_hub': chatRes]
     return new JSONObject() {
         {
             put('termConfig', terms)
-            put('afterFunction', afterFunction)
         }
     }
 }
@@ -450,6 +446,9 @@ static def loanTerm(String method, String arguments) {
                 }
             }
             def firstSubmit = submitApplyStep(appToken, firstSubmitObj)
+            if (firstSubmit == null) {
+                return result
+            }
             String appId = firstSubmit.containsKey('C_APP_ID') ? firstSubmit.getString('C_APP_ID') : ''
             def appIdForm = ['appId': appId, 'loanTerm': loanTerm]
             CamundaService.completeTask(taskId, appIdForm)
@@ -466,16 +465,9 @@ static def loadClientIdentity(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
-    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String botId = args.containsKey('botId') ? args.getString('botId') : ''
     //
     String appToken = getAppToken(mobile, null, null)
     def response = loadIdentity(appId, appToken);
-    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
-    def afterFunction = ['notice_hub': chatRes]
-    if (response != null) {
-        response.put('afterFunction', afterFunction)
-    }
     return response
 }
 
@@ -523,6 +515,9 @@ static def doIdCardOcr(String method, String arguments) {
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
             JSONObject ocrResult = doIdCardOcr(url, fileType, appToken)
+            if (ocrResult == null) {
+                return result
+            }
             def inputForm = new HashMap() {
                 {
                     put('ocr' + fileType, ocrResult)
@@ -621,12 +616,9 @@ static def checkBankCard(String method, String arguments) {
     JSONObject checkProtocolResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode)
     String protocolKey = checkProtocolResult != null && checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
     //
-    def chatRes = noticeResponse(true, ['accountId': accountId, 'botId': botId, 'content': method])
-    def afterFunction = ['notice_hub': chatRes]
     return new JSONObject() {
         {
             put('payProtocolKey', protocolKey)
-            put('afterFunction', afterFunction)
         }
     }
 }
@@ -739,6 +731,9 @@ static def submitPayProtocol(String method, String arguments) {
             String submitResult = submitPayProtocol(appId, bankCode, bankMobile, verifyCode, payProtocolKey, bankCard, appToken)
             logger.info('submitPayProtocol result: {}', submitResult)
             def submitIdentityResult = submitIdentity(appId, name, idNo, idValid, bankCode, storeCode, bankCard, bankMobile, appToken)
+            if (submitIdentityResult == null) {
+                return result
+            }
             logger.info('submitIdentity result: {}', submitIdentityResult)
             CamundaService.completeTask(taskId, [:])
         }
@@ -860,7 +855,10 @@ static def thirdStep(String method, String arguments) {
                 }
             }
             String appToken = getAppToken(mobile, null, null)
-            submitApplyStep(appToken, stepInputForm)
+            result = submitApplyStep(appToken, stepInputForm)
+            if (result == null) {
+                return result
+            }
             CamundaService.completeTask(taskId, [:])
         }
     } catch (Exception ex) {
@@ -902,7 +900,10 @@ static def forthStep(String method, String arguments) {
                 }
             }
             String appToken = getAppToken(mobile, null, null)
-            submitApplyStep(appToken, stepInputForm)
+            result = submitApplyStep(appToken, stepInputForm)
+            if (result == null) {
+                return result
+            }
             CamundaService.completeTask(taskId, [:])
         }
     } catch (Exception ex) {
@@ -928,14 +929,11 @@ static def submitAudit(String arguments) {
 
 static def noticeHub(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    if (args.containsKey('frontUrl')) {
-        args.remove('frontUrl')
-    }
-    if (args.containsKey('hubUrl')) {
-        args.remove('hubUrl')
-    }
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
+    def params = noticeResponse(true, ['accountId': accountId, 'botId': botId])
     logger.info('notice_hub arguments: {}', args)
-    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, args, null)
+    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
 }
 
 static def wrapHeadersWithToken(String token) {
