@@ -503,7 +503,15 @@ static def doIdCardOcr(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
-    String url = args.containsKey('idPhotoUrl') ? args.getString('idPhotoUrl') : ''
+    String url = ''
+    if ('id_photo_front' == method) {
+        url = args.containsKey('idPhotoFrontUrl') ? args.getString('idPhotoFrontUrl') : ''
+    } else if ('id_photo_back' == method) {
+        url = args.containsKey('idPhotoBackUrl') ? args.getString('idPhotoBackUrl') : ''
+    }
+    if (StrUtil.isEmpty(url)) {
+        return makeResponseVo(false, '[' + method + ']没有照片', result)
+    }
     String fileType = args.containsKey('idPhotoType') ? args.getString('idPhotoType') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
@@ -943,7 +951,8 @@ static def noticeHub(String arguments) {
     String botId = args.containsKey('botId') ? args.getString('botId') : ''
     def params = noticeResponse(true, ['accountId': accountId, 'botId': botId])
     logger.info('notice_hub arguments: {}', args)
-    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
+//    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
+    Thread.sleep(30000)
 }
 
 static def wrapHeadersWithToken(String token) {
