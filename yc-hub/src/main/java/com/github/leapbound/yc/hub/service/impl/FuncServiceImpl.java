@@ -63,7 +63,7 @@ public class FuncServiceImpl implements FuncService {
         Set<String> needFillEnum = new HashSet<>();
         currentTask.getCurrentInputForm().forEach(inputForm -> {
             if (inputForm.getType().equals("enum")) {
-                needFillEnum.add(inputForm.getLabel());
+                needFillEnum.add(inputForm.getId());
             }
         });
 

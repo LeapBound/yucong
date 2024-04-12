@@ -10,6 +10,7 @@ import com.github.leapbound.yc.hub.consts.RedisConsts;
 import com.github.leapbound.yc.hub.entities.BotEntity;
 import com.github.leapbound.yc.hub.entities.MessageEntity;
 import com.github.leapbound.yc.hub.entities.MessageSummaryEntity;
+import com.github.leapbound.yc.hub.external.HubInteractiveService;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
@@ -46,6 +47,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final GptService gptService;
     private final ActionServerService actionServerService;
     private final MilvusService milvusService;
+    private final HubInteractiveService hubInteractiveService;
     private final AmqpTemplate amqpTemplate;
 
     private final ObjectMapper mapper;
@@ -115,8 +117,18 @@ public class ConversationServiceImpl implements ConversationService {
         // 客户消息
         MyMessage userMsg = new MyMessage();
         userMsg.setRole(Message.Role.USER.getName());
-        userMsg.setContent(content);
-        userMsg.setPicUrl(singleChatModel.getPicUrl());
+        switch (singleChatModel.getType()) {
+            case "image":
+                userMsg.setContent("图片");
+                userMsg.setPicUrl(singleChatModel.getPicUrl());
+                break;
+            case "video":
+                userMsg.setContent("视频");
+                userMsg.setPicUrl(singleChatModel.getPicUrl());
+                break;
+            default:
+                userMsg.setContent(content);
+        }
         userMsg.setType(singleChatModel.getType());
         addMessage(conversationId, botId, accountId, userMsg);
 
@@ -132,10 +144,18 @@ public class ConversationServiceImpl implements ConversationService {
     public void notifyUser(SingleChatDto singleChatModel) {
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
-        String content = singleChatModel.getContent();
         String conversationId = getConversationId(botId, accountId);
 
-        String remind = this.actionServerService.getProcessTaskRemind(accountId, null, true);
+        String remind = this.actionServerService.getProcessTaskRemind(singleChatModel.getAccountId(), null, true);
+        singleChatModel.setContent(remind);
+
+        MyMessage assistantMsg = new MyMessage();
+        assistantMsg.setRole(Message.Role.ASSISTANT.getName());
+        assistantMsg.setContent(remind);
+        assistantMsg.setType(singleChatModel.getType());
+        addMessage(conversationId, botId, accountId, assistantMsg);
+
+        this.hubInteractiveService.receiveMsg(singleChatModel);
     }
 
     @Override

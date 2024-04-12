@@ -18,8 +18,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * @author Fred
@@ -96,7 +98,9 @@ public class ActionServerServiceImpl implements ActionServerService {
         Set<String> optionSet = loadTaskFunctionOptions(nextTask);
         if (optionSet != null && !optionSet.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            sb.append(beforeRemind).append(":\n\n");
+            if (StringUtils.hasText(beforeRemind)) {
+                sb.append(beforeRemind).append(":\n\n");
+            }
 
             int i = 1;
             for (String stage : optionSet) {
@@ -188,8 +192,13 @@ public class ActionServerServiceImpl implements ActionServerService {
     @Override
     public Set<String> loadTaskFunctionOptions(ProcessTaskDto task) {
         String showVariable = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
-        JSONObject config = loadProcessVariables(task.getProcessInstanceId());
-        return config.getObject(showVariable, Set.class);
+        if (StringUtils.hasText(showVariable)) {
+            JSONObject config = loadProcessVariables(task.getProcessInstanceId());
+            List<String> configList = (config.getObject(showVariable, List.class));
+            return configList.stream().collect(Collectors.toSet());
+        }
+
+        return null;
     }
 
     private String getTaskProperty(ProcessTaskDto task, String name) {

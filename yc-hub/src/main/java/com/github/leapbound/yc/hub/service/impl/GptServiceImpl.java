@@ -40,18 +40,7 @@ public class GptServiceImpl implements GptService {
         switch (messageList.get(messageList.size() - 1).getType()) {
             case "image":
             case "video":
-                MyMessage inMessage = messageList.get(messageList.size() - 1);
-
-                MyFunctionCall myFunctionCall = new MyFunctionCall();
-                Map<String, String> args = new HashMap<>();
-                args.put("imgUrl", inMessage.getPicUrl());
-                myFunctionCall.setArguments(JSON.toJSONString(args));
-
-                MyMessage outMessage = new MyMessage();
-                outMessage.setFunctionCall(myFunctionCall);
-
-                response = new MyChatCompletionResponse();
-                response.setMessage(outMessage);
+                response = processImg(messageList.get(messageList.size() - 1), currentTask);
                 break;
             case "text":
             default:
@@ -79,6 +68,22 @@ public class GptServiceImpl implements GptService {
 
         gptMessageList.add(assistantMsg);
         return gptMessageList;
+    }
+
+    private MyChatCompletionResponse processImg(MyMessage inMessage, ProcessTaskDto currentTask) {
+        String id = currentTask.getCurrentInputForm().get(0).getId();
+
+        MyFunctionCall myFunctionCall = new MyFunctionCall();
+        Map<String, String> args = new HashMap<>();
+        args.put(id, inMessage.getPicUrl());
+        myFunctionCall.setArguments(JSON.toJSONString(args));
+
+        MyMessage outMessage = new MyMessage();
+        outMessage.setFunctionCall(myFunctionCall);
+
+        MyChatCompletionResponse response = new MyChatCompletionResponse();
+        response.setMessage(outMessage);
+        return response;
     }
 
     @Override
