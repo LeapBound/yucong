@@ -951,8 +951,7 @@ static def noticeHub(String arguments) {
     String botId = args.containsKey('botId') ? args.getString('botId') : ''
     def params = noticeResponse(true, ['accountId': accountId, 'botId': botId])
     logger.info('notice_hub arguments: {}', args)
-//    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
-    Thread.sleep(30000)
+    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
 }
 
 static def wrapHeadersWithToken(String token) {
