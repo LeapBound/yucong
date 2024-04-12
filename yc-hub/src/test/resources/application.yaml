@@ -1,30 +1,44 @@
 server:
-  # 启用 gzip 压缩
-  compression:
-    mime-types: application/javascript,text/css,application/json,application/xml,text/html,text/xml,text/plain
-    enabled: true
-  error:
-    includeException: true
-    includeStacktrace: ALWAYS
-    includeMessage: ALWAYS
-  servlet:
-    context-path: /yucong
+  port: 8088
 
 logging:
   level:
-    yzggy.yucong: DEBUG
-
-# actuator
-management:
-  endpoints:
-    web:
-      exposure:
-        include: prometheus,health
-      base-path: /metrics
-  endpoint:
-    health:
-      show-details: always
+    com.zaxxer.hikari: error
+    com.github.leapbound: debug
+    com.github.leapbound.yc.hub.mapper: info
 
 spring:
-  profiles:
-    active: noApollo
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/xxx?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: xxx
+    password: xxx
+  output:
+    ansi:
+      enabled: always
+
+milvus:
+  host: 127.0.0.1
+  port: 19530
+
+yucong:
+  action:
+    rest:
+      url: https://xxx/yc-action
+  conversation:
+    expire: 300
+
+api2d:
+  api:
+    base: https://xxx/
+    key: xxx
+
+bce:
+  client:
+    id: xxx
+    secret: xxx
+
+xfyun:
+  asr:
+    appId: xxx
+    apiKey: xxxx
+

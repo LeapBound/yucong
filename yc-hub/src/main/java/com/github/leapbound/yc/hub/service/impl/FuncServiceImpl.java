@@ -1,22 +1,18 @@
 package com.github.leapbound.yc.hub.service.impl;
 
-import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.unfbx.chatgpt.entity.chat.Message;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
+import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -25,114 +21,67 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FuncServiceImpl implements FuncService {
 
+    private final ActionServerService actionServerService;
     private final FunctionMapper functionMapper;
-    private final RestTemplate actionRestTemplate;
+    private final ObjectMapper mapper;
 
     @Override
-    public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId, ProcessTaskDto task) {
+    public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId, ProcessTaskDto currentTask) {
         // 获取账号function列表
         List<FunctionEntity> functionList = null;
-        if (task == null) {
+        if (currentTask == null) {
             functionList = this.functionMapper.listByBotId(botId);
-        } else if (StringUtils.hasText(task.getTaskName())) {
-            functionList = this.functionMapper.listByTaskName(task.getTaskName());
+        } else if (StringUtils.hasText(currentTask.getTaskName())) {
+            functionList = this.functionMapper.listByTaskName(currentTask.getTaskName());
         }
 
-        if (functionList != null && !functionList.isEmpty()) {
-            ObjectMapper mapper = new ObjectMapper();
-            List<MyFunctions> functions = new ArrayList<>(functionList.size());
-            if (task != null) {
-                JSONObject config = loadProcessConfig(task.getProcessInstanceId());
-                functionList.forEach(entity -> {
-                    try {
-                        MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                        // 填充枚举
-                        myFunctions.getParameters().getProperties().forEach((k, v) -> {
-                            switch (k) {
-                                case "loanTerm":
-                                    Map<String, Object> property = (Map<String, Object>) v;
-                                    Set<String> termSet = new HashSet<>();
-                                    for (Object stage : config.getJSONArray("StageCount")) {
-                                        Map<String, Object> stageObject = (Map<String, Object>) stage;
-                                        String value = stageObject.get("value").toString();
-                                        if (!"请选择".equals(value)) {
-                                            termSet.add(value);
-                                        }
-                                    }
-                                    property.put("enum", termSet);
-                                    break;
-                            }
+        if (functionList == null || functionList.isEmpty()) {
+            return null;
+        }
 
-                        });
-                        log.info("可以执行的function: {}", myFunctions);
-                        functions.add(myFunctions);
-                    } catch (JsonProcessingException e) {
-                        log.error("getListByAccountIdAndBotId error", e);
-                    }
-                });
-            } else {
-                functionList.forEach(entity -> {
-                    try {
-                        MyFunctions myFunctions = mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                        log.info("可以执行的function: {}", myFunctions.getName());
-                        functions.add(myFunctions);
-                    } catch (JsonProcessingException e) {
-                        log.error("getListByAccountIdAndBotId error", e);
-                    }
-                });
+        List<MyFunctions> functions = new ArrayList<>(functionList.size());
+        functionList.forEach(entity -> {
+            try {
+                MyFunctions myFunctions = this.mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
+                myFunctions = fillFunctionEnum(myFunctions, currentTask);
+                log.info("可以执行的function: {}", myFunctions);
+                functions.add(myFunctions);
+            } catch (JsonProcessingException e) {
+                log.error("getListByAccountIdAndBotId error", e);
             }
-            return functions;
-        }
+        });
 
-        return null;
+        return functions;
     }
 
-    private JSONObject loadProcessConfig(String processInstanceId) {
-        // 查询是否存在进行中的流程
-        JSONObject task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("processInstanceId", processInstanceId);
-            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
-            ResponseEntity<JSONObject> entity = this.actionRestTemplate.exchange("/yc/business/process/config", HttpMethod.GET, requestEntity, JSONObject.class);
-
-            task = entity.getBody();
-        } catch (Exception e) {
-            log.error("getTask error", e);
+    private MyFunctions fillFunctionEnum(MyFunctions myFunctions, ProcessTaskDto currentTask) {
+        if (currentTask == null) {
+            return myFunctions;
         }
 
-        return task;
+        // 获取需要填充的enum
+        Set<String> needFillEnum = new HashSet<>();
+        currentTask.getCurrentInputForm().forEach(inputForm -> {
+            if (inputForm.getType().equals("enum")) {
+                needFillEnum.add(inputForm.getId());
+            }
+        });
+
+        // 填充enum
+        if (!needFillEnum.isEmpty()) {
+            myFunctions.getParameters().getProperties().forEach((k, v) -> {
+                if (needFillEnum.contains(k)) {
+                    Map<String, Object> property = (Map<String, Object>) v;
+                    property.put("enum", this.actionServerService.loadTaskFunctionOptions(currentTask));
+                }
+            });
+        }
+
+        return myFunctions;
     }
 
     @Override
-    public MyMessage invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("accountId", accountId);
-            requestHeaders.add("deviceId", "deviceId001");
-            // body
-            ObjectMapper mapper = new ObjectMapper();
-            String json = mapper.writeValueAsString(functionCall);
-            log.debug("invokeFunc json: {}", json);
-            HttpEntity<String> requestEntity = new HttpEntity<>(json, requestHeaders);
-            ResponseEntity<MyMessage> entity = this.actionRestTemplate.postForEntity("/yc/function/openai/execute", requestEntity, MyMessage.class);
-
-            MyMessage message = entity.getBody();
-            if (message != null) {
-                log.info("执行方法返回: {}", message);
-                return message;
-            }
-        } catch (Exception e) {
-            log.error("invokeFunc error", e);
-        }
-
-        MyMessage message = new MyMessage();
-        message.setRole(Message.Role.SYSTEM.getName());
-        message.setContent("处理失败");
-        return message;
+    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+        return this.actionServerService.invokeFunc(botId, accountId, functionCall);
     }
 }

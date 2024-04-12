@@ -1,21 +1,19 @@
 package com.github.leapbound.yc.hub.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
 import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
+import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
 import com.github.leapbound.yc.hub.service.gpt.GptHandler;
 import com.github.leapbound.yc.hub.service.gpt.GptService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,170 +27,84 @@ import java.util.Map;
 public class GptServiceImpl implements GptService {
 
     private final FuncService funcService;
+    private final ActionServerService actionServerService;
+
     private final GptHandler openAiHandler;
     private final GptHandler qianfanHandler;
-    private final RestTemplate actionRestTemplate;
 
     @Override
     public List<MyMessage> completions(String botId, String accountId, List<MyMessage> messageList) {
-        ProcessTaskDto task = queryNextTask(accountId);
+        ProcessTaskDto currentTask = this.actionServerService.queryNextTask(accountId);
 
-        MyChatCompletionResponse response = null;
+        MyChatCompletionResponse response;
         switch (messageList.get(messageList.size() - 1).getType()) {
             case "image":
-                MyMessage inMessage = messageList.get(messageList.size() - 1);
-
-                MyFunctionCall myFunctionCall = new MyFunctionCall();
-                Map<String, String> args = new HashMap<>();
-                if ("id_photo_front".equals(task.getTaskName())) {
-                    myFunctionCall.setName("id_photo_front");
-                    args.put("idPhotoType", "idnoFront");
-                    args.put("idPhotoUrl", inMessage.getPicUrl());
-                } else if ("id_photo_back".equals(task.getTaskName())) {
-                    myFunctionCall.setName("id_photo_back");
-                    args.put("idPhotoType", "idnoBack");
-                    args.put("idPhotoUrl", inMessage.getPicUrl());
-                }
-                myFunctionCall.setArguments(JSON.toJSONString(args));
-
-                MyMessage outMessage = new MyMessage();
-                outMessage.setFunctionCall(myFunctionCall);
-
-                response = new MyChatCompletionResponse();
-                response.setMessage(outMessage);
+            case "video":
+                response = processImg(botId, accountId, messageList.get(messageList.size() - 1), currentTask);
                 break;
             case "text":
             default:
-                response = sendToChatServer(botId, accountId, messageList, task);
-
+                response = sendToChatServer(botId, accountId, messageList, currentTask);
         }
         List<MyMessage> gptMessageList = new ArrayList<>(2);
 
         // 处理function
+        Boolean functionExecuteResult = null;
         if (response.getMessage().getFunctionCall() != null) {
             // 执行function
-            MyMessage message = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());
-            messageList.add(message);
-            gptMessageList.add(message);
-
-            response = getProcessTaskRemind(queryNextTask(accountId));
-        } else if (task != null) {
-            response = getProcessTaskRemind(task);
+            functionExecuteResult = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());
         }
+        String remind = this.actionServerService.getProcessTaskRemind(accountId, currentTask, functionExecuteResult);
+        log.debug("remind {}", remind);
 
         // 助理消息
         MyMessage assistantMsg = new MyMessage();
         assistantMsg.setRole(response.getMessage().getRole());
-        assistantMsg.setContent(response.getMessage().getContent());
+        if (StringUtils.hasText(remind)) {
+            assistantMsg.setContent(remind);
+        } else {
+            assistantMsg.setContent(response.getMessage().getContent());
+        }
 
-        messageList.add(assistantMsg);
         gptMessageList.add(assistantMsg);
-
         return gptMessageList;
     }
 
-    MyChatCompletionResponse getProcessTaskRemind(ProcessTaskDto task) {
-        StringBuilder sb = new StringBuilder();
-        if (task != null) {
-            sb.append("请提供以下信息:\n\n");
-            task.getCurrentInputForm().forEach(input -> {
-                if (!StringUtils.startsWithIgnoreCase(input.getId(), "z_")) {
-                    switch (input.getType()) {
-                        case "enum":
-                            JSONObject config = loadProcessConfig(task.getProcessInstanceId());
-                            if ("loanTerm".equals(input.getId())) {
-                                sb.append(input.getLabel()).append("\n");
-                                int i = 1;
-                                for (Object stage : config.getJSONArray("StageCount")) {
-                                    Map<String, Object> stageObject = (Map<String, Object>) stage;
-                                    String value = stageObject.get("value").toString();
-                                    if (!"请选择".equals(value)) {
-                                        sb.append(i).append(". ").append(value).append("\n");
-                                        i++;
-                                    }
-                                }
-                            } else if ("maritalStatus".equals(input.getId())) {
-                                sb.append(input.getLabel()).append("\n");
-                                int i = 1;
-                                for (Object stage : config.getJSONArray("Married")) {
-                                    Map<String, Object> stageObject = (Map<String, Object>) stage;
-                                    String value = stageObject.get("value").toString();
-                                    if (!"请选择".equals(value)) {
-                                        sb.append(i).append(". ").append(value).append("\n");
-                                        i++;
-                                    }
-                                }
-                            }
-                            break;
-                        default:
-                            sb.append(input.getLabel()).append("\n");
-                    }
-                }
-            });
-        } else {
-            sb.append("请稍等");
-        }
-        log.info("下一个任务需要的字段： \n{}", sb);
+    private MyChatCompletionResponse processImg(String botId, String accountId, MyMessage inMessage, ProcessTaskDto currentTask) {
+        String id = currentTask.getCurrentInputForm().get(0).getId();
+        MyFunctions functions = this.funcService.getListByAccountIdAndBotId(accountId, botId, currentTask).get(0);
 
-        MyMessage taskMessage = new MyMessage();
-        taskMessage.setRole(MyMessage.Role.ASSISTANT.getName());
-        taskMessage.setContent(sb.toString());
-        MyChatCompletionResponse taskResponse = new MyChatCompletionResponse();
-        taskResponse.setMessage(taskMessage);
-        return taskResponse;
-    }
+        MyFunctionCall myFunctionCall = new MyFunctionCall();
+        myFunctionCall.setName(functions.getName());
+        Map<String, String> args = new HashMap<>();
+        args.put(id, inMessage.getPicUrl());
+        myFunctionCall.setArguments(JSON.toJSONString(args));
 
-    private ProcessTaskDto queryNextTask(String accountId) {
-        // 查询是否存在进行中的流程
-        ProcessTaskDto task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("accountId", accountId);
-            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
-            ResponseEntity<ProcessTaskDto> entity = this.actionRestTemplate.exchange("/yc/business/task/next", HttpMethod.GET, requestEntity, ProcessTaskDto.class);
+        MyMessage outMessage = new MyMessage();
+        outMessage.setFunctionCall(myFunctionCall);
 
-            task = entity.getBody();
-        } catch (Exception e) {
-            log.error("getTask error", e);
-        }
-
-        return task;
-    }
-
-    private JSONObject loadProcessConfig(String processInstanceId) {
-        // 查询是否存在进行中的流程
-        JSONObject task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-            requestHeaders.add("processInstanceId", processInstanceId);
-            HttpEntity<String> requestEntity = new HttpEntity<>("", requestHeaders);
-            ResponseEntity<JSONObject> entity = this.actionRestTemplate.exchange("/yc/business/process/config", HttpMethod.GET, requestEntity, JSONObject.class);
-
-            task = entity.getBody();
-        } catch (Exception e) {
-            log.error("getTask error", e);
-        }
-
-        return task;
+        MyChatCompletionResponse response = new MyChatCompletionResponse();
+        response.setMessage(outMessage);
+        return response;
     }
 
     @Override
     public String summary(String content) {
-        return this.openAiHandler.summary(content).getMessage().getContent();
+        return getHandler().summary(content).getMessage().getContent();
     }
 
     @Override
     public List<BigDecimal> embedding(String content) {
-        return this.openAiHandler.embedding(content);
+        return getHandler().embedding(content);
     }
 
-    private MyChatCompletionResponse sendToChatServer(String botId, String accountId, List<MyMessage> messageList, ProcessTaskDto task) {
-        List<MyFunctions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId, task);
-        return this.openAiHandler.chatCompletion(messageList, functionsList);
-//        return this.qianfanHandler.chatCompletion(messageList, functionsList);
+    private MyChatCompletionResponse sendToChatServer(String botId, String accountId, List<MyMessage> messageList, ProcessTaskDto currentTask) {
+        List<MyFunctions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId, currentTask);
+        return getHandler().chatCompletion(messageList, functionsList);
+//        return getHandler().chatCompletion(messageList, functionsList);
+    }
+
+    private GptHandler getHandler() {
+        return this.openAiHandler;
     }
 }

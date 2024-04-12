@@ -1,4 +1,4 @@
-package yzggy.yucong.mapper;
+package com.github.leapbound.mapper;
 
 import com.github.leapbound.yc.hub.mapper.RoleMapper;
 import lombok.extern.slf4j.Slf4j;

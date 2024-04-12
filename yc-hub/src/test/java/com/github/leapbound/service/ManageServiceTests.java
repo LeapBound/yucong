@@ -1,4 +1,4 @@
-package yzggy.yucong.service;
+package com.github.leapbound.service;
 
 import com.github.leapbound.yc.hub.service.BotService;
 import com.github.leapbound.yc.hub.service.UserService;

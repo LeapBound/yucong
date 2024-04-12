@@ -10,7 +10,7 @@ import me.chanjar.weixin.cp.bean.message.WxCpMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import org.springframework.stereotype.Component;
-import com.github.leapbound.yc.hub.model.SingleChatModel;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.BotService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 
@@ -32,11 +32,11 @@ public class CpMsgHandler extends AbstractHandler {
         String content = wxMessage.getContent();
         log.info("CpMsgHandler 接收到请求消息 username: {} content: {}", username, content);
 
-        SingleChatModel singleChatModel = new SingleChatModel();
+        SingleChatDto singleChatModel = new SingleChatDto();
         singleChatModel.setBotId(this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), wxMessage.getAgentId()));
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
-        String msg = this.conversationService.chat(singleChatModel);
+        String msg = this.conversationService.chat(singleChatModel).getContent();
 
         try {
             WxCpMessage message = WxCpMessage
