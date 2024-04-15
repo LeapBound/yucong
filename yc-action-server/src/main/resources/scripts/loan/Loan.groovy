@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit
 @Field static String submitIdentityPath = '/front-api/geex_capp/v1/user/submitIdentity/'
 @Field static String submitApplyStepPath = '/front-api/geex_capp/v1/apply/submitApplyStep/'
 @Field static String hubUrl = ''
-@Field static String noticeHubPath = '/yc-hub/api/conversation/notice'
+@Field static String noticeHubPath = '/geex-smart-robot/yc-hub/api/conversation/notice'
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.loan.Loan');
 
@@ -246,7 +246,10 @@ static def getCommonVerifyCode() {
         logger.error("getCommonVerifyCode no response")
         return null
     }
-    return JSON.parseObject(response.body()).getString('responseObject')
+    if (response.ok && !StrUtil.isEmpty(response.body())) {
+        return JSON.parseObject(response.body()).getString('responseObject')
+    }
+    return null
 }
 
 // 发送登录验证码
@@ -343,7 +346,7 @@ static def preApply(String token, String mobile) {
             return null
         }
         logger.info('preApply response: {}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
@@ -490,7 +493,7 @@ static def loadIdentity(String appId, String token) {
             return null
         }
         logger.info('loadIdentity response: {}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
@@ -569,11 +572,11 @@ static def doIdCardOcr(String url, String fileType, String token) {
     try {
         def response = RestClient.doPostWithForm(frontUrl, doIdCardOcrPath + token, params, requestAuth)
         if (response == null) {
-            logger.error('doIdCardOcr error')
+            logger.error('doIdCardOcr no response')
             return null
         }
         logger.info('doIdCardOcr response: {}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
@@ -656,7 +659,7 @@ static def checkBankCardLimit(String token, String name, String idNo, String ban
             return null
         }
         logger.info('checkBankCardLimit response:{}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             String result = JSON.parseObject(response.body()).getString('responseObject')
             return new JSONObject() {
                 {
@@ -682,7 +685,7 @@ static def checkOldIdentity(String token, String name, String idNo) {
             return null
         }
         logger.info('checkIdentity response:{}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
@@ -704,7 +707,7 @@ static def checkPayProtocol(String token, String appId, String name, String idNo
             return null
         }
         logger.info('checkUserPayProtocol response: {}' + response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
@@ -779,7 +782,7 @@ static def submitPayProtocol(String appId, String bankCode, String bankMobile, S
             return null
         }
         logger.info('submitUserPayProtocol response: {}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getString('responseObject')
         }
     } catch (Exception ex) {
@@ -801,7 +804,7 @@ static def submitIdentity(String appId, String name, String idNo, String idValid
             return null
         }
         logger.info('submitIdentity response: {}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
@@ -837,7 +840,7 @@ static def submitApplyStep(String token, JSONObject info) {
             return null
         }
         logger.info('submitApplyStep response: {}', response.body())
-        if (response.isOk()) {
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
             return JSON.parseObject(response.body()).getJSONObject('responseObject')
         }
     } catch (Exception ex) {
