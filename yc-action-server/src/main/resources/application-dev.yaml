@@ -40,3 +40,10 @@ camunda:
       first-name: admin
     filter:
       create: All tasks
+yc:
+  action:
+    external:
+      args: "{ frontUrl: 'https://beta.geexfinance.com',hubUrl: 'http://192.168.8.232:8088' }"
+
+
+

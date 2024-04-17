@@ -1,16 +1,16 @@
 package com.github.leapbound.yc.action.controller;
 
+import com.github.leapbound.yc.action.model.vo.ResponseVo;
+import com.github.leapbound.yc.action.model.vo.request.FunctionGroovySaveRequest;
+import com.github.leapbound.yc.action.model.vo.request.FunctionMethodSaveRequest;
 import com.github.leapbound.yc.action.model.vo.request.FunctionTaskRequest;
+import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
+import com.github.leapbound.yc.action.service.YcFunctionMethodService;
 import com.github.leapbound.yc.action.service.YcFunctionTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.github.leapbound.yc.action.model.vo.ResponseVo;
-import com.github.leapbound.yc.action.model.vo.request.FunctionGroovySaveRequest;
-import com.github.leapbound.yc.action.model.vo.request.FunctionMethodSaveRequest;
-import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
-import com.github.leapbound.yc.action.service.YcFunctionMethodService;
 
 /**
  * @author yamath
@@ -83,9 +83,10 @@ public class YcFunctionManageController {
     }
 
     @PostMapping("/task/delete")
-    public ResponseVo<Void> deleteFunctionTask(@RequestParam("functionName") String functionName,
-                                                 @RequestParam(value = "taskName", required = false) String taskName,
+    public ResponseVo<Void> deleteFunctionTask(@RequestParam("processId") String processId,
+                                               @RequestParam("functionName") String functionName,
+                                               @RequestParam(value = "taskName", required = false) String taskName,
                                                @RequestParam(value = "userName", required = false) String userName) {
-        return this.ycFunctionTaskService.deleteFunctionTask(functionName, taskName,userName);
+        return this.ycFunctionTaskService.deleteFunctionTask(processId, functionName, taskName, userName);
     }
 }

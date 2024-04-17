@@ -9,7 +9,7 @@ import java.io.Serializable;
 public class BaseRequest implements Serializable {
 
     private String userName;
-
+    private String botId;
     private String accountId;
     private String deviceId;
 
@@ -23,6 +23,14 @@ public class BaseRequest implements Serializable {
 
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public String getBotId() {
+        return botId;
+    }
+
+    public void setBotId(String botId) {
+        this.botId = botId;
     }
 
     public String getAccountId() {
@@ -61,6 +69,7 @@ public class BaseRequest implements Serializable {
     public String toString() {
         return "BaseRequest{" +
                 "userName='" + userName + '\'' +
+                ", botId='" + botId + '\'' +
                 ", accountId='" + accountId + '\'' +
                 ", deviceId='" + deviceId + '\'' +
                 ", rows=" + rows +

@@ -30,6 +30,12 @@ public class BusinessController {
         return businessCamundaService.startProcess(processStartRequest);
     }
 
+    @PostMapping("/process/delete")
+    public R<Void> processDelete(@RequestParam("processInstanceId") String processInstanceId,
+                                 @RequestParam(value = "reason", required = false) String reason) {
+        return businessCamundaService.deleteProcessInstance(processInstanceId, reason);
+    }
+
     @PostMapping("/process/startWithReturn")
     public R<?> processStartWithReturn(@RequestBody ProcessStartRequest processStartRequest) {
         log.info("business start process, request: {}", processStartRequest);

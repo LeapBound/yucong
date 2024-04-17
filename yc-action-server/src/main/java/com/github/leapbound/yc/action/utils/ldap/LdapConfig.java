@@ -16,13 +16,13 @@ import java.util.Hashtable;
 @Configuration
 public class LdapConfig {
 
-    @Value("${spring.ldap.base}")
+    @Value("${spring.ldap.base:}")
     private String base;
-    @Value("${spring.ldap.urls}")
+    @Value("${spring.ldap.urls:}")
     private String urls;
-    @Value("${spring.ldap.username}")
+    @Value("${spring.ldap.username:}")
     private String userDn;
-    @Value("${spring.ldap.password}")
+    @Value("${spring.ldap.password:}")
     private String password;
 
     @Bean

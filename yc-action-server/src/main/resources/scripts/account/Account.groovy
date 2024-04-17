@@ -42,6 +42,12 @@ static def execAccountMethod(String method, String arguments) {
         result.put('错误', '没有提供必要的信息')
         return result
     }
+    //
+    def externalUrl = getExternalUrl(arguments)
+    if (!StrUtil.isEmptyIfStr(externalUrl)) {
+        alphaUrl = externalUrl
+    }
+    //
     switch (method) {
         case 'close_user_account': // 关闭域账号和销售账号
             result = closeUserAccount(arguments)
@@ -60,6 +66,12 @@ static def execAccountMethod(String method, String arguments) {
             break
     }
     return result
+}
+
+static def getExternalUrl(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
+    return externalHost
 }
 
 /**
