@@ -1,6 +1,6 @@
 package com.github.leapbound.service;
 
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
@@ -44,7 +44,6 @@ public class LoanServiceTests {
         }
     }
 
-    @Test
     void checkProcessAvailable() throws InterruptedException {
         ProcessTaskDto processTaskDto = null;
         while (processTaskDto == null) {
@@ -54,7 +53,6 @@ public class LoanServiceTests {
         }
     }
 
-    @Test
     void deleteProcess() {
         ProcessTaskDto processTaskDto = this.actionServerService.queryNextTask(this.accountId);
         if (processTaskDto != null && processTaskDto.getProcessInstanceId() != null) {
@@ -62,7 +60,6 @@ public class LoanServiceTests {
         }
     }
 
-    @Test
     void gossip() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -73,7 +70,6 @@ public class LoanServiceTests {
         log.info("gossip {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void applyLoan() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -84,7 +80,6 @@ public class LoanServiceTests {
         log.info("applyLoan {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void bindMobile() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -95,7 +90,6 @@ public class LoanServiceTests {
         log.info("bindMobile {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void verifyCode() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -106,7 +100,6 @@ public class LoanServiceTests {
         log.info("verifyCode {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void bdMobile() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -117,7 +110,6 @@ public class LoanServiceTests {
         log.info("bdMobile {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void productInfo() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -128,7 +120,6 @@ public class LoanServiceTests {
         log.info("productInfo {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void chooseProduct() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -139,7 +130,6 @@ public class LoanServiceTests {
         log.info("chooseProduct {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void idPhotoFront() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -150,7 +140,6 @@ public class LoanServiceTests {
         log.info("idPhotoFront {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void idPhotoBack() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -161,7 +150,6 @@ public class LoanServiceTests {
         log.info("idPhotoBack {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void bankCard() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -172,7 +160,6 @@ public class LoanServiceTests {
         log.info("bankCard {}", this.conversationService.chat(singleChatModel));
     }
 
-    @Test
     void protocolVerifyCode() {
         log.info("*".repeat(100));
         SingleChatDto singleChatModel = new SingleChatDto();
@@ -183,6 +170,11 @@ public class LoanServiceTests {
         log.info("protocolVerifyCode {}", this.conversationService.chat(singleChatModel));
     }
 
+    /**
+     * 正常流程
+     *
+     * @throws InterruptedException
+     */
     @Test
     void testLoan() throws InterruptedException {
         deleteProcess();
@@ -205,5 +197,13 @@ public class LoanServiceTests {
         checkProcessAvailable();
 
         protocolVerifyCode();
+    }
+
+    /**
+     * 聊天超时导致notifyUser任务异常，陷入死循环
+     */
+    @Test
+    void conversationTimeout() {
+
     }
 }

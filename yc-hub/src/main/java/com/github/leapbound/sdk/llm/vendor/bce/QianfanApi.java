@@ -1,11 +1,11 @@
-package com.github.leapbound.sdk.llm.bce;
+package com.github.leapbound.sdk.llm.vendor.bce;
 
+import com.github.leapbound.sdk.llm.vendor.bce.model.ChatCompletion;
+import com.github.leapbound.sdk.llm.vendor.bce.model.ChatCompletionResponse;
 import io.reactivex.Single;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
-import com.github.leapbound.sdk.llm.bce.model.ChatCompletion;
-import com.github.leapbound.sdk.llm.bce.model.ChatCompletionResponse;
 
 public interface QianfanApi {
 

@@ -1,6 +1,6 @@
-package com.github.leapbound.yc.hub.chat.dialog;
+package com.github.leapbound.sdk.llm.chat.dialog;
 
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;

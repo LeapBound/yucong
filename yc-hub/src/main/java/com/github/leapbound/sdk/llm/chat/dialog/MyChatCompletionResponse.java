@@ -1,7 +1,7 @@
-package com.github.leapbound.yc.hub.chat.dialog;
+package com.github.leapbound.sdk.llm.chat.dialog;
 
 import lombok.Data;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 
 import java.io.Serializable;
 

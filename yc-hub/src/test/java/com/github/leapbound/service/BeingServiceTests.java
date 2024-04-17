@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.gpt.MilvusService;
 

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import com.github.leapbound.yc.hub.chat.dialog.MessageMqTrans;
+import com.github.leapbound.sdk.llm.chat.dialog.MessageMqTrans;
 import com.github.leapbound.yc.hub.consts.MqConsts;
 import com.github.leapbound.yc.hub.service.ConversationService;
 

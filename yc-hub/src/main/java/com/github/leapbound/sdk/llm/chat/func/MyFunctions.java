@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.hub.chat.func;
+package com.github.leapbound.sdk.llm.chat.func;
 
 import lombok.Data;
 

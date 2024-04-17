@@ -2,7 +2,7 @@ package com.github.leapbound.yc.hub.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.consts.ProcessConsts;
 import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;

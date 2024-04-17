@@ -1,17 +1,17 @@
-package com.github.leapbound.yc.hub.service.impl.gpt;
+package com.github.leapbound.yc.hub.service.impl.gpt.handler;
 
-import com.github.leapbound.sdk.llm.bce.model.*;
+import com.github.leapbound.sdk.llm.chat.dialog.MyChatCompletionResponse;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyUsage;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
+import com.github.leapbound.sdk.llm.chat.func.MyParameters;
+import com.github.leapbound.sdk.llm.vendor.bce.QianfanApiClient;
+import com.github.leapbound.sdk.llm.vendor.bce.model.*;
 import com.github.leapbound.yc.hub.service.gpt.GptHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.github.leapbound.sdk.llm.bce.QianfanApiClient;
-import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.chat.dialog.MyUsage;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
-import com.github.leapbound.yc.hub.chat.func.MyFunctions;
-import com.github.leapbound.yc.hub.chat.func.MyParameters;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Slf4j
-@Service
+@Service("qianfanHandler")
 @RequiredArgsConstructor
 public class QianfanHandler implements GptHandler {
 

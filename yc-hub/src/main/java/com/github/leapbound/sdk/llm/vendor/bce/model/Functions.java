@@ -1,4 +1,4 @@
-package com.github.leapbound.sdk.llm.bce.model;
+package com.github.leapbound.sdk.llm.vendor.bce.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

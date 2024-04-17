@@ -1,4 +1,4 @@
-package com.github.leapbound.sdk.llm.bce.model;
+package com.github.leapbound.sdk.llm.vendor.bce.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

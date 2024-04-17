@@ -1,6 +1,8 @@
-package com.github.leapbound.sdk.llm.bce;
+package com.github.leapbound.sdk.llm.vendor.bce;
 
 import cn.hutool.core.util.StrUtil;
+import com.github.leapbound.sdk.llm.vendor.bce.model.ChatCompletion;
+import com.github.leapbound.sdk.llm.vendor.bce.model.ChatCompletionResponse;
 import io.reactivex.Single;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +12,6 @@ import org.springframework.util.StringUtils;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import com.github.leapbound.sdk.llm.bce.model.ChatCompletion;
-import com.github.leapbound.sdk.llm.bce.model.ChatCompletionResponse;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +96,7 @@ public class QianfanApiClient {
     }
 
     public ChatCompletionResponse chatCompletion(ChatCompletion chatCompletion) {
-        String token = "24.8fe100dfd5cf0e22b9acb394a24a642f.2592000.1701511676.282335-38561369";
+        String token = "24.1cd47ab4894e48df788a6fcb2b9a3f5c.2592000.1715853900.282335-38561369";
         Single<ChatCompletionResponse> chatCompletionResponse = this.qianfanApi.chatCompletion(token, chatCompletion);
         return chatCompletionResponse.blockingGet();
     }

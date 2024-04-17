@@ -1,7 +1,7 @@
 package com.github.leapbound.yc.hub.service;
 
-import com.github.leapbound.yc.hub.chat.dialog.MessageMqTrans;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MessageMqTrans;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 
 import java.util.List;

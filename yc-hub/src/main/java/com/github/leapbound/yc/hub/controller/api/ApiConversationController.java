@@ -22,14 +22,13 @@ import java.util.concurrent.TimeUnit;
 public class ApiConversationController {
 
     private final ConversationService conversationService;
-    private ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors() - 1,
             Runtime.getRuntime().availableProcessors() * 2,
             5000,
             TimeUnit.MILLISECONDS,
             new ArrayBlockingQueue<>(999)
     );
-
 
     @PostMapping("/chat")
     public String chat(@RequestBody SingleChatDto chatModel) {

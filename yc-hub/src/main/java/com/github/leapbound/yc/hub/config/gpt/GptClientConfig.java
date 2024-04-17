@@ -9,7 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.github.leapbound.sdk.llm.bce.QianfanApiClient;
+import com.github.leapbound.sdk.llm.vendor.bce.QianfanApiClient;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;

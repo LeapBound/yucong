@@ -1,9 +1,9 @@
-package com.github.leapbound.yc.hub.service.impl;
+package com.github.leapbound.yc.hub.service.impl.gpt;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
-import com.github.leapbound.yc.hub.chat.func.MyFunctions;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;

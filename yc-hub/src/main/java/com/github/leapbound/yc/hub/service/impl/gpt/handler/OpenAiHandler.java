@@ -1,5 +1,11 @@
-package com.github.leapbound.yc.hub.service.impl.gpt;
+package com.github.leapbound.yc.hub.service.impl.gpt.handler;
 
+import com.github.leapbound.sdk.llm.chat.dialog.MyChatCompletionResponse;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyUsage;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
+import com.github.leapbound.sdk.llm.chat.func.MyParameters;
 import com.github.leapbound.yc.hub.service.gpt.GptHandler;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.entity.chat.*;
@@ -8,19 +14,13 @@ import com.unfbx.chatgpt.entity.embeddings.EmbeddingResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.chat.dialog.MyUsage;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
-import com.github.leapbound.yc.hub.chat.func.MyFunctions;
-import com.github.leapbound.yc.hub.chat.func.MyParameters;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@Service
+@Service("openaiHandler")
 @RequiredArgsConstructor
 public class OpenAiHandler implements GptHandler {
 

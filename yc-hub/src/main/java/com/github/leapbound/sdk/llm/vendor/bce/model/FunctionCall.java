@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.hub.chat.func;
+package com.github.leapbound.sdk.llm.vendor.bce.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MyFunctionCall {
-
+public class FunctionCall {
     private String name;
+    private String thoughts;
     private String arguments;
-
 }

@@ -19,9 +19,12 @@ public class NotifyUserRunnable implements Runnable {
     @Override
     public void run() {
         boolean execFlag = true;
-        while (execFlag) {
+        int times = 0;
+        while (execFlag && times < 5) {
+            times++;
+
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1000L * times);
                 this.conversationService.notifyUser(singleChatModel);
                 execFlag = false;
             } catch (Exception e) {

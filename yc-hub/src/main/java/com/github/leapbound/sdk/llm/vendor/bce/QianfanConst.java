@@ -1,4 +1,4 @@
-package com.github.leapbound.sdk.llm.bce;
+package com.github.leapbound.sdk.llm.vendor.bce;
 
 public class QianfanConst {
 
