@@ -42,6 +42,8 @@ import java.util.concurrent.TimeUnit
 @Field static String hubUrl = ''
 @Field static String noticeHubPath = '/geex-smart-robot/yc-hub/api/conversation/notice'
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
+@Field static Map<String, String> maritalStatusMap = ['未婚': '01', '已婚': '02', '离异': '03', '其他': '04']
+
 @Field static Logger logger = LoggerFactory.getLogger('scripts.loan.Loan');
 
 execLoanMethod(method, arguments)
@@ -904,7 +906,7 @@ static def thirdStep(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
-    String maritalStatus = args.containsKey('maritalStatus') ? args.getString('maritalStatus') : ''
+    String maritalStatusKey = args.containsKey('maritalStatus') ? args.getString('maritalStatus') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
@@ -921,11 +923,20 @@ static def thirdStep(String method, String arguments) {
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appId = processVariable.containsKey('appId') ? processVariable.getString('appId') : ''
+            String maritalStatus = maritalStatusMap.forEach {
+                String key, String value ->
+                    if (maritalStatusKey == key) {
+                        return value
+                    }
+            }
             JSONObject stepInputForm = new JSONObject() {
                 {
                     put('C_APP_ID', appId)
                     put('C_MARITAL', maritalStatus)
                     put('C_STEP_ID', 'NYB01_03')
+                    put('C_RELATION', '01')
+                    put('C_CONTACT_NM', '周进')
+                    put('C_CTAT_TEL_CELL', '18071672669')
                 }
             }
             String appToken = getAppToken(mobile, null, null)
