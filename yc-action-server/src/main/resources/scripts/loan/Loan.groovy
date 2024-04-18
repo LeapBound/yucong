@@ -1007,7 +1007,7 @@ static def noticeHub(String arguments) {
     String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
     String botId = args.containsKey('botId') ? args.getString('botId') : ''
     def params = noticeResponse(true, ['accountId': accountId, 'botId': botId])
-    logger.info('notice_hub arguments: {}', args)
+//    logger.info('notice_hub arguments: {}', args)
     def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
 }
 
