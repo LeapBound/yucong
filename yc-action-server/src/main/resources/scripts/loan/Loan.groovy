@@ -37,7 +37,8 @@ import java.util.concurrent.TimeUnit
 @Field static String checkProtocolPath = '/front-api/geex_capp/v1/user/checkProtocol/'
 @Field static String submitProtocolPath = '/front-api/geex_capp/v1/user/submitProtocol/'
 @Field static String submitIdentityPath = '/front-api/geex_capp/v1/user/submitIdentity/'
-@Field static String submitApplyStepPath = '/front-api/geex_capp/v1/apply/submitApplyStep/'
+@Field static String submitApplyStepPath = '/front2-provider/geex_capp/v2/submit/step/submitApplyStep/'
+@Field static String getSupportBankListPath = '/front2-provider/geex_capp/v1/payment/getSupportBankList'
 @Field static String hubUrl = ''
 @Field static String noticeHubPath = '/geex-smart-robot/yc-hub/api/conversation/notice'
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
@@ -91,6 +92,9 @@ static def execLoanMethod(String method, String arguments) {
             break
         case 'id_photo_back':
             result = doIdCardOcr(method, arguments)
+            break
+        case 'bank_code_config':
+            result = bankCodeConfig(method, arguments)
             break
         case 'bank_card':
             result = bankCard(method, arguments)
@@ -585,12 +589,51 @@ static def doIdCardOcr(String url, String fileType, String token) {
     return null
 }
 
+static def bankCodeConfig(String method, String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    def params = ['action': 'cardPackage']
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, getSupportBankListPath, params, null)
+        if (response == null) {
+            logger.error('bankCodeConfig no response')
+            return null
+        }
+
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            JSONObject json = JSON.parseObject(response.body()).getJSONObject('responseObject')
+            if (json != null && !json.isEmpty()) {
+                JSONArray allBanks = json.containsKey('allBanks') ? json.getJSONArray('allBanks') : null
+                if (allBanks != null && !allBanks.isEmpty()) {
+                    def bankMap = new HashMap()
+                    allBanks.forEach {
+                        JSONObject bank ->
+                            String bankCode = bank.containsKey('bankCode') ? bank.getString('bankCode') : ''
+                            String bankName = bank.containsKey('bankName') ? bank.getString('bankName') : ''
+                            bankMap.put(bankName, bankCode)
+                    }
+                    if (!bankMap.isEmpty()) {
+                        return new JSONObject() {
+                            {
+                                put('bankCodeConfig', bankMap)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception ex) {
+        logger.error('bankCodeConfig error', ex)
+    }
+    return null
+}
+
 static def bankCard(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String bankCard = args.containsKey('bankCard') ? args.getString('bankCard') : ''
     String bankMobile = args.containsKey('bankMobile') ? args.getString('bankMobile') : ''
+    String bankName = args.containsKey('bankName') ? args.getString('bankName') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId);
         if (taskReturn == null) {
@@ -602,8 +645,16 @@ static def bankCard(String method, String arguments) {
                 result.put('functionContent', '当前流程失败，请联系管理员')
                 return makeResponseVo(false, '[back_card]当前流程失败，请联系管理员', result)
             }
+            // transfer bankName to bankCode
+            def bankCode = ''
+            CamundaService.getProcessVariable(taskReturn.getProcessInstanceId()).getJSONObject('bankCodeConfig').forEach {
+                String key, String value ->
+                    if (key == bankName) {
+                        bankCode = value
+                    }
+            }
             String taskId = taskReturn.getTaskId()
-            def inputForm = ['bankCard': bankCard, 'bankMobile': bankMobile]
+            def inputForm = ['bankCard': bankCard, 'bankMobile': bankMobile, 'bankCode': bankCode]
             CamundaService.completeTask(taskId, inputForm)
             return makeResponseVo(true, null, result)
         }
