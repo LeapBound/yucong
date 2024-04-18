@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -95,7 +96,7 @@ public class ActionServerServiceImpl implements ActionServerService {
     private String getNextTaskRemind(ProcessTaskDto nextTask) {
         String beforeRemind = getTaskProperty(nextTask, ProcessConsts.TASK_REMIND_BEFORE);
 
-        Set<String> optionSet = loadTaskFunctionOptions(nextTask);
+        Set<String> optionSet = loadTaskFunctionOptions(nextTask, true);
         if (optionSet != null && !optionSet.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             if (StringUtils.hasText(beforeRemind)) {
@@ -190,27 +191,42 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public Set<String> loadTaskFunctionOptions(ProcessTaskDto task) {
-        String showVariable = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
-        if (StringUtils.hasText(showVariable)) {
-            JSONObject config = loadProcessVariables(task.getProcessInstanceId());
-            List<String> configList = (config.getObject(showVariable, List.class));
-            return configList.stream().collect(Collectors.toSet());
+    public Set<String> loadTaskFunctionOptions(ProcessTaskDto task, boolean showRemind) {
+        Map<String, Object> showVariable = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
+
+        String optionName;
+        if (showVariable != null && StringUtils.hasText(optionName = (String) showVariable.get("name"))) {
+            boolean isShowRemind = Boolean.parseBoolean((String) showVariable.get("isShow"));
+
+            if (!showRemind || isShowRemind) {
+                if ("set".equals(showVariable.get("type"))) {
+                    JSONObject config = loadProcessVariables(task.getProcessInstanceId());
+                    List<String> configList = (config.getObject(optionName, List.class));
+                    return configList.stream().collect(Collectors.toSet());
+                } else if ("map".equals(showVariable.get("type"))) {
+                    JSONObject config = loadProcessVariables(task.getProcessInstanceId());
+                    Map<String, String> configMap = (config.getObject(optionName, Map.class));
+                    return configMap.keySet();
+                }
+            }
+
         }
 
         return null;
     }
 
-    private String getTaskProperty(ProcessTaskDto task, String name) {
-        AtomicReference<String> type = new AtomicReference<>();
+    private <T> T getTaskProperty(ProcessTaskDto task, String name) {
+        AtomicReference<T> type = new AtomicReference<>();
 
-        task.getTaskProperties().stream()
-                .filter(property -> {
-                    String propertyName = (String) property.get("name");
-                    return propertyName.equals(name);
-                })
-                .findFirst()
-                .ifPresent(property -> type.set((String) property.get("type")));
+        if (task != null) {
+            task.getTaskProperties().stream()
+                    .filter(property -> {
+                        String propertyName = (String) property.get("name");
+                        return propertyName.equals(name);
+                    })
+                    .findFirst()
+                    .ifPresent(property -> type.set((T) property.get("type")));
+        }
 
         return type.get();
     }

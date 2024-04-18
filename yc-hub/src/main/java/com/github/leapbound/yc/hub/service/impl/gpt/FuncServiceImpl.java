@@ -72,7 +72,10 @@ public class FuncServiceImpl implements FuncService {
             myFunctions.getParameters().getProperties().forEach((k, v) -> {
                 if (needFillEnum.contains(k)) {
                     Map<String, Object> property = (Map<String, Object>) v;
-                    property.put("enum", this.actionServerService.loadTaskFunctionOptions(currentTask));
+                    Set<String> options = this.actionServerService.loadTaskFunctionOptions(currentTask, false);
+                    if (options != null) {
+                        property.put("enum", options);
+                    }
                 }
             });
         }

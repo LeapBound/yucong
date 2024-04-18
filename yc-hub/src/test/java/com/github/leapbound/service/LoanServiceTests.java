@@ -156,7 +156,7 @@ public class LoanServiceTests {
         singleChatModel.setBotId(this.botId);
         singleChatModel.setAccountId(this.accountId);
         singleChatModel.setType("text");
-        singleChatModel.setContent("8703003892904753 15913175493");
+        singleChatModel.setContent("浦发银行 8703003892904753 15913175493");
         log.info("bankCard {}", this.conversationService.chat(singleChatModel));
     }
 
@@ -168,6 +168,26 @@ public class LoanServiceTests {
         singleChatModel.setType("text");
         singleChatModel.setContent("123456");
         log.info("protocolVerifyCode {}", this.conversationService.chat(singleChatModel));
+    }
+
+    void maritalStatus() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("已婚");
+        log.info("maritalStatus {}", this.conversationService.chat(singleChatModel));
+    }
+
+    void company() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("上海即可集团 上海市杨浦区尚浦中心");
+        log.info("company {}", this.conversationService.chat(singleChatModel));
     }
 
     /**
@@ -193,10 +213,16 @@ public class LoanServiceTests {
 
         idPhotoFront();
         idPhotoBack();
+        checkProcessAvailable();
+
         bankCard();
         checkProcessAvailable();
 
         protocolVerifyCode();
+        checkProcessAvailable();
+
+        maritalStatus();
+        company();
     }
 
     /**

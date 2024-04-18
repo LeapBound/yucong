@@ -18,7 +18,7 @@ public interface ActionServerService {
 
     JSONObject loadProcessVariables(String processInstanceId);
 
-    Set<String> loadTaskFunctionOptions(ProcessTaskDto task);
+    Set<String> loadTaskFunctionOptions(ProcessTaskDto task, boolean showRemind);
 
     void deleteProcess(String processInstanceId);
 
