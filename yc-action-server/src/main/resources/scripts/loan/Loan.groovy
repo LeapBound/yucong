@@ -937,6 +937,9 @@ static def thirdStep(String method, String arguments) {
                     put('C_RELATION', '01')
                     put('C_CONTACT_NM', '周进')
                     put('C_CTAT_TEL_CELL', '18071672669')
+                    put('C_RELATION2', '3')
+                    put('C_CONTACT_NM2', '陈广君')
+                    put('C_CTAT_TEL_CELL2', '18360168225')
                 }
             }
             String appToken = getAppToken(mobile, null, null)
