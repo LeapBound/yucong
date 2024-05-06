@@ -29,7 +29,7 @@ Thanks to all the contributors!
 ## Sponsors
 
 <p>
- <a href="https://www.jetbrains.com/community/opensource/#support">
+ <a href="https://www.jetbrains.com/community/opensource/#support" target="_blank">
    <img height="60" src="https://github.com/LeapBound/leapbound.github.io/blob/main/docs/jetbrains.png?raw=true">
  </a>
 </p>
