@@ -25,3 +25,13 @@ Demo is coming.
 Thanks to all the contributors!
 
 [![contributors](https://contrib.rocks/image?repo=LeapBound/yucong)](https://github.com/LeapBound/yucong/graphs/contributors)
+
+## Sponsors
+
+<p>
+ <a href="https://www.jetbrains.com/community/opensource/#support">
+   <img height="60" src="https://github.com/LeapBound/leapbound.github.io/blob/main/docs/jetbrains.png?raw=true">
+ </a>
+</p>
+
+Thank you to JetBrains, who provide Open Source License for IDEA!
