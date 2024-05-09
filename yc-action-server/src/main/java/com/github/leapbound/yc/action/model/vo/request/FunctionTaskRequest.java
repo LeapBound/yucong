@@ -31,6 +31,11 @@ public class FunctionTaskRequest extends BaseRequest {
     private String taskName;
 
     /**
+     * task type
+     */
+    private String taskType;
+
+    /**
      * 话术
      */
     private List<Script> script;

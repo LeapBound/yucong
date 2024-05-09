@@ -9,5 +9,5 @@ import com.alibaba.fastjson.JSONObject;
  */
 public interface ServiceTaskSubService {
 
-    JSONObject execute(String method, String arguments);
+    JSONObject execute(String method, String arguments) throws Exception;
 }
