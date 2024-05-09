@@ -188,10 +188,8 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
                 result = FunctionGroovyExec.runScript(engine, dto, arguments);
             } else {
                 GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
-                if (engine != null) {
-                    engineMap.put(engineKey, engine);
-                    result = FunctionGroovyExec.runScript(engine, dto, arguments);
-                }
+                engineMap.put(engineKey, engine);
+                result = FunctionGroovyExec.runScript(engine, dto, arguments);
             }
             return JSON.toJavaObject(result, ResponseVo.class);
         } catch (Exception ex) {
@@ -217,11 +215,8 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             return FunctionGroovyExec.runScript(engine, dto, args);
         }
         GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(dto.getGroovyUrl());
-        if (engine != null) {
-            engineMap.put(engineKey, engine);
-            return FunctionGroovyExec.runScript(engine, dto, args);
-        }
-        return null;
+        engineMap.put(engineKey, engine);
+        return FunctionGroovyExec.runScript(engine, dto, args);
     }
 
     @Override
