@@ -50,6 +50,11 @@ class CamundaService {
         }
     }
 
+    /**
+     * delete process, get processInstanceId by query current task by businessKey
+     * @param userId
+     * @return
+     */
     static def deleteProcess(String userId) {
         TaskReturn taskReturn = queryCurrentTask(userId)
         if (taskReturn != null) {
@@ -58,6 +63,11 @@ class CamundaService {
         }
     }
 
+    /**
+     * query current task by businessKey
+     * @param userId
+     * @return
+     */
     static def queryCurrentTask(String userId) {
         TaskFindRequest taskFindRequest = new TaskFindRequest()
         taskFindRequest.setBusinessKey(userId)
@@ -71,6 +81,12 @@ class CamundaService {
         }
     }
 
+    /**
+     * complete task with input variables by taskId
+     * @param taskId
+     * @param taskInputVariable
+     * @return
+     */
     static def completeTask(String taskId, Map<String, Object> taskInputVariable) {
         TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest()
         taskCompleteRequest.setTaskId(taskId)
@@ -83,6 +99,13 @@ class CamundaService {
         }
     }
 
+    /**
+     * complete task with input variables by processInstanceId and taskId, and return result data
+     * @param processInstanceId
+     * @param taskId
+     * @param taskInputVariable
+     * @return
+     */
     static def completeTaskWithReturn(String processInstanceId, String taskId, Map<String, Object> taskInputVariable) {
         TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest()
         taskCompleteRequest.setProcessInstanceId(processInstanceId)
@@ -97,6 +120,11 @@ class CamundaService {
         return null
     }
 
+    /**
+     * query current task when preview task completed
+     * @param userId
+     * @return
+     */
     static def nextForm(String userId) {
         JSONObject result = new JSONObject()
         TaskReturn task = queryCurrentTask(userId)
@@ -106,6 +134,12 @@ class CamundaService {
         return result
     }
 
+    /**
+     * fill task variables
+     * @param inputFormList
+     * @param arguments
+     * @return
+     */
     static def fillCurrentForm(List<ProcessStepInputForm> inputFormList, JSONObject arguments) {
         Map<String, Object> result = Maps.newHashMap()
         inputFormList.each {
@@ -134,6 +168,11 @@ class CamundaService {
         return result
     }
 
+    /**
+     * get process variable by processInstanceId
+     * @param processInstanceId
+     * @return
+     */
     static def getProcessVariable(String processInstanceId) {
         ProcessVariablesRequest processVariablesRequest = new ProcessVariablesRequest();
         processVariablesRequest.setProcessInstanceId(processInstanceId)
@@ -145,6 +184,12 @@ class CamundaService {
         return null
     }
 
+    /**
+     * get task local variable by processInstanceId and taskId
+     * @param processInstanceId
+     * @param taskId
+     * @return
+     */
     static def getTaskVariableLocal(String processInstanceId, String taskId) {
         TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest()
         taskCompleteRequest.setProcessInstanceId(processInstanceId)
@@ -157,6 +202,13 @@ class CamundaService {
         return null
     }
 
+    /**
+     * set task local variable
+     * @param variablesLocal
+     * @param processInstanceId
+     * @param taskId
+     * @return
+     */
     static def setTaskVariableLocal(Map<String, Object> variablesLocal, String processInstanceId, String taskId) {
         TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest();
         taskCompleteRequest.setProcessInstanceId(processInstanceId)
