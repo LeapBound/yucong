@@ -80,6 +80,7 @@ public class YcFunctionTaskServiceImpl
             return ResponseVo.fail(null, "没有找到数据");
         }
         // insert
+        functionTask.setTaskType(request.getTaskType());
         functionTask.setScript(request.scriptJson());
         functionTask.setUpdateUser(request.getUserName());
         functionTask.setUpdateTime(LocalDateTime.now());
@@ -134,6 +135,7 @@ public class YcFunctionTaskServiceImpl
         functionTask.setProcessId(request.getProcessId());
         functionTask.setFunctionName(request.getFunctionName());
         functionTask.setTaskName(request.getTaskName());
+        functionTask.setTaskType(request.getTaskType());
         functionTask.setScript(request.scriptJson());
         functionTask.setCreateUser(request.getUserName());
         functionTask.setUpdateUser(request.getUserName());

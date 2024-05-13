@@ -2,12 +2,12 @@ package com.github.leapbound.yc.action.func;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.github.leapbound.yc.action.model.dto.YcFunctionGroovyDto;
 import com.google.common.collect.Maps;
 import groovy.lang.Binding;
 import groovy.util.GroovyScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.github.leapbound.yc.action.model.dto.YcFunctionGroovyDto;
 
 import java.util.Map;
 
@@ -19,16 +19,16 @@ public class FunctionGroovyExec {
 
     private static final Logger logger = LoggerFactory.getLogger(FunctionGroovyExec.class);
 
-    public static GroovyScriptEngine createGroovyEngine(String groovyUrl) {
+    public static GroovyScriptEngine createGroovyEngine(String groovyUrl) throws Exception {
         try {
             return new GroovyScriptEngine(groovyUrl);
         } catch (Exception ex) {
             logger.error("create groovy engine error, groovyUrl: {}", groovyUrl, ex);
+            throw new Exception(ex);
         }
-        return null;
     }
 
-    public static JSONObject runScript(GroovyScriptEngine engine, YcFunctionGroovyDto functionGroovyDto, JSONObject arguments) {
+    public static JSONObject runScript(GroovyScriptEngine engine, YcFunctionGroovyDto functionGroovyDto, JSONObject arguments) throws Exception {
         String groovyName = functionGroovyDto.getGroovyName();
         // param
         try {
@@ -41,9 +41,10 @@ public class FunctionGroovyExec {
             if (object != null) {
                 return (JSONObject) JSON.toJSON(object);
             }
+            return null;
         } catch (Exception ex) {
             logger.error("execute groovy script error,", ex);
+            throw new Exception(ex);
         }
-        return null;
     }
 }
