@@ -12,6 +12,7 @@ import java.lang.reflect.Method;
  * @author yamath
  * @since 2023/7/12 10:54
  */
+@Deprecated
 public class FunctionExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(FunctionExecutor.class);

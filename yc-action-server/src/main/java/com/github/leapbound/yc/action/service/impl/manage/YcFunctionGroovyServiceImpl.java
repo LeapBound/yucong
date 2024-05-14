@@ -5,16 +5,16 @@ import cn.hutool.core.io.resource.ClassPathResource;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import com.github.leapbound.yc.action.entities.YcFunctionGroovy;
 import com.github.leapbound.yc.action.mapper.YcFunctionGroovyMapper;
 import com.github.leapbound.yc.action.model.dto.YcFunctionGroovyDto;
 import com.github.leapbound.yc.action.model.vo.ResponseVo;
 import com.github.leapbound.yc.action.model.vo.request.FunctionGroovySaveRequest;
 import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.InputStream;
@@ -66,7 +66,7 @@ public class YcFunctionGroovyServiceImpl
         YcFunctionGroovy ycFunctionGroovy = baseMapper.selectOne(wrapper);
         // if not exist
         if (ycFunctionGroovy == null) {
-            logger.error("function groovy not exist, function = {}", request.getId());
+            logger.error("function groovy not exist, function = {}", request.getFunctionName());
             return ResponseVo.fail(null, "没有找到数据");
         }
         // update
@@ -112,12 +112,7 @@ public class YcFunctionGroovyServiceImpl
     @Override
     public ResponseVo<Void> uploadFunctionGroovyScripts(MultipartFile file, String groovyUrl) {
         //
-        if (!groovyUrl.startsWith("/")) {
-            groovyUrl = "/" + groovyUrl;
-        }
-        if (!groovyUrl.endsWith("/")) {
-            groovyUrl = groovyUrl + "/";
-        }
+        groovyUrl = checkUrl(groovyUrl);
         try {
             String groovyName = file.getOriginalFilename();
             YcFunctionGroovyDto dto = baseMapper.selectFunctionGroovyDtoByGroovy(groovyName);
@@ -151,6 +146,7 @@ public class YcFunctionGroovyServiceImpl
         if (list != null && !list.isEmpty()) {
             for (YcFunctionGroovyDto dto : list) {
                 String groovyPath = dto.getGroovyUrl() + dto.getGroovyName(); // dest path
+                // '/home' is the working directory
                 String resourcePath = groovyPath.replaceFirst("/home/", "");
                 try {
                     ClassPathResource cpr = new ClassPathResource(resourcePath);
@@ -183,16 +179,16 @@ public class YcFunctionGroovyServiceImpl
         YcFunctionGroovy ycFunctionGroovy = new YcFunctionGroovy();
         ycFunctionGroovy.setFunctionName(request.getFunctionName());
         ycFunctionGroovy.setGroovyName(request.getGroovyName());
-        String groovyUrl = request.getGroovyUrl();
-        if (!groovyUrl.startsWith("/")) {
-            groovyUrl = "/" + groovyUrl;
-        }
-        if (!groovyUrl.endsWith("/")) {
-            groovyUrl = groovyUrl + "/";
-        }
+        String groovyUrl = checkUrl(request.getGroovyUrl());
         ycFunctionGroovy.setGroovyUrl(groovyUrl);
         ycFunctionGroovy.setCreateUser(request.getUserName());
         ycFunctionGroovy.setCreateTime(LocalDateTime.now());
         return baseMapper.insert(ycFunctionGroovy);
+    }
+
+    private static String checkUrl(String groovyUrl) {
+        groovyUrl = groovyUrl.startsWith("/") ? groovyUrl : "/" + groovyUrl;
+        groovyUrl = groovyUrl.endsWith("/") ? groovyUrl : groovyUrl + "/";
+        return groovyUrl;
     }
 }

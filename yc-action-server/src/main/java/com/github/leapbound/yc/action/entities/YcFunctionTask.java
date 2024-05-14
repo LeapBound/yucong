@@ -27,17 +27,22 @@ public class YcFunctionTask implements Serializable {
     private String processId;
 
     /**
-     * 方法名
+     * function name
      */
     private String functionName;
 
     /**
-     *  task name  -> 流程管理
+     *  task name
      */
     private String taskName;
 
     /**
-     * 话术 json 字符串
+     * task type
+     */
+    private String taskType;
+
+    /**
+     * task json
      */
     private String script;
 

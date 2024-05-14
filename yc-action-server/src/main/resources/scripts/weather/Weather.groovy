@@ -3,6 +3,7 @@ package scripts.weather
 import cn.hutool.core.util.StrUtil
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
+import com.github.leapbound.yc.action.func.groovy.GeneralMethods
 
 /**
  *
@@ -45,7 +46,7 @@ static def getCurrentWeather(String arguments) {
     JSONObject result = new JSONObject()
     if (StrUtil.isEmptyIfStr(location)) {
         result.put('错误', '没有提供 location，要求用户明确 location.')
-        return result
+        return GeneralMethods.makeResponseVo(true, null, result)
     }
     result.put('location', location)
     result.put('天气', '晴朗')
@@ -53,7 +54,7 @@ static def getCurrentWeather(String arguments) {
     result.put('空气质量指数', '30')
     result.put('紫外线指数', '5')
     result.put('风速', '5m/s')
-    return result
+    return GeneralMethods.makeResponseVo(true, null, result)
 }
 
 static def getDayWeatherForecast(String arguments) {
@@ -73,13 +74,13 @@ static def getDayWeatherForecast(String arguments) {
     JSONObject result = new JSONObject()
     if (StrUtil.isEmptyIfStr(location)) {
         result.put('错误', '没有提供 location，要求用户明确 location.')
-        return result
+        return GeneralMethods.makeResponseVo(true, null, result)
     }
     result.put('location', location)
     result.put('第一天', '天气: 晴朗, 温度: 23-35, 空气质量指数: 60')
     result.put('第二天', '天气: 小雨转大雨, 温度: 20-28')
     result.put('第三天', '天气: 雷暴, 温度: 10-16')
-    return result
+    return GeneralMethods.makeResponseVo(true, null, result)
 }
 
 execWeatherMethod(method, arguments)

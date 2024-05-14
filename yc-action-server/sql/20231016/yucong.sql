@@ -30,6 +30,7 @@ create table yc_function_task
     process_id    varchar(64) default '' null comment 'Process',
     function_name varchar(64) default '' null comment 'function name',
     task_name     varchar(64) default '' null comment 'Process task name',
+    task_type     varchar(32) default '' null comment 'task type like user_task/service_task/...',
     script        text                   null comment 'task json',
     del_flag      tinyint     default 0  null comment '=0 action >0 deleted',
     create_user   varchar(64)            null,

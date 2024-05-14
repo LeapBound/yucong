@@ -1,7 +1,6 @@
 package com.github.leapbound.yc.action.service.impl.camunda;
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRequest;
 import com.github.leapbound.yc.action.service.YcFunctionOpenaiService;
 import com.github.leapbound.yc.camunda.handler.ServiceTaskSubService;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class CamundaSubServiceImpl implements ServiceTaskSubService {
-    
+
     private final YcFunctionOpenaiService ycFunctionOpenaiService;
 
     public CamundaSubServiceImpl(YcFunctionOpenaiService ycFunctionOpenaiService) {
@@ -20,10 +19,7 @@ public class CamundaSubServiceImpl implements ServiceTaskSubService {
     }
 
     @Override
-    public JSONObject execute(String method, String arguments) {
-        FunctionExecuteRequest request = new FunctionExecuteRequest();
-        request.setName(method);
-        request.setArguments(arguments);
-        return ycFunctionOpenaiService.executeGroovy(request);
+    public JSONObject execute(String method, String arguments) throws Exception {
+        return ycFunctionOpenaiService.executeGroovy(method, arguments);
     }
 }
