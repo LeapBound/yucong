@@ -1329,13 +1329,7 @@ def static doWebankFace(String token, JSONObject params) {
 static def faceVerify(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    String code = args.containsKey('code') ? args.getString('code') : ''
-    String orderNo = args.containsKey('orderNo') ? args.getString('orderNo') : ''
-    String h5faceId = args.containsKey('h5faceId') ? args.getString('h5faceId') : ''
-    String signature = args.containsKey('signature') ? args.getString('signature') : ''
-    String newSignature = args.containsKey('newSignature') ? args.getString('newSignature') : ''
-    String liveRate = args.containsKey('liveRate') ? args.getString('liveRate') : ''
-    String type = args.containsKey('type') ? args.getString('type') : ''
+
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
@@ -1351,6 +1345,13 @@ static def faceVerify(String method, String arguments) {
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
+            String code = processVariable.containsKey('code') ? processVariable.getString('code') : ''
+            String orderNo = processVariable.containsKey('orderNo') ? processVariable.getString('orderNo') : ''
+            String h5faceId = processVariable.containsKey('h5faceId') ? processVariable.getString('h5faceId') : ''
+            String signature = processVariable.containsKey('signature') ? processVariable.getString('signature') : ''
+            String newSignature = processVariable.containsKey('newSignature') ? processVariable.getString('newSignature') : ''
+            String liveRate = processVariable.containsKey('liveRate') ? processVariable.getString('liveRate') : ''
+            String type = processVariable.containsKey('type') ? processVariable.getString('type') : ''
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
             def params = new JSONObject() {
