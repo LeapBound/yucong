@@ -1366,14 +1366,15 @@ static def faceVerify(String method, String arguments) {
             }
             def validateResult = validateH5Face(appToken, params)
             if (validateResult == null) {
-                return makeResponseVo(false, '[face_validate]验证失败， 请重新验证', result)
+                return makeResponseVo(false, '[face_validate]提交失败， 联系管理员', result)
             }
             if (validateResult.containsKey('result') && !validateResult.getBooleanValue('result')) {
                 def errMsg = validateResult.containsKey('errMsg') ? validateResult.getString('errMsg') : '验证失败， 请重新验证'
+                CamundaService.completeTask(taskId, ['face_result': false])
                 return makeResponseVo(false, errMsg, result)
             }
             result = validateResult.getJSONObject('responseObject')
-            CamundaService.completeTask(taskId, [:])
+            CamundaService.completeTask(taskId, ['face_result': true])
             return makeResponseVo(true, null, result)
         }
     } catch (Exception ex) {
