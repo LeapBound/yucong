@@ -135,8 +135,8 @@ static def execLoanMethod(String method, String arguments) {
         case 'face_detect':
             result = faceDetect(method, arguments)
             break
-        case 'face_validate':
-            result = faceValidate(method, arguments)
+        case 'face_verify':
+            result = faceVerify(method, arguments)
             break
         case 'submit_audit': // service task called by java delegate
             result = submitAudit(arguments)
@@ -1326,7 +1326,7 @@ def static doWebankFace(String token, JSONObject params) {
     return null
 }
 
-static def faceValidate(String method, String arguments) {
+static def faceVerify(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String code = args.containsKey('code') ? args.getString('code') : ''
