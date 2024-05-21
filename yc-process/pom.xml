@@ -20,7 +20,7 @@
         <java.version>17</java.version>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.source>${java.version}</maven.compiler.source>
-        <camunda.version>7.21.0-alpha4</camunda.version>
+        <camunda.version>7.21.0</camunda.version>
         <mybatis.baomidou.version>3.5.5</mybatis.baomidou.version>
     </properties>
 
@@ -69,18 +69,4 @@
 
     </dependencies>
 
-    <distributionManagement>
-        <repository>
-            <id>maven-releases</id>
-            <name>maven-releases</name>
-            <url>http://maven.geexfinance.com/repository/maven-releases/</url>
-            <uniqueVersion>true</uniqueVersion>
-        </repository>
-        <snapshotRepository>
-            <id>maven-snapshots</id>
-            <name>maven-snapshots</name>
-            <url>http://maven.geexfinance.com/repository/maven-snapshots/</url>
-            <uniqueVersion>true</uniqueVersion>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
