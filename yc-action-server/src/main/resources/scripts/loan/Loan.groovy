@@ -1229,62 +1229,47 @@ static def forthStep(String method, String arguments) {
 
 static def faceDetect(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
-    try {
-        TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
-        if (taskReturn == null) {
-            logger.error('thirdStep no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[forth_step]失败， 联系管理员', result)
-        } else {
-            if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，请联系管理员')
-                return makeResponseVo(false, '[forth_step]当前流程失败， 联系管理员', result)
+
+    String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    String appToken = getAppToken(mobile, null, null)
+    def detectJson = doFaceCheck(appToken, ['appId': appId])
+    if (detectJson == null || (detectJson.containsKey('result') && !detectJson.getBooleanValue('result'))) {
+        def result = new JSONObject() {
+            {
+                put('error', '检测活体人脸启动失败')
             }
-            String taskId = taskReturn.getTaskId()
-            String processInstanceId = taskReturn.getProcessInstanceId()
-            JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
-            String appId = processVariable.containsKey('appId') ? processVariable.getString('appId') : ''
-            String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
-            String appToken = getAppToken(mobile, null, null)
-            def detectJson = doFaceCheck(appToken, ['appId': appId])
-            if (detectJson == null) {
-                return makeResponseVo(false, '[face_detect]验证失败，联系管理员', result)
-            }
-            if (detectJson.containsKey('result') && !detectJson.getBooleanValue('result')) {
-                String errMsg = detectJson.containsKey('errMsg') ? detectJson.getString('errMsg') : ''
-                return makeResponseVo(false, errMsg, result)
-            }
-            def detectResult = detectJson.getJSONObject('responseObject')
-            if (detectResult.containsKey('needFace') && detectResult.getIntValue('needFace') == 1) {
-                // 需要人脸识别
-                def params = new JSONObject() {
-                    {
-                        put('appId', appId);
-                        put('appFrom', '1');
-                        put('redirectUrl', 'https://alpha.geexfinance.com');
-                        put('videoType', '1');
-                    }
-                }
-                def faceJson = doWebankFace(appToken, params)
-                if (faceJson == null) {
-                    return makeResponseVo(false, '[face_detect]启动人脸失败，联系管理员', result)
-                }
-                if (faceJson.containsKey('result') && !faceJson.getBooleanValue('result')) {
-                    def errMsg = faceJson.containsKey('errMsg') ? faceJson.getString('errMsg') : '启动人脸失败'
-                    return makeResponseVo(false, errMsg, result)
-                }
-                result = faceJson.getJSONObject('responseObject')
-                CamundaService.completeTask(taskId, [:])
-                return makeResponseVo(true, null, result)
-            }
-            return makeResponseVo(true, null, result)
         }
-    } catch (Exception ex) {
-        logger.error('faceDetect error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[face_detect]系统错误， 联系管理员', result)
+
+        noticeHub(JSON.toJSONString(result))
+        return
+    }
+
+    def detectResult = detectJson.getJSONObject('responseObject')
+    if (detectResult.containsKey('needFace') && detectResult.getIntValue('needFace') == 1) {
+        // 需要人脸识别
+        def params = new JSONObject() {
+            {
+                put('appId', appId);
+                put('appFrom', '1');
+                put('redirectUrl', 'https://alpha.geexfinance.com');
+                put('videoType', '1');
+            }
+        }
+        def faceJson = doWebankFace(appToken, params)
+        if (faceJson == null || (faceJson.containsKey('result') && !faceJson.getBooleanValue('result'))) {
+            def result = new JSONObject() {
+                {
+                    put('error', '[face_detect]启动人脸失败')
+                }
+            }
+            noticeHub(JSON.toJSONString(result))
+            return
+        }
+        JSONObject result = faceJson.getJSONObject('responseObject')
+        //
+        noticeHub(JSON.toJSONString(result))
     }
 }
 
