@@ -319,6 +319,7 @@ static def verifyMobileCode(String arguments) {
                 CamundaService.completeTask(taskId, inputForm)
                 return makeResponseVo(true, null, result)
             }
+            return makeResponseVo(false, '验证登录失败', result)
         }
     } catch (Exception ex) {
         logger.error('verifyMobileCode error, ', ex)
