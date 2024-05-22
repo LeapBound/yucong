@@ -132,7 +132,7 @@ static def execLoanMethod(String method, String arguments) {
         case 'forth_step':
             result = forthStep(method, arguments)
             break
-        case 'face_detect':
+        case 'face_detect': // service task called by java delegate
             result = faceDetect(method, arguments)
             break
         case 'face_verify':
@@ -952,6 +952,8 @@ static def contractPreviewNotice(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
 
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
     String name = args.containsKey('name') ? args.getString('name') : '' // 姓名
     String idNo = args.containsKey('idNo') ? args.getString('idNo') : '' // 身份证
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : '' // 手机号
@@ -973,7 +975,8 @@ static def contractPreviewNotice(String arguments) {
     def inputForm = ['name'    : name, 'idno': idNo, 'mobile': mobile, 'amt': amt, 'tenor': tenor, 'addr': addr,
                      'bankcard': bankCard, 'userPoint': userPoint, 'amtTenor': amtTenor, 'itemName': itemName,
                      'product' : product, 'icName': icName] as Map<String, Object>
-    noticeHub(JSON.toJSONString(inputForm))
+    def data = noticeData(botId, accountId, '', '', '', inputForm)
+    noticeHub(true, '', data)
     return new JSONObject()
 }
 
@@ -1229,21 +1232,14 @@ static def forthStep(String method, String arguments) {
 
 static def faceDetect(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
 
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appToken = getAppToken(mobile, null, null)
     def detectJson = doFaceCheck(appToken, ['appId': appId])
     if (detectJson == null || (detectJson.containsKey('result') && !detectJson.getBooleanValue('result'))) {
-        def result = new JSONObject() {
-            {
-                put('error', '检测活体人脸启动失败')
-            }
-        }
-
-        noticeHub(JSON.toJSONString(result))
-        return
+        noticeHub(false, '检测活体人脸启动失败', null)
+        return null
     }
 
     def detectResult = detectJson.getJSONObject('responseObject')
@@ -1259,17 +1255,16 @@ static def faceDetect(String method, String arguments) {
         }
         def faceJson = doWebankFace(appToken, params)
         if (faceJson == null || (faceJson.containsKey('result') && !faceJson.getBooleanValue('result'))) {
-            def result = new JSONObject() {
-                {
-                    put('error', '[face_detect]启动人脸失败')
-                }
-            }
-            noticeHub(JSON.toJSONString(result))
-            return
+            noticeHub(false, '启动活体人脸失败', null)
+            return null
         }
         JSONObject result = faceJson.getJSONObject('responseObject')
         //
-        noticeHub(JSON.toJSONString(result))
+        String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+        String botId = args.containsKey('botId') ? args.getString('botId') : ''
+        def data = noticeData(botId, accountId, '', '', 'redirect', result)
+        noticeHub(true, null, data)
+        return new JSONObject()
     }
 }
 
@@ -1411,13 +1406,22 @@ static def submitAudit(String arguments) {
     return submitJson.getJSONObject('responseObject')
 }
 
-static def noticeHub(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-//    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-//    String botId = args.containsKey('botId') ? args.getString('botId') : ''
-    def params = noticeResponse(true, args)
+static def noticeHub(boolean success, String msg, JSONObject noticeData) {
+    def params = makeResponseVo(success, msg, noticeData)
 //    logger.info('notice_hub arguments: {}', args)
     def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
+}
+
+static def noticeHub(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
+    String content = args.containsKey('content') ? args.getString('content') : ''
+    String picUrl = args.containsKey('picUrl') ? args.getString('picUrl') : ''
+    String type = args.containsKey('type') ? args.getString('type') : ''
+    Map<String, Object> param = args.containsKey('param') ? args.get('param') as Map<String, Object> : null
+    def data = noticeData(botId, accountId, content, picUrl, type, param)
+    noticeHub(true, '', data)
 }
 
 static def wrapHeadersWithToken(String token) {
@@ -1443,15 +1447,15 @@ static def makeResponseVo(boolean success, String msg, Object data) {
     }
 }
 
-static def noticeResponse(boolean success, Map<String, Object> response) {
-    Map<String, Object> result = new HashMap() {
+static def noticeData(String botId, String accountId, String content, String picUrl, String type, Map<String, Object> param) {
+    return new JSONObject() {
         {
-            put('success', success)
-            put('code', null)
-            put('msg', '')
-            put('data', response)
+            put('botId', botId)
+            put('accountId', accountId)
+            put('content', content)
+            put('picUrl', picUrl)
+            put('type', type)
+            put('param', param)
         }
     }
-    return result
-
 }
