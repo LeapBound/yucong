@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public class ActionServerServiceImpl implements ActionServerService {
                     });
 
             task = entity.getBody().getData();
-            log.debug("queryNextTask {}", task);
+            log.debug("queryNextTask {} {}", task != null ? task.getTaskName() : null, task);
             if (task != null && task.getTaskId() == null) {
                 task = null;
             }
@@ -162,6 +163,28 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
+    public void inputProcessVariable(String processInstanceId, String businessKey, Map<String, Object> params) {
+        // 请求action server执行方法
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            // 创建表单数据
+            MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
+            formData.add("processInstanceId", processInstanceId);
+            formData.add("businessKey", businessKey);
+            formData.add("inputVariables", params);
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(formData, headers);
+            ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity(
+                    "/process/variables/input", requestEntity, ProcessResponseDto.class
+            );
+
+            log.debug("inputProcessVariable {}", entity.getBody());
+        } catch (Exception e) {
+            log.error("inputProcessVariable error", e);
+        }
+    }
+
+    @Override
     public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
             // 请求action server执行方法
@@ -191,27 +214,43 @@ public class ActionServerServiceImpl implements ActionServerService {
 
     @Override
     public Set<String> loadTaskFunctionOptions(ProcessTaskDto task) {
-        String showVariable = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
-        if (StringUtils.hasText(showVariable)) {
+        Map<String, String> showVariableMap = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
+        if (showVariableMap != null) {
+            String showVariable = showVariableMap.get("name");
             JSONObject config = loadProcessVariables(task.getProcessInstanceId());
-            List<String> configList = (config.getObject(showVariable, List.class));
-            return configList.stream().collect(Collectors.toSet());
+
+            switch (showVariableMap.get("type")) {
+                case "set":
+                case "list":
+                    List<String> configList = (config.getObject(showVariable, List.class));
+                    return configList.stream().collect(Collectors.toSet());
+                case "map":
+                    Map<String, String> configMap = (config.getObject(showVariable, Map.class));
+                    return configMap.keySet().stream().collect(Collectors.toSet());
+            }
         }
 
         return null;
     }
 
-    private String getTaskProperty(ProcessTaskDto task, String name) {
-        AtomicReference<String> type = new AtomicReference<>();
+    @Override
+    public String getTaskFunction(ProcessTaskDto task) {
+        return getTaskProperty(task, ProcessConsts.TASK_FUNCTION_UUID);
+    }
 
+    private <T> T getTaskProperty(ProcessTaskDto task, String name) {
+        if (task == null) {
+            return null;
+        }
+
+        AtomicReference<T> type = new AtomicReference<>();
         task.getTaskProperties().stream()
                 .filter(property -> {
                     String propertyName = (String) property.get("name");
                     return propertyName.equals(name);
                 })
                 .findFirst()
-                .ifPresent(property -> type.set((String) property.get("type")));
-
+                .ifPresent(property -> type.set((T) property.get("type")));
         return type.get();
     }
 

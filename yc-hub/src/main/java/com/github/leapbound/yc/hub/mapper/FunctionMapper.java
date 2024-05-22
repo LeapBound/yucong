@@ -10,10 +10,10 @@ public interface FunctionMapper extends BaseMapper<FunctionEntity> {
 
     @Select("select fm.* " +
             "from yc_bot b " +
-            "         left join yc_role_relation rr on b.id = rr.relate_id " +
-            "         left join yc_role_function rf on rr.role_id = rf.role_id " +
-            "         left join yc_function_manage fm on rf.function_id = fm.id " +
-            "where b.bot_id = #{botId} " +
+            "         left join yc_role_relation rr on b.bot_uuid = rr.relate_uuid " +
+            "         left join yc_role_function rf on rr.role_uuid = rf.role_uuid " +
+            "         left join yc_function_manage fm on rf.function_uuid = fm.function_uuid " +
+            "where b.bot_uuid = #{botId} " +
             "  and rr.relation_type = 0 ")
     List<FunctionEntity> listByBotId(String botId);
 
@@ -25,10 +25,4 @@ public interface FunctionMapper extends BaseMapper<FunctionEntity> {
             "where a.account_name = #{accountId} " +
             "  and rr.relation_type = 1 ")
     List<FunctionEntity> listByAccountId(String accountId);
-
-    @Select("select fm.*" +
-            "from yc_task_function tf " +
-            "         left join yc_function_manage fm on tf.function_id = fm.id " +
-            "where tf.task_name = #{taskName}")
-    List<FunctionEntity> listByTaskName(String taskName);
 }

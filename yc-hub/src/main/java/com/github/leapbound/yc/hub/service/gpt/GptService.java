@@ -4,10 +4,11 @@ import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface GptService {
 
-    List<MyMessage> completions(String botId, String accountId, List<MyMessage> messageList);
+    List<MyMessage> completions(String botId, String accountId, Map<String, Object> params, List<MyMessage> messageList);
 
     String summary(String content);
 

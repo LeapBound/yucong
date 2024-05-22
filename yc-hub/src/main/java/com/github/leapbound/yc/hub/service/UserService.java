@@ -2,13 +2,13 @@ package com.github.leapbound.yc.hub.service;
 
 public interface UserService {
 
-    Long getUserByUsername(String username);
+    String getUserByUsername(String username);
 
-    Long createUser(String username);
+    String createUser(String username);
 
-    Long getAccountNId(Long userId, Long botId);
+    String getAccountId(String userId, String botId);
 
-    Long createAccount(String accountName, Long userNId, Long botUId);
+    String createAccount(String accountName, String userId, String botId);
 
-    void addAccountRoleRelation(String roleName, Long accountNId);
+    void addAccountRoleRelation(String roleName, String accountId);
 }

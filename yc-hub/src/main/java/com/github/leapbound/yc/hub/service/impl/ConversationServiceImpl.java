@@ -134,7 +134,7 @@ public class ConversationServiceImpl implements ConversationService {
 
         // 调用gpt服务
         messageList = getByBotIdAndAccountId(botId, accountId);
-        List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, messageList);
+        List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList);
         gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
 
         return gptMessageList.get(gptMessageList.size() - 1);

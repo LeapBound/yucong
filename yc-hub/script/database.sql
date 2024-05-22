@@ -1,30 +1,3 @@
-create table ths_stock
-(
-    id          bigint auto_increment
-        primary key,
-    stock_code  varchar(8) null,
-    stock_area  varchar(8) null,
-    create_date datetime   null
-);
-
-create table ths_stock_transaction
-(
-    id               bigint auto_increment
-        primary key,
-    stock_code       varchar(8) null,
-    trans_type       int        null comment '0 买入, 1 卖出',
-    trans_num        int        null,
-    trans_price      double     null,
-    target_price     double     null,
-    trans_amount     double     null,
-    brokerage_amount double     null,
-    trans_remain_num int        null,
-    trans_profit     double     null,
-    trans_time       datetime   null,
-    create_time      datetime   null,
-    update_time      datetime   null
-);
-
 create table yc_account
 (
     id           bigint auto_increment

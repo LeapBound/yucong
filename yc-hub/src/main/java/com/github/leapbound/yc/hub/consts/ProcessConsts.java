@@ -9,6 +9,7 @@ public class ProcessConsts {
     public static final String TASK_REMIND_BEFORE = "taskRemindBefore";
 
     public static final String TASK_SHOW_VARIABLE = "showVariable";
+    public static final String TASK_FUNCTION_UUID = "taskFunctionUuid";
 
     public static final String TASK_REMIND_AFTER_SUCCESS = "taskRemindAfterSuccess";
     public static final String TASK_REMIND_AFTER_FAIL = "taskRemindAfterFail";

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -20,7 +21,11 @@ public interface ActionServerService {
 
     Set<String> loadTaskFunctionOptions(ProcessTaskDto task);
 
+    String getTaskFunction(ProcessTaskDto task);
+
     void deleteProcess(String processInstanceId);
+
+    void inputProcessVariable(String processInstanceId, String businessKey, Map<String, Object> params);
 
     Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
 

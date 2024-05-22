@@ -33,7 +33,7 @@ public class GptServiceImpl implements GptService {
     private final GptHandler qianfanHandler;
 
     @Override
-    public List<MyMessage> completions(String botId, String accountId, List<MyMessage> messageList) {
+    public List<MyMessage> completions(String botId, String accountId, Map<String, Object> params, List<MyMessage> messageList) {
         ProcessTaskDto currentTask = this.actionServerService.queryNextTask(accountId);
 
         MyChatCompletionResponse response;
@@ -47,6 +47,11 @@ public class GptServiceImpl implements GptService {
                 response = sendToChatServer(botId, accountId, messageList, currentTask);
         }
         List<MyMessage> gptMessageList = new ArrayList<>(2);
+
+        // 入参
+        if (params != null && !params.isEmpty()) {
+            this.actionServerService.inputProcessVariable(currentTask.getProcessInstanceId(), accountId, params);
+        }
 
         // 处理function
         Boolean functionExecuteResult = null;
@@ -81,6 +86,7 @@ public class GptServiceImpl implements GptService {
         myFunctionCall.setArguments(JSON.toJSONString(args));
 
         MyMessage outMessage = new MyMessage();
+        outMessage.setRole(MyMessage.Role.ASSISTANT.getName());
         outMessage.setFunctionCall(myFunctionCall);
 
         MyChatCompletionResponse response = new MyChatCompletionResponse();

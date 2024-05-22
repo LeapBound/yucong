@@ -25,8 +25,8 @@ public class LoanServiceTests {
     @Autowired
     ActionServerService actionServerService;
 
-    private final String botId = "bot001";
-    private final String accountId = "account001";
+    private final String botId = "B6aeff8084b134aaeba2d919270f8322a";
+    private final String accountId = "A95b28a1a41024b5ca1b8053996d24cb5";
 
     @BeforeEach
     void clearHistory() {
@@ -168,7 +168,7 @@ public class LoanServiceTests {
         singleChatModel.setBotId(this.botId);
         singleChatModel.setAccountId(this.accountId);
         singleChatModel.setType("text");
-        singleChatModel.setContent("8703003892904753 15913175493");
+        singleChatModel.setContent("8703003892904753 15913175493 浦发银行");
         log.info("bankCard {}", this.conversationService.chat(singleChatModel));
     }
 
@@ -181,6 +181,72 @@ public class LoanServiceTests {
         singleChatModel.setType("text");
         singleChatModel.setContent("123456");
         log.info("protocolVerifyCode {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void contractPreview() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("看过了");
+        log.info("contractPreview {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void maritalStatus() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("已婚");
+        log.info("maritalStatus {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void relationInfo() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("张三 13666666666");
+        log.info("relationInfo {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void relation() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("第二个");
+        log.info("relation {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void forthStep() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("沃尔玛公司 上海市静安区110号3楼");
+        log.info("forthStep {}", this.conversationService.chat(singleChatModel));
+    }
+
+    @Test
+    void finishFace() {
+        log.info("*".repeat(100));
+        SingleChatDto singleChatModel = new SingleChatDto();
+        singleChatModel.setBotId(this.botId);
+        singleChatModel.setAccountId(this.accountId);
+        singleChatModel.setType("text");
+        singleChatModel.setContent("做完了");
+        log.info("finishFace {}", this.conversationService.chat(singleChatModel));
     }
 
     @Test
@@ -201,9 +267,23 @@ public class LoanServiceTests {
 
         idPhotoFront();
         idPhotoBack();
+        checkProcessAvailable();
+
         bankCard();
         checkProcessAvailable();
 
         protocolVerifyCode();
+        checkProcessAvailable();
+
+        contractPreview();
+        checkProcessAvailable();
+
+        maritalStatus();
+        relationInfo();
+        relation();
+        forthStep();
+        checkProcessAvailable();
+
+        finishFace();
     }
 }
