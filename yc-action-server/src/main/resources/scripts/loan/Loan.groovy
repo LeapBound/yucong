@@ -164,8 +164,9 @@ static def startLoanProcess(String arguments) {
     JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
+    String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
     String botId = args.containsKey('botid') ? args.getString('botid') : ''
-    def startFormVariables = ['accountId': userId, 'botId': botId]
+    def startFormVariables = ['accountId': userId, 'botId': botId, 'externalId': externalId]
     // process key = 'Process_chatin'
     String processInstanceId = CamundaService.startProcess('Process_chatin', userId, startFormVariables)
     result.put('functionContent', '好的，请提供您的手机号')
@@ -1236,6 +1237,7 @@ static def faceDetect(String method, String arguments) {
 
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
+    String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
     String appToken = getAppToken(mobile, null, null)
     def detectJson = doFaceCheck(appToken, ['appId': appId])
     if (detectJson == null || (detectJson.containsKey('result') && !detectJson.getBooleanValue('result'))) {
@@ -1246,11 +1248,12 @@ static def faceDetect(String method, String arguments) {
     def detectResult = detectJson.getJSONObject('responseObject')
     if (detectResult.containsKey('needFace') && detectResult.getIntValue('needFace') == 1) {
         // 需要人脸识别
+        def redirectUrl = frontUrl + '/geexSmartRobot/robot/' + externalId
         def params = new JSONObject() {
             {
                 put('appId', appId);
                 put('appFrom', '1');
-                put('redirectUrl', 'https://alpha.geexfinance.com');
+                put('redirectUrl', redirectUrl);
                 put('videoType', '1');
             }
         }
