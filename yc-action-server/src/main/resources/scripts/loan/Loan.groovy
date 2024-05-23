@@ -977,7 +977,7 @@ static def contractPreviewNotice(String arguments) {
     def inputForm = ['name'    : name, 'idno': idNo, 'mobile': mobile, 'amt': amt, 'tenor': tenor, 'addr': addr,
                      'bankcard': bankCard, 'userPoint': userPoint, 'amtTenor': amtTenor, 'itemName': itemName,
                      'product' : product, 'icName': icName] as Map<String, Object>
-    def data = noticeData(botId, accountId, '', '', '', inputForm)
+    def data = noticeData(botId, accountId, '', '', 'contract', inputForm)
     noticeHub(true, '', data)
     return new JSONObject()
 }
