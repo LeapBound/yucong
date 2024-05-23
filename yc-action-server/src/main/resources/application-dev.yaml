@@ -43,7 +43,7 @@ camunda:
 yc:
   action:
     external:
-      args: "{ frontUrl: 'https://beta.geexfinance.com',hubUrl: 'https://beta.geexfinance.com' }"
+      args: "{ frontUrl: 'https://beta.geexfinance.com',hubUrl: 'https://alpha.geexfinance.com' }"
 
 
 

@@ -46,6 +46,7 @@ public class ServiceTaskDelegate implements JavaDelegate {
                     if (result != null && !result.isEmpty()) {
                         //
                         Map<String, Object> afterArgs = new HashMap<>();
+                        Map<String, Object> variables = new HashMap<>();
                         // reset variables
                         for (Map.Entry<String, Object> entry : result.entrySet()) {
                             //  execute functions after that service task completed
@@ -53,10 +54,13 @@ public class ServiceTaskDelegate implements JavaDelegate {
                                 if (entry.getValue() instanceof Map<?, ?>) {
                                     afterArgs = (Map<String, Object>) entry.getValue();
                                 }
-                                continue;
+                            } else {
+                                variables.put(entry.getKey(), entry.getValue());
                             }
+                        }
+                        if (!variables.isEmpty()) {
                             // set variables
-                            execution.setVariable(entry.getKey(), entry.getValue());
+                            execution.setVariables(variables);
                         }
                         // execute after functions
                         if (!afterArgs.isEmpty()) {

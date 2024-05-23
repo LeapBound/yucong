@@ -66,9 +66,6 @@ static def execLoanMethod(String method, String arguments) {
         case 'start_loan_process':
             result = startLoanProcess(arguments)
             break
-        case 'delete_loan_process':
-            result = deleteLoanProcess(arguments)
-            break
         case 'bind_mobile':
             result = bindMobile(arguments)
             break
@@ -91,7 +88,7 @@ static def execLoanMethod(String method, String arguments) {
             result = loanTerm(method, arguments)
             break
         case 'load_client_identity': // service task called by java delegate
-            loadClientIdentity(method, arguments)
+            result = loadClientIdentity(method, arguments)
             break
         case 'id_photo_front':
             result = doIdCardOcr(method, arguments)
@@ -144,6 +141,9 @@ static def execLoanMethod(String method, String arguments) {
         case 'notice_hub':
             noticeHub(arguments)
             break
+        case 'delete_loan_process':
+            result = deleteLoanProcess(arguments)
+            break
         default:
             result.put('结果', '没有执行方法')
             break
@@ -169,23 +169,10 @@ static def startLoanProcess(String arguments) {
     def startFormVariables = ['accountId': userId, 'botId': botId, 'externalId': externalId]
     // process key = 'Process_chatin'
     String processInstanceId = CamundaService.startProcess('Process_chatin', userId, startFormVariables)
+    //
+    logger.info('{},{}, start_loan_process', userId, externalId)
     result.put('functionContent', '好的，请提供您的手机号')
     return makeResponseVo(true, null, result)
-}
-
-static def deleteLoanProcess(String arguments) {
-    JSONObject result = new JSONObject()
-    JSONObject args = JSON.parseObject(arguments)
-    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
-    try {
-        CamundaService.deleteProcess(userId)
-        result.put('functionContent', '好的，您的贷款申请已取消')
-        return makeResponseVo(true, null, result)
-    } catch (Exception ex) {
-        logger.error('deleteLoanProcess error, ', ex)
-        result.put('functionContent', '[delete_loan_process]后台错误，联系管理员')
-        return makeResponseVo(false, '[delete_loan_process]后台错误，联系管理员', result)
-    }
 }
 
 // 绑定手机号
@@ -208,91 +195,27 @@ static def bindMobile(String arguments) {
 
 static def sendCode(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
+    JSONObject result = new JSONObject()
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
-    sendLoginSms(mobile)
-// set send_code output
-    return new JSONObject() {
-        {
-            put('z_sendUserMobileVerifyCode', true)
-        }
+    def appCommonResult = sendLoginSms(mobile) as AppCommonResult
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(false, appCommonResult.errMsg, data)
+        result.put('s_taskResult', false)
+        result.put('z_sendUserMobileVerifyCode', true)
+        result.put('afterFunction', afterFunctionMap)
+        return result
     }
-}
-
-// 登录app
-static def loginApp(String userMobile, String verifyCode, String deviceId) {
-    def params = ['deviceId': deviceId, 'account': userMobile, 'veriCode': verifyCode]
-    def token = '';
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, loginAppPath, params, null)
-        if (response == null) {
-            logger.error('user login App no response')
-            return token;
-        }
-        logger.info('user login App response: {}', response.body())
-        if (response.isOk()) {
-            JSONObject result = JSON.parseObject(response.body())
-            if (result.getBooleanValue('result')) {
-                token = result.getJSONObject('responseObject').getString('token')
-                String appTokenKey = APP_TOKEN_KEY + userMobile
-                // save token key
-                StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
-                stringRedisTemplate.opsForValue().set(appTokenKey, token, 3600, TimeUnit.SECONDS)
-            } else {
-                logger.error('user login App failed, result: {}', result.getString('errMsg'))
-            }
-        }
-    } catch (Exception ex) {
-        logger.error('user login App failed,', ex)
+    if (appCommonResult.responseObject != null) {
+        result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
     }
     //
-    return token
-}
-
-// get app token
-static def getAppToken(String mobile, String verifyCode, String deviceId) {
-    String appToken = ''
-    if (!StrUtil.isEmptyIfStr(verifyCode)) {
-        appToken = loginApp(mobile, verifyCode, deviceId)
-    }
-    if (StrUtil.isEmptyIfStr(appToken)) {
-        String appTokenKey = APP_TOKEN_KEY + mobile;
-        StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
-        appToken = stringRedisTemplate.opsForValue().get(appTokenKey)
-    }
-    if (StrUtil.isEmptyIfStr(appToken) && StrUtil.isEmptyIfStr(verifyCode)) {
-        String commonVerifyCode = getCommonVerifyCode()
-        if (StrUtil.isEmptyIfStr(commonVerifyCode)) {
-            return appToken
-        }
-        appToken = getAppToken(mobile, commonVerifyCode, deviceId)
-    }
-    return appToken
-}
-
-static def getCommonVerifyCode() {
-    def response = RestClient.doGet(frontUrl, getCommonVerifyCodePath, null, null)
-    if (response == null) {
-        logger.error("getCommonVerifyCode no response")
-        return null
-    }
-    if (response.ok && !StrUtil.isEmpty(response.body())) {
-        return JSON.parseObject(response.body()).getString('responseObject')
-    }
-    return null
-}
-
-// 发送登录验证码
-static def sendLoginSms(String userMobile) {
-
-    JSONObject result = new JSONObject()
-    int randomInt = RandomUtil.getSecureRandom().nextInt(10)
-    String checkKey = DigestUtil.md5Hex(('verify_code_check' + userMobile + randomInt).getBytes())
-    def params = ['mobile': userMobile, 'random': String.valueOf(randomInt), 'requestKey': checkKey]
-    def response = RestClient.doPostWithBody(frontUrl, getAppVerifyCodeCheckPath, params, null)
-    if (response == null) {
-        logger.error('send login sms no response')
-    }
-    logger.info('send login sms response: {}', response.body()) // 回调hub通知接口
+    Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+    result.put('z_sendUserMobileVerifyCode', true)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', appCommonResult.result)
+    // set send_code output
+    return result
 }
 
 static def verifyMobileCode(String arguments) {
@@ -346,10 +269,12 @@ static def configByBdMobile(String arguments) {
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
-            JSONObject storeConfig = preApply(appToken, bdMobile)
-            if (storeConfig == null) {
-                return makeResponseVo(false, '[config_bd_mobile]没有门店配置，联系管理员', result)
+            def appCommonResult = preApply(appToken, bdMobile) as AppCommonResult
+            if (!appCommonResult.result) {
+                result.put('functionContent', appCommonResult.errMsg)
+                return makeResponseVo(false, appCommonResult.errMsg, result)
             }
+            def storeConfig = JSON.toJSON(appCommonResult.responseObject) as JSONObject
             String storeCode = storeConfig.containsKey('storeCode') ? storeConfig.getString('storeCode') : ''
             JSONObject config = storeConfig.containsKey('config') ? storeConfig.getJSONObject('config') : null
             def configForm = ['bdMobile': bdMobile, 'storeCode': storeCode, 'loanConfig': config]
@@ -361,28 +286,6 @@ static def configByBdMobile(String arguments) {
         result.put('functionContent', '系统错误，请联系管理员')
         return makeResponseVo(false, '[config_bd_mobile]系统错误，联系管理员', result)
     }
-}
-
-static def preApply(String token, String mobile) {
-    // post params body
-    def params = ['mobile': mobile, 'showLoanList': 'DDG']
-    // post headers
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, preApplyPath + token, params, requestAuth)
-        if (response == null) {
-            logger.warn('preApply no response')
-            return null
-        }
-        logger.info('preApply response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body()).getJSONObject('responseObject')
-        }
-    } catch (Exception ex) {
-        logger.error('preApply error,', ex)
-    }
-    return null
 }
 
 static def productInfo(String method, String arguments) {
@@ -464,7 +367,13 @@ static def loanConfig(String method, String arguments) {
     } else {
         logger.warn('no Relationship found in loanConfig')
     }
-
+    //
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    //
+    Map<String, Object> afterFunctionMap = noticeMap(data)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', true)
+    //
     return result
 }
 
@@ -511,15 +420,12 @@ static def loanTerm(String method, String arguments) {
                     put('N_GEEX_LOAN_PDT_ID', loanProductId);
                 }
             }
-            def submitJson = submitApplyStep(appToken, firstSubmitObj)
-            if (submitJson == null) {
-                return makeResponseVo(false, '[loan_term]获取配置失败，联系管理员', result)
+            def appCommonResult = submitApplyStep(appToken, firstSubmitObj) as AppCommonResult
+            if (!appCommonResult.result) {
+                logger.warn('[loan_term]submitApplyStep error, ', appCommonResult.errMsg)
+                return makeResponseVo(false, appCommonResult.errMsg, result)
             }
-            if (submitJson.containsKey('result') && !submitJson.getBooleanValue('result')) {
-                String errMsg = submitJson.containsKey('errMsg') ? submitJson.getString('errMsg') : '获取配置失败'
-                return makeResponseVo(false, errMsg, result)
-            }
-            def firstSubmit = submitJson.getJSONObject('responseObject')
+            def firstSubmit = JSON.toJSON(appCommonResult.responseObject) as JSONObject
             String appId = firstSubmit.containsKey('C_APP_ID') ? firstSubmit.getString('C_APP_ID') : ''
             def appIdForm = ['appId': appId, 'loanTerm': loanTerm]
             CamundaService.completeTask(taskId, appIdForm)
@@ -535,34 +441,29 @@ static def loanTerm(String method, String arguments) {
 // 加载用户信息
 static def loadClientIdentity(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
+    JSONObject result = new JSONObject()
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     //
     String appToken = getAppToken(mobile, null, null)
-    def response = loadIdentity(appId, appToken);
-    return response
-}
-
-static def loadIdentity(String appId, String token) {
-    // post params body
-    def params = ['appId': appId]
-    // post headers
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, loadIdentityPath + token, params, requestAuth)
-        if (response == null) {
-            logger.error('loadIdentity no response')
-            return null
-        }
-        logger.info('loadIdentity response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body()).getJSONObject('responseObject')
-        }
-    } catch (Exception ex) {
-        logger.error('loadIdentity error,', ex)
+    // call load identity
+    def appCommonResult = loadIdentity(appId, appToken) as AppCommonResult
+    //
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(false, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
     }
-    return null
+    if (appCommonResult.responseObject != null) {
+        result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
+    }
+    //
+    Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', appCommonResult.result)
+    return result
 }
 
 static def doIdCardOcr(String method, String arguments) {
@@ -598,10 +499,12 @@ static def doIdCardOcr(String method, String arguments) {
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
-            JSONObject ocrResult = doIdCardOcr(url, fileType, appToken)
-            if (ocrResult == null) {
-                return makeResponseVo(false, '[' + method + ']身份证 ocr 失败，联系管理员', result)
+            def appCommonResult = doIdCardOcr(url, fileType, appToken) as AppCommonResult
+            if (!appCommonResult.result) {
+                result.put('functionContent', '[' + method + ']' + appCommonResult.errMsg)
+                return makeResponseVo(false, '[' + method + ']' + appCommonResult.errMsg, result)
             }
+            def ocrResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
             def inputForm = new HashMap() {
                 {
                     put('ocr' + fileType, ocrResult)
@@ -617,73 +520,24 @@ static def doIdCardOcr(String method, String arguments) {
     }
 }
 
-// 识别身份证
-static def doIdCardOcr(String url, String fileType, String token) {
-    // file dest
-    File file = File.createTempFile('idPhoto', '.ycImage')
-    // download file
-    HttpUtil.downloadFile(url, file)
-    // read file to bytes
-    byte[] fileContent = FileUtil.readBytes(file)
-    // base64 encoding
-    String encodedString = Base64.getEncoder().encodeToString(fileContent)
-    // post params body
-    def params = ['fileType': fileType, 'imgData': 'data:image/jpeg;base64,' + encodedString]
-    // post header
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithForm(frontUrl, doIdCardOcrPath + token, params, requestAuth)
-        if (response == null) {
-            logger.error('doIdCardOcr no response')
-            return null
-        }
-        logger.info('doIdCardOcr response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body()).getJSONObject('responseObject')
-        }
-    } catch (Exception ex) {
-        logger.error('doIdCardOcr error,', ex)
-    }
-    return null
-}
-
 static def bankCodeConfig(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    def params = ['action': 'cardPackage']
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, getSupportBankListPath, params, null)
-        if (response == null) {
-            logger.error('bankCodeConfig no response')
-            return null
-        }
-
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            JSONObject json = JSON.parseObject(response.body()).getJSONObject('responseObject')
-            if (json != null && !json.isEmpty()) {
-                JSONArray allBanks = json.containsKey('allBanks') ? json.getJSONArray('allBanks') : null
-                if (allBanks != null && !allBanks.isEmpty()) {
-                    def bankMap = new HashMap()
-                    allBanks.forEach {
-                        JSONObject bank ->
-                            String bankCode = bank.containsKey('bankCode') ? bank.getString('bankCode') : ''
-                            String bankName = bank.containsKey('bankName') ? bank.getString('bankName') : ''
-                            bankMap.put(bankName, bankCode)
-                    }
-                    if (!bankMap.isEmpty()) {
-                        return new JSONObject() {
-                            {
-                                put('bankCodeConfig', bankMap)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } catch (Exception ex) {
-        logger.error('bankCodeConfig error', ex)
+    JSONObject result = new JSONObject()
+    def appCommonResult = doBankCode(['action': 'cardPackage']) as AppCommonResult
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
     }
-    return null
+    //
+    result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
+    //
+    Map<String, Object> afterFunctionMap = noticeMap(true, '', data)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', true)
+    return result
 }
 
 static def bankCard(String method, String arguments) {
@@ -726,6 +580,7 @@ static def bankCard(String method, String arguments) {
 
 static def checkBankCard(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
+    JSONObject result = new JSONObject()
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     Integer amount = args.containsKey('applyAmount') ? args.getInteger('applyAmount') : null
@@ -741,95 +596,47 @@ static def checkBankCard(String method, String arguments) {
     String idValid = (ocrBackDetail != null && ocrBackDetail.containsKey('validDate')) ? ocrBackDetail.getString('validDate') : ''
 
     String appToken = getAppToken(mobile, null, null)
-    checkBankCardLimit(appToken, name, idNo, bankCard, amount)
-
-    checkOldIdentity(appToken, name, idNo)
-
-    JSONObject checkProtocolResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode)
-    if (checkProtocolResult == null) {
-        logger.error('checkPayProtocol error')
+    //
+    def responseData = new JSONObject()
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    // check bank card limit
+    def appCommonResult = checkBankCardLimit(appToken, name, idNo, bankCard, amount) as AppCommonResult
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
     }
+    // check old identity
+    appCommonResult = checkOldIdentity(appToken, name, idNo) as AppCommonResult
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
+    } else {
+        JSONObject responseObject = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+        boolean needVerify = responseObject.getBooleanValue('needVerify')
+        result.put('needOldIdentity', needVerify)
+    }
+    // check pay protocol
+    appCommonResult = checkPayProtocol(appToken, appId, name, idNo, bankCard, bankMobile, bankCode) as AppCommonResult
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
+    }
+    JSONObject checkProtocolResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
     String protocolKey = checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
     boolean needMakeProtocol = checkProtocolResult.containsKey('needMakeProtocol') ? checkProtocolResult.getBooleanValue('needMakeProtocol') : false
     //
-    return new JSONObject() {
-        {
-            put('needMakeProtocol', needMakeProtocol)
-            put('payProtocolKey', protocolKey)
-        }
-    }
-}
-
-// check bank card limit
-static def checkBankCardLimit(String token, String name, String idNo, String bankCard, Integer amount) {
-    // post params body
-    def params = ['name': name, 'idNo': idNo, 'bankCard': bankCard, 'loanAmt': amount]
-    // post headers
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, checkBankCardLimitPath, params, requestAuth)
-        if (response == null) {
-            logger.error('checkBankCardLimit no response')
-            return null
-        }
-        logger.info('checkBankCardLimit response:{}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            String result = JSON.parseObject(response.body()).getString('responseObject')
-            return new JSONObject() {
-                {
-                    put('result', result)
-                }
-            }
-        }
-    } catch (Exception ex) {
-        logger.error('checkBankCardLimit error,', ex)
-    }
-    return null
-}
-
-// check 老客户信息
-static def checkOldIdentity(String token, String name, String idNo) {
-    def params = ['name': name, 'idNo': idNo]
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, checkOldIdentityPath + token, params, requestAuth)
-        if (response == null) {
-            logger.error('checkIdentity no response')
-            return null
-        }
-        logger.info('checkIdentity response:{}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body()).getJSONObject('responseObject')
-        }
-    } catch (Exception ex) {
-        logger.error('checkIdentity error,', ex)
-    }
-    return null
-}
-
-// check 用户支付协议
-static def checkPayProtocol(String token, String appId, String name, String idNo, String bankCard, String bankMobile, String bankCode) {
-    // post params body
-    // pageUrl 签约回调地址，不是招商银行，可以为空
-    def params = ['appId': appId, 'name': name, 'idNo': idNo, 'bankCode': bankCode, 'accountId': bankCard, 'rsvPhone': bankMobile, 'type': '1', 'pageUrl': '']
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, checkProtocolPath + token, params, requestAuth)
-        if (response == null) {
-            logger.error('checkUserPayProtocol no response')
-            return null
-        }
-        logger.info('checkUserPayProtocol response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body()).getJSONObject('responseObject')
-        }
-    } catch (Exception ex) {
-        logger.error('checkUserPayProtocol error,', ex)
-    }
-    return null
+    Map<String, Object> afterFunctionMap = noticeMap(data)
+    result.put('needMakeProtocol', needMakeProtocol)
+    result.put('payProtocolKey', protocolKey)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', true)
+    return result
 }
 
 // 提交用户支付协议
@@ -875,23 +682,17 @@ static def submitPayProtocol(String method, String arguments) {
             def ocrBackDetail = ocrBack.containsKey('ocrDetail') ? ocrBack.getJSONObject('ocrDetail') : null
             String idValid = ocrBackDetail.containsKey('validDate') ? ocrBackDetail.getString('validDate') : ''
             String appToken = getAppToken(mobile, null, null)
-            def submitResult = submitPayProtocol(appId, bankCode, bankMobile, verifyCode, payProtocolKey, bankCard, appToken)
-            if (submitResult == null) {
-                return makeResponseVo(false, '[submit_pay_protocol]提交协议失败， 联系管理员', result)
+            def appCommonResult = submitPayProtocol(appId, bankCode, bankMobile, verifyCode, payProtocolKey, bankCard, appToken) as AppCommonResult
+            if (!appCommonResult.result) {
+                result.put('functionContent', '提交支付协议失败， 联系管理员')
+                return makeResponseVo(false, appCommonResult.errMsg, result)
             }
-            logger.info('submitPayProtocol result: {}', submitResult)
-            if (submitResult.containsKey('result') && !submitResult.getBooleanValue('result')) {
-                def errMsg = submitResult.containsKey('errMsg') ? submitResult.getString('errMsg') : ''
-                return makeResponseVo(false, errMsg, result)
-            }
-            def submitIdentityResult = submitIdentity(appId, name, idNo, idValid, bankCode, storeCode, bankCard, bankMobile, appToken)
-            if (submitIdentityResult == null) {
-                return makeResponseVo(false, '[submit_pay_protocol]提交身份信息失败，联系管理员', result)
-            }
-            logger.info('submitIdentity result: {}', submitIdentityResult)
-            if (submitIdentityResult.containsKey('result') && !submitIdentityResult.getBooleanValue('result')) {
-                def errMsg = submitIdentityResult.containsKey('errMsg') ? submitIdentityResult.getString('errMsg') : ''
-                return makeResponseVo(false, errMsg, result)
+            logger.info('submitPayProtocol result: {}', appCommonResult)
+            //
+            appCommonResult = submitIdentity(appId, name, idNo, idValid, bankCode, storeCode, bankCard, bankMobile, appToken) as AppCommonResult
+            if (!appCommonResult.result) {
+                result.put('functionContent', '提交支付协议失败， 联系管理员')
+                return makeResponseVo(false, appCommonResult.errMsg, result)
             }
             CamundaService.completeTask(taskId, [:])
             return makeResponseVo(true, null, result)
@@ -901,53 +702,6 @@ static def submitPayProtocol(String method, String arguments) {
         result.put('functionContent', '系统错误，联系管理员')
         return makeResponseVo(false, '[submit_pay_protocol]系统错误，联系管理员', result)
     }
-}
-
-static def submitPayProtocol(String appId, String bankCode, String bankMobile, String verifyCode, String payProtocolKey, String bankCard, String token) {
-
-    // post params body
-    def params = ['appId': appId, 'cardCode': bankCode, 'reservedMobile': bankMobile, 'smsStr': verifyCode, 'makeProtocolKey': payProtocolKey, 'cardNo': bankCard, 'type': '1']
-    // post headers
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, submitProtocolPath + token, params, requestAuth)
-        if (response == null) {
-            logger.error('submitUserPayProtocol no response')
-            return null
-        }
-        logger.info('submitUserPayProtocol response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body())
-        }
-        logger.error('submitUserPayProtocol no response')
-    } catch (Exception ex) {
-        logger.error('submitUserPayProtocol error,', ex)
-    }
-    return null
-}
-
-static def submitIdentity(String appId, String name, String idNo, String idValid, String bankCode,
-                          String storeCode, String bankCard, String bankMobile, String token) {
-    // post params body
-    def params = ['C_APP_ID': appId, 'name': name, 'C_ID_VALID': idValid, 'idNo': idNo, 'bankCode': bankCode, 'storeCode': storeCode, 'accountId': bankCard, 'rsvPhone': bankMobile]
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, submitIdentityPath + token, params, requestAuth)
-        if (response == null) {
-            logger.error('submitIdentity no response')
-            return null
-        }
-        logger.info('submitIdentity response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body())
-        }
-        logger.error('submitIdentity no response')
-    } catch (Exception ex) {
-        logger.error('submitIdentity error,', ex)
-    }
-    return null
 }
 
 static def contractPreviewNotice(String arguments) {
@@ -978,8 +732,13 @@ static def contractPreviewNotice(String arguments) {
                      'bankcard': bankCard, 'userPoint': userPoint, 'amtTenor': amtTenor, 'itemName': itemName,
                      'product' : product, 'icName': icName] as Map<String, Object>
     def data = noticeData(botId, accountId, '', '', 'contract', inputForm)
-    noticeHub(true, '', data)
-    return new JSONObject()
+    Map<String, Object> afterFunctionMap = noticeMap(data)
+    return new JSONObject() {
+        {
+            put('afterFunction', afterFunctionMap)
+            put('s_taskResult', true)
+        }
+    }
 }
 
 static def contractPreview(String method, String arguments) {
@@ -1010,6 +769,7 @@ static def contractPreview(String method, String arguments) {
 
 static def secondStep(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
+    JSONObject result = new JSONObject()
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appToken = getAppToken(mobile, null, null)
@@ -1021,16 +781,20 @@ static def secondStep(String arguments) {
             put('C_FORM_ID', 'NYB01')
         }
     }
-    def submitJson = submitApplyStep(appToken, info)
-    if (submitJson == null) {
-        return null
+    def appCommonResult = submitApplyStep(appToken, info) as AppCommonResult
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    //
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
     }
-    if (submitJson.containsKey('result') && !submitJson.getBooleanValue('result')) {
-        String errMsg = submitJson.containsKey('errorMessage') ? submitJson.getString('errorMessage') : 'second step 错误'
-        logger.error('second_step error, {}', errMsg)
-        return null
-    }
-    return submitJson.getJSONObject('responseObject')
+    //
+    Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', true)
+    return result
 }
 
 static def maritalStatus(String method, String arguments) {
@@ -1097,26 +861,6 @@ static def relationInfo(String method, String arguments) {
     }
 }
 
-// 提交申请
-static def submitApplyStep(String token, JSONObject info) {
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, submitApplyStepPath + token, info, requestAuth)
-        if (response == null) {
-            logger.error('submitApplyStep no response')
-            return null
-        }
-        logger.info('submitApplyStep response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body())
-        }
-    } catch (Exception ex) {
-        logger.error('submitApplyStep error,', ex)
-    }
-    return null
-}
-
 static def thirdStep(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
@@ -1160,17 +904,13 @@ static def thirdStep(String method, String arguments) {
                 }
             }
             String appToken = getAppToken(mobile, null, null)
-            def submitJson = submitApplyStep(appToken, stepInputForm)
-            if (submitJson == null) {
-                return makeResponseVo(false, '[third_step]提交失败， 联系管理员', result)
-            }
-            if (submitJson.containsKey('result') && !submitJson.getBooleanValue('result')) {
-                String errMsg = submitJson.containsKey('errMsg') ? submitJson.getString('errMsg') : '提交失败'
+            def appCommonResult = submitApplyStep(appToken, stepInputForm) as AppCommonResult
+            if (!appCommonResult.result) {
                 def inputForm = ['step_3_result': false]
                 CamundaService.completeTask(taskId, inputForm)
-                return makeResponseVo(false, errMsg, result)
+                return makeResponseVo(appCommonResult.result, appCommonResult.errMsg, result)
             }
-            result = submitJson.getJSONObject('responseObject')
+            result = JSON.toJSON(appCommonResult.responseObject) as JSONObject
             def inputForm = ['relationKey': relationKey, 'step_3_result': true]
             CamundaService.completeTask(taskId, inputForm)
             return makeResponseVo(true, null, result)
@@ -1213,15 +953,11 @@ static def forthStep(String method, String arguments) {
                 }
             }
             String appToken = getAppToken(mobile, null, null)
-            def submitJson = submitApplyStep(appToken, stepInputForm)
-            if (submitJson == null) {
-                return makeResponseVo(false, '[forth_step]提交失败， 联系管理员', result)
+            def appCommonResult = submitApplyStep(appToken, stepInputForm) as AppCommonResult
+            if (!appCommonResult.result) {
+                return makeResponseVo(appCommonResult.result, appCommonResult.errMsg, result)
             }
-            if (submitJson.containsKey('result') && !submitJson.getBooleanValue('result')) {
-                String errMsg = submitJson.containsKey('errMsg') ? submitJson.getString('errMsg') : '提交失败'
-                return makeResponseVo(false, errMsg, result)
-            }
-            result = submitJson.getJSONObject('responseObject')
+            result = JSON.toJSON(appCommonResult.responseObject) as JSONObject
             CamundaService.completeTask(taskId, [:])
             return makeResponseVo(true, null, result)
         }
@@ -1234,18 +970,21 @@ static def forthStep(String method, String arguments) {
 
 static def faceDetect(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-
+    JSONObject result = new JSONObject()
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
     String appToken = getAppToken(mobile, null, null)
-    def detectJson = doFaceCheck(appToken, ['appId': appId])
-    if (detectJson == null || (detectJson.containsKey('result') && !detectJson.getBooleanValue('result'))) {
-        noticeHub(false, '检测活体人脸启动失败', null)
-        return null
+    def appCommonResult = doFaceCheck(appToken, ['appId': appId]) as AppCommonResult
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    if (!appCommonResult.result) {
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
     }
-
-    def detectResult = detectJson.getJSONObject('responseObject')
+    //
+    def detectResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
     if (detectResult.containsKey('needFace') && detectResult.getIntValue('needFace') == 1) {
         // 需要人脸识别
         def redirectUrl = frontUrl + '/geexSmartRobot/robot/' + externalId
@@ -1257,57 +996,21 @@ static def faceDetect(String method, String arguments) {
                 put('videoType', '1');
             }
         }
-        def faceJson = doWebankFace(appToken, params)
-        if (faceJson == null || (faceJson.containsKey('result') && !faceJson.getBooleanValue('result'))) {
-            noticeHub(false, '启动活体人脸失败', null)
-            return null
+        appCommonResult = doWebankFace(appToken, params) as AppCommonResult
+        if (!appCommonResult.result) {
+            Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+            result.put('afterFunction', afterFunctionMap)
+            result.put('s_taskResult', false)
+            return result
         }
-        JSONObject result = faceJson.getJSONObject('responseObject')
+        def faceResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
         //
-        String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-        String botId = args.containsKey('botId') ? args.getString('botId') : ''
-        def data = noticeData(botId, accountId, '', '', 'redirect', result)
-        noticeHub(true, null, data)
-        return new JSONObject()
+        data = noticeData(args, '', '', 'redirect', faceResult)
+        Map<String, Object> afterFunctionMap = noticeMap(true, '', data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', true)
+        return result
     }
-}
-
-static def doFaceCheck(String token, Map<String, Object> params) {
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithForm(frontUrl, faceDetectPath, params, requestAuth)
-        if (response == null) {
-            logger.error('doFaceCheck no response')
-            return null
-        }
-        logger.info('doFaceCheck response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body())
-        }
-    } catch (Exception ex) {
-        logger.error('doFaceCheck error,', ex)
-    }
-    return null
-}
-
-def static doWebankFace(String token, JSONObject params) {
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, webankH5Path, params, requestAuth)
-        if (response == null) {
-            logger.error('doWebankFace no response')
-            return null
-        }
-        logger.info('doWebankFace response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body())
-        }
-    } catch (Exception ex) {
-        logger.error('doWebankFace error,', ex)
-    }
-    return null
 }
 
 static def faceVerify(String method, String arguments) {
@@ -1349,16 +1052,13 @@ static def faceVerify(String method, String arguments) {
                     put('type', type)
                 }
             }
-            def validateResult = validateH5Face(appToken, params)
-            if (validateResult == null) {
-                return makeResponseVo(false, '[face_validate]提交失败， 联系管理员', result)
-            }
-            if (validateResult.containsKey('result') && !validateResult.getBooleanValue('result')) {
-                def errMsg = validateResult.containsKey('errMsg') ? validateResult.getString('errMsg') : '验证失败， 请重新验证'
+            def appCommonResult = validateH5Face(appToken, params) as AppCommonResult
+            if (!appCommonResult.result) {
                 CamundaService.completeTask(taskId, ['face_result': false])
-                return makeResponseVo(false, errMsg, result)
+                result.put('functionContent', appCommonResult.errMsg)
+                return makeResponseVo(false, appCommonResult.errMsg, result)
             }
-            result = validateResult.getJSONObject('responseObject')
+            result = JSON.toJSON(appCommonResult.responseObject) as JSONObject
             CamundaService.completeTask(taskId, ['face_result': true])
             return makeResponseVo(true, null, result)
         }
@@ -1369,26 +1069,9 @@ static def faceVerify(String method, String arguments) {
     }
 }
 
-static def validateH5Face(String token, JSONObject params) {
-    def headers = wrapHeadersWithToken(token)
-    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
-    try {
-        def response = RestClient.doPostWithBody(frontUrl, validateH5FacePath, params, requestAuth)
-        if (response == null) {
-            logger.error('validateH5Face no response')
-            return null
-        }
-        logger.info('validateH5Face response: {}', response.body())
-        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
-            return JSON.parseObject(response.body())
-        }
-    } catch (Exception ex) {
-        logger.error('validateH5Face error, ', ex)
-    }
-}
-
 static def submitAudit(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
+    JSONObject result = new JSONObject()
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String appToken = getAppToken(mobile, null, null)
@@ -1398,35 +1081,447 @@ static def submitAudit(String arguments) {
             put('C_STEP_ID', 'PREVIEW')
         }
     }
-    def submitJson = submitApplyStep(appToken, info)
-    if (submitJson == null) {
-        return null
-    }
-    if (submitJson.containsKey('result') && !submitJson.getBooleanValue('result')) {
-        def errMsg = submitJson.containsKey('errMsg') ? submitJson.getString('errMsg') : '提交失败'
-        logger.error('submit_audit error, {}', errMsg)
-        return null
-    }
-    return submitJson.getJSONObject('responseObject')
-}
+    def appCommonResult = submitApplyStep(appToken, info) as AppCommonResult
+    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
 
-static def noticeHub(boolean success, String msg, JSONObject noticeData) {
-    def params = makeResponseVo(success, msg, noticeData)
-//    logger.info('notice_hub arguments: {}', args)
-    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, params, null)
+    if (!appCommonResult.result) {
+        logger.error('submit_audit error, {}', appCommonResult.errMsg)
+        def afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        result.put('afterFunction', afterFunctionMap)
+        result.put('s_taskResult', false)
+        return result
+    }
+    def afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+    result.put('afterFunction', afterFunctionMap)
+    result.put('s_taskResult', true)
+    return result
 }
 
 static def noticeHub(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String botId = args.containsKey('botId') ? args.getString('botId') : ''
-    String content = args.containsKey('content') ? args.getString('content') : ''
-    String picUrl = args.containsKey('picUrl') ? args.getString('picUrl') : ''
-    String type = args.containsKey('type') ? args.getString('type') : ''
-    Map<String, Object> param = args.containsKey('param') ? args.get('param') as Map<String, Object> : null
-    def data = noticeData(botId, accountId, content, picUrl, type, param)
-    noticeHub(true, '', data)
+    JSONObject args = JSON.parseObject(arguments) // notice response
+    def success = args.containsKey('success') ? args.getBooleanValue('success') : true
+    def msg = args.containsKey('msg') ? args.getString('msg') : ''
+    def data = args.containsKey('data') ? args.getJSONObject('data') : null
+
+    noticeHub(success, msg, data)
 }
+
+static def deleteLoanProcess(String arguments) {
+    JSONObject result = new JSONObject()
+    JSONObject args = JSON.parseObject(arguments)
+    String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
+    try {
+        CamundaService.deleteProcess(userId)
+        result.put('functionContent', '好的，您的贷款申请已取消')
+        return makeResponseVo(true, null, result)
+    } catch (Exception ex) {
+        logger.error('deleteLoanProcess error, ', ex)
+        result.put('functionContent', '[delete_loan_process]后台错误，联系管理员')
+        return makeResponseVo(false, '[delete_loan_process]后台错误，联系管理员', result)
+    }
+}
+
+
+// ####################################### 非 function 方法 #################################################
+// 登录app
+static def loginApp(String userMobile, String verifyCode, String deviceId) {
+    def params = ['deviceId': deviceId, 'account': userMobile, 'veriCode': verifyCode]
+    def token = '';
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, loginAppPath, params, null)
+        if (response == null) {
+            logger.error('user login App no response')
+            return token;
+        }
+        logger.info('user login App response: {}', response.body())
+        if (response.isOk()) {
+            AppCommonResult appCommonResult = JSON.parseObject(response.body(), AppCommonResult.class)
+            if (appCommonResult.result) {
+                JSONObject responseObject = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+                token = responseObject.getString('token')
+                String appTokenKey = APP_TOKEN_KEY + userMobile
+                // save token key
+                StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
+                stringRedisTemplate.opsForValue().set(appTokenKey, token, 3600, TimeUnit.SECONDS)
+            } else {
+                logger.error('user login App failed, result: {}', appCommonResult.errMsg)
+            }
+        }
+    } catch (Exception ex) {
+        logger.error('user login App failed,', ex)
+    }
+    //
+    return token
+}
+
+// get app token
+static def getAppToken(String mobile, String verifyCode, String deviceId) {
+    String appToken = ''
+    if (!StrUtil.isEmptyIfStr(verifyCode)) {
+        appToken = loginApp(mobile, verifyCode, deviceId)
+    }
+    if (StrUtil.isEmptyIfStr(appToken)) {
+        String appTokenKey = APP_TOKEN_KEY + mobile;
+        StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
+        appToken = stringRedisTemplate.opsForValue().get(appTokenKey)
+    }
+    // 通用验证码
+//    if (StrUtil.isEmptyIfStr(appToken) && StrUtil.isEmptyIfStr(verifyCode)) {
+//        String commonVerifyCode = getCommonVerifyCode()
+//        if (StrUtil.isEmptyIfStr(commonVerifyCode)) {
+//            return appToken
+//        }
+//        appToken = getAppToken(mobile, commonVerifyCode, deviceId)
+//    }
+    return appToken
+}
+
+static def getCommonVerifyCode() {
+    def response = RestClient.doGet(frontUrl, getCommonVerifyCodePath, null, null)
+    if (response == null) {
+        logger.error("getCommonVerifyCode no response")
+        return null
+    }
+    if (response.ok && !StrUtil.isEmpty(response.body())) {
+        AppCommonResult appCommonResult = JSON.parseObject(response.body(), AppCommonResult.class)
+        return appCommonResult.responseObject as String
+    }
+    return null
+}
+
+// 发送登录验证码
+static def sendLoginSms(String userMobile) {
+
+    JSONObject result = new JSONObject()
+    int randomInt = RandomUtil.getSecureRandom().nextInt(10)
+    String checkKey = DigestUtil.md5Hex(('verify_code_check' + userMobile + randomInt).getBytes())
+    def params = ['mobile': userMobile, 'random': String.valueOf(randomInt), 'requestKey': checkKey]
+    def response = RestClient.doPostWithBody(frontUrl, getAppVerifyCodeCheckPath, params, null)
+    if (response == null) {
+        logger.error('send login sms no response')
+        return new AppCommonResult(false, '短信验证码发送失败', 1, 0, result)
+    }
+    logger.info('send login sms response: {}', response.body())
+    if (response.ok && !StrUtil.isEmpty(response.body())) {
+        return JSON.parseObject(response.body(), AppCommonResult.class)
+    }
+    return new AppCommonResult(false, '短信验证码发送失败', 1, 0, result)
+}
+
+static def preApply(String token, String mobile) {
+    JSONObject result = new JSONObject()
+    // post params body
+    def params = ['mobile': mobile, 'showLoanList': 'DDG']
+    // post headers
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, preApplyPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('preApply no response')
+            return new AppCommonResult(false, '没有取得门店配置，联系管理员', 1, 0, result)
+        }
+        logger.info('preApply response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('preApply error,', ex)
+    }
+    return new AppCommonResult(false, '没有取得门店配置，联系管理员', 1, 0, result)
+}
+
+static def loadIdentity(String appId, String token) {
+    JSONObject result = new JSONObject()
+    // post params body
+    def params = ['appId': appId]
+    // post headers
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, loadIdentityPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('loadIdentity no response')
+            return new AppCommonResult(false, '加载用户信息失败', 1, 0, result)
+        }
+        logger.info('loadIdentity response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('loadIdentity error,', ex)
+    }
+    return new AppCommonResult(false, '加载用户信息失败', 1, 0, result)
+}
+
+// 识别身份证
+static def doIdCardOcr(String url, String fileType, String token) {
+    JSONObject result = new JSONObject()
+    // file dest
+    File file = File.createTempFile('idPhoto', '.ycImage')
+    // download file
+    HttpUtil.downloadFile(url, file)
+    // read file to bytes
+    byte[] fileContent = FileUtil.readBytes(file)
+    // base64 encoding
+    String encodedString = Base64.getEncoder().encodeToString(fileContent)
+    // post params body
+    def params = ['fileType': fileType, 'imgData': 'data:image/jpeg;base64,' + encodedString]
+    // post header
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithForm(frontUrl, doIdCardOcrPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('doIdCardOcr no response')
+            return new AppCommonResult(false, '身份证识别失败', 1, 0, result)
+        }
+        logger.info('doIdCardOcr response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('doIdCardOcr error,', ex)
+    }
+    return new AppCommonResult(false, '身份证识别失败', 1, 0, result)
+}
+
+static def doBankCode(Map<String, Object> params) {
+    JSONObject result = new JSONObject()
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, getSupportBankListPath, params, null)
+        if (response == null) {
+            logger.error('bankCodeConfig no response')
+            return new AppCommonResult(false, '获取银行列表失败', 1, 0, result)
+        }
+
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            AppCommonResult appCommonResult = JSON.parseObject(response.body(), AppCommonResult.class)
+
+            JSONObject json = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+            if (json != null && !json.isEmpty()) {
+                JSONArray allBanks = json.containsKey('allBanks') ? json.getJSONArray('allBanks') : null
+                if (allBanks != null && !allBanks.isEmpty()) {
+                    def bankMap = new HashMap()
+                    allBanks.forEach {
+                        JSONObject bank ->
+                            String bankCode = bank.containsKey('bankCode') ? bank.getString('bankCode') : ''
+                            String bankName = bank.containsKey('bankName') ? bank.getString('bankName') : ''
+                            bankMap.put(bankName, bankCode)
+                    }
+                    if (!bankMap.isEmpty()) {
+                        result.put('bankCodeConfig', bankMap)
+                        return new AppCommonResult(true, '', 1, 1, result)
+                    }
+                }
+            }
+        }
+    } catch (Exception ex) {
+        logger.error('bankCodeConfig error', ex)
+    }
+    return new AppCommonResult(false, '获取银行列表失败', 1, 0, result)
+}
+
+// check bank card limit
+static def checkBankCardLimit(String token, String name, String idNo, String bankCard, Integer amount) {
+    JSONObject result = new JSONObject()
+    // post params body
+    def params = ['name': name, 'idNo': idNo, 'bankCard': bankCard, 'loanAmt': amount]
+    // post headers
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, checkBankCardLimitPath, params, requestAuth)
+        if (response == null) {
+            logger.error('checkBankCardLimit no response')
+            return new AppCommonResult(false, '银行卡限额校验失败', 1, 0, result)
+        }
+        logger.info('checkBankCardLimit response:{}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            AppCommonResult appCommonResult = JSON.parseObject(response.body(), AppCommonResult.class)
+            //
+            if (appCommonResult.result) {
+                return new AppCommonResult(true, '银行卡限额校验通过', 1, 1, result)
+            }
+        }
+    } catch (Exception ex) {
+        logger.error('checkBankCardLimit error,', ex)
+    }
+    return new AppCommonResult(false, '银行卡限额校验失败', 1, 0, result)
+}
+
+// check 老客户信息
+static def checkOldIdentity(String token, String name, String idNo) {
+    JSONObject result = new JSONObject()
+    def params = ['name': name, 'idNo': idNo]
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, checkOldIdentityPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('checkIdentity no response')
+            return new AppCommonResult(false, '老客户信息检测失败', 1, 0, result)
+        }
+        logger.info('checkIdentity response:{}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('checkIdentity error,', ex)
+    }
+    return new AppCommonResult(false, '老客户信息检测失败', 1, 0, result)
+}
+
+// check 用户支付协议
+static def checkPayProtocol(String token, String appId, String name, String idNo, String bankCard, String bankMobile, String bankCode) {
+    JSONObject result = new JSONObject()
+    // pageUrl 签约回调地址，不是招商银行，可以为空
+    def params = ['appId': appId, 'name': name, 'idNo': idNo, 'bankCode': bankCode, 'accountId': bankCard, 'rsvPhone': bankMobile, 'type': '1', 'pageUrl': '']
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, checkProtocolPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('checkUserPayProtocol no response')
+            return new AppCommonResult(false, '用户支付协议检测失败', 1, 0, result)
+        }
+        logger.info('checkUserPayProtocol response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('checkUserPayProtocol error,', ex)
+    }
+    return new AppCommonResult(false, '用户支付协议检测失败', 1, 0, result)
+}
+
+static def submitPayProtocol(String appId, String bankCode, String bankMobile, String verifyCode, String payProtocolKey, String bankCard, String token) {
+    JSONObject result = new JSONObject()
+    // post params body
+    def params = ['appId': appId, 'cardCode': bankCode, 'reservedMobile': bankMobile, 'smsStr': verifyCode, 'makeProtocolKey': payProtocolKey, 'cardNo': bankCard, 'type': '1']
+    // post headers
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, submitProtocolPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('submitUserPayProtocol no response')
+            return new AppCommonResult(false, '提交用户支付协议失败，联系管理员', 1, 0, result)
+        }
+        logger.info('submitUserPayProtocol response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('submitUserPayProtocol error,', ex)
+    }
+    return new AppCommonResult(false, '提交用户支付协议失败，联系管理员', 1, 0, result)
+}
+
+static def submitIdentity(String appId, String name, String idNo, String idValid, String bankCode,
+                          String storeCode, String bankCard, String bankMobile, String token) {
+    JSONObject result = new JSONObject()
+    // post params body
+    def params = ['C_APP_ID': appId, 'name': name, 'C_ID_VALID': idValid, 'idNo': idNo, 'bankCode': bankCode, 'storeCode': storeCode, 'accountId': bankCard, 'rsvPhone': bankMobile]
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, submitIdentityPath + token, params, requestAuth)
+        if (response == null) {
+            logger.error('submitIdentity no response')
+            return new AppCommonResult(false, '提交身份信息失败，联系管理员', 1, 0, result)
+        }
+        logger.info('submitIdentity response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('submitIdentity error,', ex)
+    }
+    return new AppCommonResult(false, '提交身份信息失败，联系管理员', 1, 0, result)
+}
+
+// 提交申请
+static def submitApplyStep(String token, JSONObject info) {
+    JSONObject result = new JSONObject()
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, submitApplyStepPath + token, info, requestAuth)
+        if (response == null) {
+            logger.error('submitApplyStep no response')
+            return new AppCommonResult(false, '进件提交订单信息失败，联系管理员', 1, 0, result)
+        }
+        logger.info('submitApplyStep response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('submitApplyStep error,', ex)
+    }
+    return new AppCommonResult(false, '进件提交订单信息失败，联系管理员', 1, 0, result)
+}
+
+static def doFaceCheck(String token, Map<String, Object> params) {
+    JSONObject result = new JSONObject()
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithForm(frontUrl, faceDetectPath, params, requestAuth)
+        if (response == null) {
+            logger.error('doFaceCheck no response')
+            return new AppCommonResult(false, '检测活体人脸启动失败', 1, 0, result)
+        }
+        logger.info('doFaceCheck response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('doFaceCheck error,', ex)
+    }
+    return new AppCommonResult(false, '检测活体人脸启动失败', 1, 0, result)
+}
+
+def static doWebankFace(String token, JSONObject params) {
+    JSONObject result = new JSONObject()
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, webankH5Path, params, requestAuth)
+        if (response == null) {
+            logger.error('doWebankFace no response')
+            return new AppCommonResult(false, '启动活体人脸失败', 1, 0, result)
+        }
+        logger.info('doWebankFace response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('doWebankFace error,', ex)
+    }
+    return new AppCommonResult(false, '启动活体人脸失败', 1, 0, result)
+}
+
+static def validateH5Face(String token, JSONObject params) {
+    JSONObject result = new JSONObject()
+    def headers = wrapHeadersWithToken(token)
+    RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
+    try {
+        def response = RestClient.doPostWithBody(frontUrl, validateH5FacePath, params, requestAuth)
+        if (response == null) {
+            logger.error('validateH5Face no response')
+            return new AppCommonResult(false, '人脸验证提交失败， 联系管理员', 1, 0, result)
+        }
+        logger.info('validateH5Face response: {}', response.body())
+        if (response.isOk() && !StrUtil.isEmpty(response.body())) {
+            return JSON.parseObject(response.body(), AppCommonResult.class)
+        }
+    } catch (Exception ex) {
+        logger.error('validateH5Face error, ', ex)
+    }
+    return new AppCommonResult(false, '人脸验证提交失败， 联系管理员', 1, 0, result)
+}
+
 
 static def wrapHeadersWithToken(String token) {
     def defaultHeaders = ['platform': 'wechat']
@@ -1451,6 +1546,41 @@ static def makeResponseVo(boolean success, String msg, Object data) {
     }
 }
 
+static def noticeMap(JSONObject noticeData) {
+    return noticeMap(new JSONObject(), noticeData)
+}
+
+static def noticeMap(JSONObject responseData, JSONObject noticeData) {
+    def success = responseData.containsKey('success') ? responseData.getBooleanValue('success') : true
+    def msg = responseData.containsKey('msg') ? responseData.getString('msg') : ''
+    return noticeMap(success, msg, noticeData)
+}
+
+static def noticeMap(boolean success, String msg, JSONObject noticeData) {
+    def noticeArgs = makeResponseVo(success, msg, noticeData)
+    return new HashMap<String, Object>() {
+        {
+            put('notice_hub', noticeArgs)
+        }
+    }
+}
+
+static def noticeData(JSONObject args) {
+    String botId = args.containsKey('botId') ? args.getString('botId') : ''
+    String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
+    String content = args.containsKey('content') ? args.getString('content') : ''
+    String picUrl = args.containsKey('picUrl') ? args.getString('picUrl') : ''
+    String type = args.containsKey('type') ? args.getString('type') : ''
+    Map<String, Object> param = args.containsKey('param') ? args.get('param') as Map<String, Object> : new HashMap<String, Object>()
+    return noticeData(botId, accountId, content, picUrl, type, param)
+}
+
+static def noticeData(JSONObject processVariables, String content, String picUrl, String type, Map<String, Object> param) {
+    String botId = processVariables.containsKey('botId') ? processVariables.getString('botId') : ''
+    String accountId = processVariables.containsKey('accountId') ? processVariables.getString('accountId') : ''
+    return noticeData(botId, accountId, content, picUrl, type, param)
+}
+
 static def noticeData(String botId, String accountId, String content, String picUrl, String type, Map<String, Object> param) {
     return new JSONObject() {
         {
@@ -1461,5 +1591,36 @@ static def noticeData(String botId, String accountId, String content, String pic
             put('type', type)
             put('param', param)
         }
+    }
+}
+
+static def noticeHub(JSONObject responseVo) {
+    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, responseVo, null)
+    if (!StrUtil.isEmpty(response.body())) {
+        logger.info('noticeHub response {}', response.body())
+    }
+}
+
+static def noticeHub(boolean success, String msg, JSONObject noticeData) {
+    def params = makeResponseVo(success, msg, noticeData)
+    noticeHub(params)
+}
+
+class AppCommonResult {
+    boolean result = true
+    String errMsg = ''
+    Integer status = 1
+    Integer success = 1
+    Object responseObject
+
+    AppCommonResult() {
+    }
+
+    AppCommonResult(boolean result, String errMsg, Integer status, Integer success, Object responseObject) {
+        this.result = result
+        this.errMsg = errMsg
+        this.status = status
+        this.success = success
+        this.responseObject = responseObject
     }
 }
