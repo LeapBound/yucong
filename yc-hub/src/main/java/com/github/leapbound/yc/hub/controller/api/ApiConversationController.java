@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class ApiConversationController {
 
     private final ConversationService conversationService;
-    private ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors() - 1,
             Runtime.getRuntime().availableProcessors() * 2,
             5000,
@@ -44,6 +44,10 @@ public class ApiConversationController {
     @PostMapping("/notice")
     public void noticeUser(@RequestBody ProcessResponseDto<SingleChatDto> responseDto) {
         log.debug("noticeUser {}", responseDto);
+        SingleChatDto singleChatDto = new SingleChatDto();
+        singleChatDto.setBotId("B6aeff8084b134aaeba2d919270f8322a");
+        singleChatDto.setAccountId("A95b28a1a41024b5ca1b8053996d24cb5");
+        responseDto.setData(singleChatDto);
         NotifyUserRunnable notifyUserRunnable = new NotifyUserRunnable(this.conversationService, responseDto.getData());
         this.executor.execute(notifyUserRunnable);
     }

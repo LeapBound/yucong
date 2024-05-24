@@ -54,15 +54,15 @@ public class UserServiceImpl implements UserService {
                 .last("limit 1");
         AccountEntity accountEntity = this.accountMapper.selectOne(queryWrapper);
         if (accountEntity != null) {
-            return accountEntity.getUserId();
+            return accountEntity.getAccountId();
         }
         return null;
     }
 
     @Override
-    public String createAccount(String accountName, String userId, String botId) {
+    public String createAccount(String accountName, String externalId, String userId, String botId) {
         AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setAccountName(accountName);
+        accountEntity.setExternalId(externalId);
         accountEntity.setUserId(userId);
         accountEntity.setBotId(botId);
         accountEntity.setAccountId("A" + UUID.randomUUID().toString().replace("-", ""));

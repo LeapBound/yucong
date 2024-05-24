@@ -8,7 +8,7 @@ public interface UserService {
 
     String getAccountId(String userId, String botId);
 
-    String createAccount(String accountName, String userId, String botId);
+    String createAccount(String accountName, String externalId, String userId, String botId);
 
     void addAccountRoleRelation(String roleName, String accountId);
 }

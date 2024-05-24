@@ -30,10 +30,8 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -53,6 +51,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final ObjectMapper mapper;
     @Value("${yucong.conversation.expire:300}")
     private int expires;
+    private final Map<String, Boolean> notifyMap = new ConcurrentHashMap<>();
 
     @Override
     public List<MyMessage> getByConversationId(String conversationId) {
@@ -84,6 +83,11 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public MyMessage chat(SingleChatDto singleChatModel) {
+        return chat(singleChatModel, false);
+    }
+
+    @Override
+    public MyMessage chat(SingleChatDto singleChatModel, Boolean isTest) {
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
         String content = singleChatModel.getContent();
@@ -99,20 +103,22 @@ public class ConversationServiceImpl implements ConversationService {
         String conversationId = getConversationId(botId, accountId);
 
         // 匹配历史记忆
-//        List<BigDecimal> embedding = this.gptService.embedding(content);
-//        List<Float> floatList = new ArrayList<>(embedding.size());
-//        embedding.forEach(item -> floatList.add(item.floatValue()));
-//        String summaryConversationId = this.milvusService.search(floatList, 0.4);
-//        if (StringUtils.hasText(summaryConversationId)) {
-//            LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
-//                    .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
-//                    .last("limit 1");
-//            MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
-//            MyMessage botMemory = new MyMessage();
-//            botMemory.setRole(Message.Role.SYSTEM.getName());
-//            botMemory.setContent(summaryEntity.getContent());
-//            addMessage(conversationId, botId, accountId, botMemory);
-//        }
+        /*
+        List<BigDecimal> embedding = this.gptService.embedding(content);
+        List<Float> floatList = new ArrayList<>(embedding.size());
+        embedding.forEach(item -> floatList.add(item.floatValue()));
+        String summaryConversationId = this.milvusService.search(floatList, 0.4);
+        if (StringUtils.hasText(summaryConversationId)) {
+            LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
+                    .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
+                    .last("limit 1");
+            MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
+            MyMessage botMemory = new MyMessage();
+            botMemory.setRole(Message.Role.SYSTEM.getName());
+            botMemory.setContent(summaryEntity.getContent());
+            addMessage(conversationId, botId, accountId, botMemory);
+        }
+        */
 
         // 客户消息
         MyMessage userMsg = new MyMessage();
@@ -134,7 +140,7 @@ public class ConversationServiceImpl implements ConversationService {
 
         // 调用gpt服务
         messageList = getByBotIdAndAccountId(botId, accountId);
-        List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList);
+        List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
         gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
 
         return gptMessageList.get(gptMessageList.size() - 1);
@@ -142,6 +148,11 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public void notifyUser(SingleChatDto singleChatModel) {
+        if (singleChatModel == null) {
+            log.error("notifyUser singleChatModel is null");
+            return;
+        }
+
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
         String conversationId = getConversationId(botId, accountId);
@@ -156,6 +167,15 @@ public class ConversationServiceImpl implements ConversationService {
         addMessage(conversationId, botId, accountId, assistantMsg);
 
         this.hubInteractiveService.receiveMsg(singleChatModel);
+
+        this.notifyMap.put(accountId, true);
+    }
+
+    @Override
+    public Boolean checkNotify(String accountId) {
+        Boolean notify = this.notifyMap.get(accountId);
+        this.notifyMap.remove(accountId);
+        return notify;
     }
 
     @Override
@@ -265,8 +285,11 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     private void addMessage(String conversationId, String botId, String accountId, MyMessage message) {
-        if (StringUtils.hasText(message.getContent())
-                || StringUtils.hasText(message.getPicUrl())) {
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
+
+        if ((StringUtils.hasText(message.getContent())
+                || StringUtils.hasText(message.getPicUrl()))
+                && Boolean.TRUE.equals(this.redisTemplate.hasKey(mapKey))) {
             this.redisTemplate.opsForList().rightPush(conversationId, message);
             this.redisTemplate.expire(conversationId, Duration.ofSeconds(this.expires));
 

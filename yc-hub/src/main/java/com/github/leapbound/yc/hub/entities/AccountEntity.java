@@ -16,7 +16,8 @@ public class AccountEntity {
     private Long id;
     @TableField("account_uuid")
     private String accountId;
-    private String accountName;
+    @TableField("account_name")
+    private String externalId;
     @TableField("user_uuid")
     private String userId;
     @TableField("bot_uuid")

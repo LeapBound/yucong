@@ -10,11 +10,15 @@ public interface ConversationService {
 
     List<MyMessage> getByConversationId(String conversationId);
 
-    List<MyMessage> getByBotIdAndAccountId(String botId, String accountId);
+    List<MyMessage> getByBotIdAndAccountId(String botId, String externalId);
 
     MyMessage chat(SingleChatDto singleChatModel);
 
+    MyMessage chat(SingleChatDto singleChatModel, Boolean isTest);
+
     void notifyUser(SingleChatDto singleChatModel);
+
+    Boolean checkNotify(String accountId);
 
     void summaryDialog(String conversationId);
 

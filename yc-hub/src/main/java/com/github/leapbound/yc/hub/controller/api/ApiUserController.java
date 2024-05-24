@@ -31,7 +31,7 @@ public class ApiUserController {
 
         String accountID = this.userService.getAccountId(userId, botId);
         if (accountID == null) {
-            accountID = this.userService.createAccount(accountName, userId, botId);
+            accountID = this.userService.createAccount("", accountName, userId, botId);
         }
 
         this.userService.addAccountRoleRelation(roleName, accountID);

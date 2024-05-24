@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface GptService {
 
-    List<MyMessage> completions(String botId, String accountId, Map<String, Object> params, List<MyMessage> messageList);
+    List<MyMessage> completions(String botId, String accountId, Map<String, Object> params, List<MyMessage> messageList, Boolean isTest);
 
     String summary(String content);
 

@@ -1,9 +1,12 @@
 package com.github.leapbound.yc.hub.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.consts.ProcessConsts;
+import com.github.leapbound.yc.hub.entities.AccountEntity;
+import com.github.leapbound.yc.hub.mapper.AccountMapper;
 import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
@@ -35,6 +38,7 @@ public class ActionServerServiceImpl implements ActionServerService {
 
     private final RestTemplate actionRestTemplate;
     private final ObjectMapper objectMapper;
+    private final AccountMapper accountMapper;
 
     @Override
     public ProcessTaskDto queryNextTask(String accountId) {
@@ -187,11 +191,16 @@ public class ActionServerServiceImpl implements ActionServerService {
     @Override
     public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
+            LambdaQueryWrapper<AccountEntity> lqw = new LambdaQueryWrapper<AccountEntity>()
+                    .eq(AccountEntity::getAccountId, accountId);
+            AccountEntity accountEntity = this.accountMapper.selectOne(lqw);
+
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_JSON);
             requestHeaders.add("accountId", accountId);
             requestHeaders.add("botId", botId);
+            requestHeaders.add("externalId", accountEntity.getExternalId());
             // todo
             requestHeaders.add("deviceId", "deviceId001");
             // body
