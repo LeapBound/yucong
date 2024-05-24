@@ -456,9 +456,10 @@ static def loadClientIdentity(String method, String arguments) {
         result.put('s_taskResult', false)
         return result
     }
-    if (appCommonResult.responseObject != null) {
-        result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
-    }
+    // todo 先不塞
+//    if (appCommonResult.responseObject != null) {
+//        result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
+//    }
     //
     Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
     result.put('afterFunction', afterFunctionMap)
@@ -559,7 +560,7 @@ static def bankCard(String method, String arguments) {
                 return makeResponseVo(false, '[back_card]当前流程失败，请联系管理员', result)
             }
             // transfer bankName to bankCode
-            def bankCode = ''
+            def bankCode = bankName
             CamundaService.getProcessVariable(taskReturn.getProcessInstanceId()).getJSONObject('bankCodeConfig').forEach {
                 String key, String value ->
                     if (key == bankName) {
@@ -814,7 +815,7 @@ static def maritalStatus(String method, String arguments) {
                 return makeResponseVo(false, '[marital_status]当前流程失败， 联系管理员', result)
             }
             String taskId = taskReturn.getTaskId()
-            def maritalKey = ''
+            def maritalKey = marital
             maritalStatusMap.forEach {
                 String key, String value ->
                     if (key == marital) {
@@ -885,7 +886,7 @@ static def thirdStep(String method, String arguments) {
             String maritalKey = processVariable.containsKey('maritalKey') ? processVariable.getString('maritalKey') : ''
             String relationName = processVariable.containsKey('relationName') ? processVariable.getString('relationName') : ''
             String relationTel = processVariable.containsKey('relationTel') ? processVariable.getString('relationTel') : ''
-            def relationKey = ''
+            def relationKey = relation
             relationMap.forEach {
                 String key, String value ->
                     if (key == relation) {
