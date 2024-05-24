@@ -48,7 +48,3 @@ static def startTicket(String arguments) {
     logger.info('{},{}, start_ticket', userId, externalId)
     return ResponseVo.makeSuccess(result)
 }
-
-static def getTicket(String arguments) {
-
-}
