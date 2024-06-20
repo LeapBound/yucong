@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import groovy.transform.Field
 import scripts.alpha.Alpha
+import scripts.general.GeneralMethods
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -18,7 +19,7 @@ import java.time.format.DateTimeFormatter
  *
  */
 // alpha 地址
-@Field static String alphaUrl = 'https://beta.geexfinance.com'
+@Field static String alphaUrl = ''
 // 通过订单号获取还款计划 yrl
 @Field static String getRepayPlanByOrderPath = '/geex-csorder/order/repayPlan/'
 // 查询订单放款状态 url
@@ -61,10 +62,7 @@ static def execOrderMethod(String method, String arguments) {
         return result
     }
     //
-    def externalUrl = getExternalUrl(arguments)
-    if (!StrUtil.isEmptyIfStr(externalUrl)) {
-        alphaUrl = externalUrl
-    }
+    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
     //
     switch (method) {
         case 'get_user_repayment_by_order': // 订单号查询用户还款计划
@@ -89,12 +87,6 @@ static def execOrderMethod(String method, String arguments) {
     return result
 }
 
-static def getExternalUrl(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
-    return externalHost
-}
-
 /**
  * 订单号查询用户还款计划
  * @param arguments 入参
@@ -116,7 +108,7 @@ static def getUserRepaymentByOrder(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
     def response = Alpha.doGetWithLogin(alphaUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
     // no response
     if (response == null) {
@@ -185,7 +177,7 @@ static def getUserLoanTimeByOrder(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
     def response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
@@ -261,7 +253,7 @@ static def getLoanStatusByOrder(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
     def response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
@@ -318,7 +310,7 @@ static def tryOrderRepay(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
     def response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRepayPath, params, requestAuth, 1)
     // no response
     if (response == null) {
@@ -371,7 +363,7 @@ static def tryOrderRefund(String arguments) {
     // params init
     def params = ['orderNo': orderNo]
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
     def response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRefundPath, params, requestAuth, 1)
     // no response
     if (response == null) {
