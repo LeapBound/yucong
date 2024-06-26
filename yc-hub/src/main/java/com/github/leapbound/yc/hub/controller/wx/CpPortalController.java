@@ -52,7 +52,7 @@ public class CpPortalController {
                        @RequestParam("msg_signature") String signature,
                        @RequestParam("timestamp") String timestamp,
                        @RequestParam("nonce") String nonce) {
-        log.debug("接收微信请求：[signature=[{}], timestamp=[{}], nonce=[{}], requestBody=[\n{}\n] ",
+        log.debug("接收企业微信请求：[signature=[{}], timestamp=[{}], nonce=[{}], requestBody=[\n{}\n] ",
                 signature, timestamp, nonce, requestBody);
 
         final WxCpService wxCpService = this.channelService.getCpService(corpId, agentId);

@@ -39,11 +39,10 @@ public class GptServiceImpl implements GptService {
 
         MyChatCompletionResponse response;
         switch (messageList.get(messageList.size() - 1).getType()) {
-            case "image":
-            case "video":
+            case IMAGE, VIDEO:
                 response = processImg(botId, accountId, messageList.get(messageList.size() - 1), currentTask);
                 break;
-            case "text":
+            case TEXT:
             default:
                 response = sendToChatServer(botId, accountId, messageList, currentTask, isTest);
         }

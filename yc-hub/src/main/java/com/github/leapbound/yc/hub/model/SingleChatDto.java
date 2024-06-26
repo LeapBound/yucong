@@ -1,5 +1,6 @@
 package com.github.leapbound.yc.hub.model;
 
+import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import lombok.Data;
 
 import java.util.Map;
@@ -11,6 +12,6 @@ public class SingleChatDto {
     private String accountId;
     private String content;
     private String picUrl;
-    private String type;
+    private MyMessageType type;
     private Map<String, Object> param;
 }

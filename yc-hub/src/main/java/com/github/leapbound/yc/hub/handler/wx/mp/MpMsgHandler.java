@@ -35,7 +35,6 @@ public class MpMsgHandler extends AbstractHandler {
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
         singleChatModel.setPicUrl(wxMessage.getPicUrl());
-        singleChatModel.setType(wxMessage.getMsgType());
         String msg = this.conversationService.chat(singleChatModel).getContent();
 
         return WxMpXmlOutMessage

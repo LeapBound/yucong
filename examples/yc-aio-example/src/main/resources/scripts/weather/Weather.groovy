@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSONObject
 /**
  *
  * @author yamath
- * @since 2023/12/8 9:35
+ * @date 2023/12/8 9:35
  */
 
 static def execWeatherMethod(String method, String arguments) {

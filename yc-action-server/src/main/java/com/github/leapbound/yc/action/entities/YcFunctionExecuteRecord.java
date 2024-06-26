@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author yamath
- * @since 2023-07-14
+ * @date 2023-07-14
  */
 @TableName("yc_function_execute_record")
 public class YcFunctionExecuteRecord implements Serializable {

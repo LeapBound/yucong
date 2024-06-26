@@ -11,6 +11,8 @@ public interface ChannelService {
 
     WxCpMessageRouter getCpRouter(String corpId, Integer agentId);
 
+    void switchCpDealer();
+
     WxMpService getMpService(String appId);
 
     WxMpMessageRouter getMpRouter(String appId);

@@ -14,7 +14,7 @@ public class MyMessage implements Serializable {
     private String role;
     private String content;
     private String picUrl;
-    private String type;
+    private MyMessageType type;
     private String name;
     private Map<String, Object> param;
 

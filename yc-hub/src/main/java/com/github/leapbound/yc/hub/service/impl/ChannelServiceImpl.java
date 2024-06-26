@@ -1,6 +1,7 @@
 package com.github.leapbound.yc.hub.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.leapbound.yc.hub.handler.wx.cp.CpKfHandler;
 import com.github.leapbound.yc.hub.service.ChannelService;
 import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import me.chanjar.weixin.common.error.WxRuntimeException;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.api.impl.WxCpServiceImpl;
 import me.chanjar.weixin.cp.config.impl.WxCpDefaultConfigImpl;
+import me.chanjar.weixin.cp.constant.WxCpConsts;
 import me.chanjar.weixin.cp.message.WxCpMessageRouter;
 import me.chanjar.weixin.mp.api.WxMpMessageRouter;
 import me.chanjar.weixin.mp.api.WxMpService;
@@ -35,13 +37,14 @@ public class ChannelServiceImpl implements ChannelService {
 
     private final CpLogHandler cpLogHandler;
     private final CpMsgHandler cpMsgHandler;
+    private final CpKfHandler cpKfHandler;
     private final MpLogHandler mpLogHandler;
     private final MpMsgHandler mpMsgHandler;
     private final ChannelMapper channelMapper;
-    private final Map<String, WxCpMessageRouter> cpRouters = Maps.newHashMap();
-    private final Map<String, WxCpService> cpServices = Maps.newHashMap();
-    private final Map<String, WxMpMessageRouter> mpRouters = Maps.newHashMap();
-    private final Map<String, WxMpService> mpServices = Maps.newHashMap();
+    private final Map<String, WxCpMessageRouter> cpRouters = Maps.newConcurrentMap();
+    private final Map<String, WxCpService> cpServices = Maps.newConcurrentMap();
+    private final Map<String, WxMpMessageRouter> mpRouters = Maps.newConcurrentMap();
+    private final Map<String, WxMpService> mpServices = Maps.newConcurrentMap();
 
     @Override
     public WxCpService getCpService(String corpId, Integer agentId) {
@@ -55,6 +58,51 @@ public class ChannelServiceImpl implements ChannelService {
     @Override
     public WxCpMessageRouter getCpRouter(String corpId, Integer agentId) {
         return this.cpRouters.get(corpId + agentId);
+    }
+
+    @Override
+    public void switchCpDealer() {
+
+    }
+
+    private WxCpService initCpService(String corpId, Integer agentId) {
+        ChannelEntity channelEntity = getChannelEntity(corpId, agentId);
+        if (channelEntity == null) {
+            return null;
+        }
+
+        WxCpDefaultConfigImpl config = new WxCpDefaultConfigImpl();
+        config.setCorpId(channelEntity.getCorpId());
+        config.setAgentId(Integer.valueOf(channelEntity.getAgentId()));
+        config.setCorpSecret(channelEntity.getSecret());
+        config.setToken(channelEntity.getToken());
+        config.setAesKey(channelEntity.getAesKey());
+
+        WxCpService service = new WxCpServiceImpl();
+        service.setWxCpConfigStorage(config);
+
+        this.cpRouters.put(corpId + agentId, newCpRouter(service));
+        this.cpServices.put(corpId + agentId, service);
+        return service;
+    }
+
+    private WxCpMessageRouter newCpRouter(WxCpService wxCpService) {
+        WxCpMessageRouter newRouter = new WxCpMessageRouter(wxCpService);
+
+        // 记录所有事件的日志 （异步执行）
+        newRouter.rule().handler(this.cpLogHandler).next();
+
+//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
+//                .event(WxCpConsts.EventType.CHANGE_CONTACT).handler(this.contactChangeHandler).end();
+
+        // 信息
+        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.TEXT).handler(this.cpMsgHandler).end();
+
+        // 客服信息
+        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
+                .event(WxCpConsts.EventType.KF_MSG_OR_EVENT).handler(this.cpKfHandler).end();
+
+        return newRouter;
     }
 
     @Override
@@ -78,36 +126,8 @@ public class ChannelServiceImpl implements ChannelService {
         return mpMessageRouter;
     }
 
-    private WxCpService initCpService(String corpId, Integer agentId) {
-        LambdaQueryWrapper<ChannelEntity> queryWrapper = new LambdaQueryWrapper<ChannelEntity>()
-                .eq(ChannelEntity::getCorpId, corpId)
-                .eq(ChannelEntity::getAgentId, agentId)
-                .last("limit 1");
-        ChannelEntity channelEntity = this.channelMapper.selectOne(queryWrapper);
-        if (channelEntity == null) {
-            return null;
-        }
-
-        WxCpDefaultConfigImpl config = new WxCpDefaultConfigImpl();
-        config.setCorpId(channelEntity.getCorpId());
-        config.setAgentId(Integer.valueOf(channelEntity.getAgentId()));
-        config.setCorpSecret(channelEntity.getSecret());
-        config.setToken(channelEntity.getToken());
-        config.setAesKey(channelEntity.getAesKey());
-
-        WxCpService service = new WxCpServiceImpl();
-        service.setWxCpConfigStorage(config);
-
-        this.cpRouters.put(corpId + agentId, newCpRouter(service));
-        this.cpServices.put(corpId + agentId, service);
-        return service;
-    }
-
     private WxMpService initMpService(String appId) {
-        LambdaQueryWrapper<ChannelEntity> queryWrapper = new LambdaQueryWrapper<ChannelEntity>()
-                .eq(ChannelEntity::getCorpId, appId)
-                .last("limit 1");
-        ChannelEntity channelEntity = this.channelMapper.selectOne(queryWrapper);
+        ChannelEntity channelEntity = getChannelEntity(appId);
         if (channelEntity == null) {
             return null;
         }
@@ -128,55 +148,18 @@ public class ChannelServiceImpl implements ChannelService {
         return wxMpService;
     }
 
-    private WxCpMessageRouter newCpRouter(WxCpService wxCpService) {
-        WxCpMessageRouter newRouter = new WxCpMessageRouter(wxCpService);
+    private ChannelEntity getChannelEntity(String corpId) {
+        return getChannelEntity(corpId, null);
+    }
 
-        // 记录所有事件的日志 （异步执行）
-        newRouter.rule().handler(this.cpLogHandler).next();
-
-//        // 自定义菜单事件
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxConsts.MenuButtonType.CLICK).handler(this.menuHandler).end();
-//
-//        // 点击菜单链接事件（这里使用了一个空的处理器，可以根据自己需要进行扩展）
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxConsts.MenuButtonType.VIEW).handler(this.nullHandler).end();
-//
-//        // 关注事件
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxConsts.EventType.SUBSCRIBE).handler(this.subscribeHandler)
-//                .end();
-//
-//        // 取消关注事件
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxConsts.EventType.UNSUBSCRIBE)
-//                .handler(this.unsubscribeHandler).end();
-//
-//        // 上报地理位置事件
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxConsts.EventType.LOCATION).handler(this.locationHandler)
-//                .end();
-//
-//        // 接收地理位置消息
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.LOCATION)
-//                .handler(this.locationHandler).end();
-//
-//        // 扫码事件（这里使用了一个空的处理器，可以根据自己需要进行扩展）
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxConsts.EventType.SCAN).handler(this.nullHandler).end();
-//
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxCpConsts.EventType.CHANGE_CONTACT).handler(this.contactChangeHandler).end();
-//
-//        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.EVENT)
-//                .event(WxCpConsts.EventType.ENTER_AGENT).handler(new EnterAgentHandler()).end();
-
-        // 信息
-        newRouter.rule().async(false).msgType(WxConsts.XmlMsgType.TEXT).handler(this.cpMsgHandler).end();
-
-//        newRouter.rule().async(false).handler(this.msgOrderHandler).end();
-
-        return newRouter;
+    private ChannelEntity getChannelEntity(String corpId, Integer agentId) {
+        LambdaQueryWrapper<ChannelEntity> queryWrapper = new LambdaQueryWrapper<ChannelEntity>()
+                .eq(ChannelEntity::getCorpId, corpId)
+                .last("limit 1");
+        if (agentId != null) {
+            queryWrapper.eq(ChannelEntity::getAgentId, agentId);
+        }
+        return this.channelMapper.selectOne(queryWrapper);
     }
 
     private WxMpMessageRouter newMpRouter(WxMpService wxMpService) {

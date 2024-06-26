@@ -1,5 +1,6 @@
 package com.github.leapbound.yc.hub.model.test;
 
+import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import lombok.Data;
 
 import java.util.Map;
@@ -11,7 +12,7 @@ import java.util.Map;
 @Data
 public class TestMessageDto {
 
-    private String type;
+    private MyMessageType type;
     private Boolean mock;
     private String content;
     private String picUrl;

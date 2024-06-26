@@ -20,6 +20,8 @@ public interface ConversationService {
 
     Boolean checkNotify(String accountId);
 
+    void switchToHuman();
+
     void summaryDialog(String conversationId);
 
     void clearMessageHistory(String botId, String accountId);
