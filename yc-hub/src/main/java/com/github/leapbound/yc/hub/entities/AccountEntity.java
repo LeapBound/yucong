@@ -18,6 +18,8 @@ public class AccountEntity {
     private String accountId;
     @TableField("account_name")
     private String externalId;
+    @TableField(value = "channel_uuid")
+    private String channelId;
     @TableField("user_uuid")
     private String userId;
     @TableField("bot_uuid")

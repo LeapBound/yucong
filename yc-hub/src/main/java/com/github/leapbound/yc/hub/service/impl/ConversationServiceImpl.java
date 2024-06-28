@@ -41,7 +41,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
     private final MessageSummaryMapper messageSummaryMapper;
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final GptService gptService;
     private final ActionServerService actionServerService;
     private final MilvusService milvusService;
@@ -98,12 +98,13 @@ public class ConversationServiceImpl implements ConversationService {
                 MyMessage userMsg = new MyMessage();
                 userMsg.setContent("该bot没有调用权限");
                 return userMsg;
+            } else {
+                conversationId = getConversationId(botId, accountId);
             }
         }
 
         // 判断是对人还是对AI
         Boolean isDealWithAI = isDealWithAI(botId, accountId);
-        List<MyMessage> messageList = getByConversationId(conversationId);
         if (isDealWithAI != null && isDealWithAI) {
             // 匹配历史记忆
             /*
@@ -137,8 +138,10 @@ public class ConversationServiceImpl implements ConversationService {
             addMessage(conversationId, botId, accountId, userMsg);
 
             // 调用gpt服务
+            List<MyMessage> messageList = getByConversationId(conversationId);
             List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
-            gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
+            String finalConversationId = conversationId;
+            gptMessageList.forEach(myMessage -> addMessage(finalConversationId, botId, accountId, myMessage));
 
             return gptMessageList.get(gptMessageList.size() - 1);
         } else {

@@ -19,6 +19,7 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,14 +71,16 @@ public class CpKfHandler extends AbstractHandler {
             String msg = this.conversationService.chat(singleChatModel).getContent();
             log.debug("wxCpKfMsgListResp chat {}", msg);
 
-            WxCpKfMsgSendRequest request = new WxCpKfMsgSendRequest();
-            request.setToUser(externalUserId.get());
-            request.setOpenKfid(openKfId);
-            request.setMsgType("text");
-            WxCpKfTextMsg wxCpKfTextMsg = new WxCpKfTextMsg();
-            wxCpKfTextMsg.setContent(msg);
-            request.setText(wxCpKfTextMsg);
-            wxCpKfService.sendMsg(request);
+            if (StringUtils.hasText(msg)) {
+                WxCpKfMsgSendRequest request = new WxCpKfMsgSendRequest();
+                request.setToUser(externalUserId.get());
+                request.setOpenKfid(openKfId);
+                request.setMsgType("text");
+                WxCpKfTextMsg wxCpKfTextMsg = new WxCpKfTextMsg();
+                wxCpKfTextMsg.setContent(msg);
+                request.setText(wxCpKfTextMsg);
+                wxCpKfService.sendMsg(request);
+            }
         }
 
         return null;

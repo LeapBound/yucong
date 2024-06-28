@@ -2,6 +2,8 @@ package com.github.leapbound.yc.hub.controller.api;
 
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
+import com.github.leapbound.yc.hub.model.wx.WxCpKfDto;
+import com.github.leapbound.yc.hub.service.ChannelService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 import com.github.leapbound.yc.hub.service.impl.runnable.NotifyUserRunnable;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class ApiConversationController {
 
     private final ConversationService conversationService;
+    private final ChannelService channelService;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors() - 1,
             Runtime.getRuntime().availableProcessors() * 2,
@@ -47,8 +50,38 @@ public class ApiConversationController {
         SingleChatDto singleChatDto = new SingleChatDto();
         singleChatDto.setBotId("B6aeff8084b134aaeba2d919270f8322a");
         singleChatDto.setAccountId("A95b28a1a41024b5ca1b8053996d24cb5");
-        responseDto.setData(singleChatDto);
-        NotifyUserRunnable notifyUserRunnable = new NotifyUserRunnable(this.conversationService, responseDto.getData());
+        NotifyUserRunnable notifyUserRunnable = new NotifyUserRunnable(this.conversationService, singleChatDto);
         this.executor.execute(notifyUserRunnable);
     }
+
+    @PostMapping("/servicer/list")
+    public void servicerList(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
+        WxCpKfDto switchKfDto = responseDto.getData();
+        this.channelService.listCpKfServicer(switchKfDto);
+    }
+
+    @PostMapping("/servicer/add")
+    public void servicerAdd(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
+        WxCpKfDto switchKfDto = responseDto.getData();
+        this.channelService.addCpKfServicer(switchKfDto);
+    }
+
+    @PostMapping("/servicer/switch")
+    public void switchDealer(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
+        WxCpKfDto switchKfDto = responseDto.getData();
+        this.channelService.switchCpKfServicer(switchKfDto);
+    }
+
+    @PostMapping("/servicer/switch/group")
+    public void switchDealerByGroup(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
+        WxCpKfDto switchKfDto = responseDto.getData();
+        this.channelService.switchCpKfServicer(switchKfDto);
+    }
+
+    @PostMapping("/servicer/del")
+    public void servicerDel(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
+        WxCpKfDto switchKfDto = responseDto.getData();
+        this.channelService.switchCpKfServicer(switchKfDto);
+    }
+
 }
