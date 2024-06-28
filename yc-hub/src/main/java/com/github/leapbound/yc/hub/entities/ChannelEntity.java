@@ -18,8 +18,8 @@ public class ChannelEntity {
     private String channelId;
     @TableField(value = "bot_uuid")
     private String botId;
-    private String agentId;
     private String corpId;
+    private String agentId;
     @TableField(value = "secret_content")
     private String secret;
     @TableField(value = "token_content")

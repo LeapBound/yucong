@@ -41,10 +41,10 @@ public class ApiWxController {
         inMessage.setFromUser(username);
         inMessage.setContent(content);
 
-        log.debug("消息解密后内容为：\n{} ", inMessage);
+        log.debug("goMp inMessage：\n{} ", inMessage);
         WxMpXmlOutMessage outMessage = this.channelService.getMpRouter(appId).route(inMessage);
 
-        log.debug("组装回复信息：\n{}", outMessage);
+        log.debug("goMp outMessage：\n{}", outMessage);
         return outMessage;
     }
 
@@ -55,10 +55,10 @@ public class ApiWxController {
         inMessage.setContent(content);
         inMessage.setAgentId(agentId.toString());
 
-        log.debug("消息解密后内容为：\n{} ", inMessage);
+        log.debug("goCp inMessage：\n{} ", inMessage);
         WxCpXmlOutMessage outMessage = this.channelService.getCpRouter(corpId, agentId).route(inMessage);
 
-        log.debug("组装回复信息：\n{}", outMessage);
+        log.debug("goCp outMessage：\n{}", outMessage);
         return outMessage;
     }
 }

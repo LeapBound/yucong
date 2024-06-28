@@ -116,3 +116,21 @@ create table yc_user
     update_time datetime    null
 );
 -- 2023/10/08
+alter table yc_channel_config
+    change bot_id bot_uuid varchar(64) null;
+
+alter table yc_channel_config
+    add channel_uuid varchar(33) null after bot_uuid;
+
+alter table yc_account
+    add channel_uuid varchar(33) null after account_uuid;
+
+create table yc_wx_cp_kf
+(
+    id              bigint auto_increment
+        primary key,
+    group_tag       varchar(32) null,
+    service_user_id varchar(64) null,
+    create_time     datetime    null
+);
+-- 20240702

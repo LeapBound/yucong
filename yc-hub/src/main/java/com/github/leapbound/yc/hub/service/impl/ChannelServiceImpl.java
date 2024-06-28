@@ -12,8 +12,10 @@ import com.github.leapbound.yc.hub.handler.wx.mp.MpMsgHandler;
 import com.github.leapbound.yc.hub.mapper.AccountMapper;
 import com.github.leapbound.yc.hub.mapper.ChannelMapper;
 import com.github.leapbound.yc.hub.mapper.WxCpKfMapper;
+import com.github.leapbound.yc.hub.model.ChannelDto;
 import com.github.leapbound.yc.hub.model.wx.WxCpKfDto;
 import com.github.leapbound.yc.hub.service.ChannelService;
+import com.github.leapbound.yc.hub.utils.bean.ChannelBeanMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +60,12 @@ public class ChannelServiceImpl implements ChannelService {
     private final Map<String, WxCpService> cpServices = Maps.newConcurrentMap();
     private final Map<String, WxMpMessageRouter> mpRouters = Maps.newConcurrentMap();
     private final Map<String, WxMpService> mpServices = Maps.newConcurrentMap();
+
+    @Override
+    public ChannelDto getChannelByAccountId(String accountId) {
+        ChannelEntity channelEntity = getChannelEntityByAccountId(accountId);
+        return ChannelBeanMapper.mapEntityToModel(channelEntity);
+    }
 
     @Override
     public WxCpService getCpService(String corpId, Integer agentId) {

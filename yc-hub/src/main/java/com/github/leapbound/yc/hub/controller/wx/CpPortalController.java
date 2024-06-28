@@ -63,7 +63,7 @@ public class CpPortalController {
         WxCpXmlMessage inMessage = WxCpXmlMessage.fromEncryptedXml(requestBody, wxCpService.getWxCpConfigStorage(),
                 timestamp, nonce, signature);
         log.debug("消息解密后内容为：\n{} ", inMessage);
-        WxCpXmlOutMessage outMessage = this.route(corpId, agentId, inMessage);
+        WxCpXmlOutMessage outMessage = route(corpId, agentId, inMessage);
         if (outMessage == null) {
             return "";
         }

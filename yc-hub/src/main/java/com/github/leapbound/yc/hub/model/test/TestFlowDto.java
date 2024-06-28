@@ -11,6 +11,8 @@ import java.util.List;
  */
 @Data
 public class TestFlowDto {
+    private String channel;
+
     private SingleChatDto chat;
     private List<TestMessageDto> messages;
 }
