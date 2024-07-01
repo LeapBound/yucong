@@ -19,8 +19,8 @@ import scripts.general.GeneralMethods
  * @since 2024/5/24 17:28
  */
 @Field static Logger logger = LoggerFactory.getLogger('scripts.bdqa.Bdqa');
-@Field static String alphaUrl = ''
-@Field static String hubUrl = ''
+@Field static String gonggongUrl = ''
+@Field static String qiguanUrl = ''
 @Field static String getSmsRecordPath = '/geex-ops-web/task/getSmsRecord'
 @Field static String updateOrderResultPath = '/geex-ops-web/api/updOrderResult'
 @Field static String noticeHubGroupPath = '/geex-smart-robot/yc-hub/servicer/switch/group'
@@ -42,8 +42,9 @@ static def execBdqaMethod(String method, String arguments) {
         return result
     }
     // get external args
-    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
-    hubUrl = GeneralMethods.getExternal(arguments).get('hubUrl')
+    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
+    Alpha.alphaLoginUrl = gonggongUrl
+    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
 
     switch (method) {
         case 'start_ticket':
@@ -108,8 +109,8 @@ static def getSmsRecord(String arguments) {
     }
     //
     try {
-        RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
-        def response = Alpha.doGetWithLogin(alphaUrl, getSmsRecordPath, params, requestAuth, 1)
+        RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+        def response = Alpha.doGetWithLogin(qiguanUrl, getSmsRecordPath, params, requestAuth, 1)
         if (response == null) {
             logger.error("[get_sms_record] no response")
             return ResponseVo.makeFail(9999, '没有响应，联系管理员')
@@ -160,7 +161,7 @@ static def humanProcess(String arguments) {
             put('accountId', accountId)
             put('externalUserId', externalId)
             put('serviceGroup', serviceGroupTag)
-            put('noticeHubUrl', hubUrl)
+            put('noticeHubUrl', gonggongUrl)
             put('noticeHubPath', noticeHubGroupPath)
         }
     }
@@ -196,8 +197,8 @@ static def updateOrderResult(String arguments) {
     }
     //
     def params = ['appId': appId, 'username': username, 'result': result]
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
-    def response = Alpha.doGetWithLogin(alphaUrl, updateOrderResultPath, params, requestAuth, 1)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doGetWithLogin(qiguanUrl, updateOrderResultPath, params, requestAuth, 1)
     if (response == null) {
         logger.error('[update_order_result] no response')
         return ResponseVo.makeFail(9999, '[小工具]更改订单状态没有响应')

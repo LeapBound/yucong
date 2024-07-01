@@ -21,7 +21,8 @@ import java.util.concurrent.atomic.AtomicReference
  * @since 2023/10/13 17:25
  */
 
-@Field static String alphaUrl = ''
+@Field static String gonggongUrl = ''
+@Field static String qiguanUrl = ''
 @Field static String getSalesListPath = '/geex-platform-web/management/user/getSalesList'
 @Field static String getSalesDetailListPath = '/geex-platform-web/management/user/getSalesDetailList'
 @Field static String updateSalesInfoPath = '/geex-platform-web/management/user/updateSalesInfo'
@@ -44,7 +45,9 @@ static def execAccountMethod(String method, String arguments) {
         return result
     }
     //
-    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
+    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
+    Alpha.alphaLoginUrl = gonggongUrl
+    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
     //
     switch (method) {
         case 'close_user_account': // 关闭域账号和销售账号
@@ -203,8 +206,8 @@ static def closeSalesAccount(String name, String ldapAccount) {
     AtomicReference<Boolean> close = new AtomicReference<>(false)
     //
     def params = ['userName': name, 'status': '1', 'page': '1', 'rows': 50]
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
-    def response = Alpha.doPostBodyWithLogin(alphaUrl, getSalesListPath, params, requestAuth, 1)
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+    def response = Alpha.doPostBodyWithLogin(qiguanUrl, getSalesListPath, params, requestAuth, 1)
     if (response == null) {
         logger.error('closeSalesAccount no response')
         return null
@@ -214,8 +217,8 @@ static def closeSalesAccount(String name, String ldapAccount) {
         JSONArray rows = JSON.parseObject(response.body()).getJSONArray('rows')
         for (int i = 0; i < rows.size(); i++) {
             String userId = rows.getJSONObject(i).get('userId')
-            requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
-            def response1 = Alpha.doGetWithLogin(alphaUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
+            requestAuth = Alpha.setLoginRequestAuth()
+            def response1 = Alpha.doGetWithLogin(qiguanUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
             if (response1 == null) {
                 logger.warn('getSalesDetailList no response')
                 continue
@@ -226,8 +229,8 @@ static def closeSalesAccount(String name, String ldapAccount) {
                     logger.info('close sales account basicInfo: {}', basicInfo)
                     basicInfo.put('status', 0)
                     def closeMap = ['basicInfo': basicInfo, 'rolesList': new ArrayList<>(0), 'teamList': new ArrayList<>(0)]
-                    requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
-                    def response2 = Alpha.doPostBodyWithLogin(alphaUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
+                    requestAuth = Alpha.setLoginRequestAuth()
+                    def response2 = Alpha.doPostBodyWithLogin(qiguanUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
                     if (response2 == null) {
                         logger.warn('updateSalesInfo no response')
                         continue

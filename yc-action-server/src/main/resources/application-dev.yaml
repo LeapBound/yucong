@@ -43,7 +43,7 @@ camunda:
 yc:
   action:
     external:
-      args: "{ frontUrl: 'https://alpha.geexfinance.com',hubUrl: 'https://alpha.geexfinance.com', alphaUrl: 'https://alpha.geexfinance.com' }"
+      args: "{ frontUrl: 'https://alpha.geexfinance.com',hubUrl: 'https://alpha.geexfinance.com', alphaUrl: 'https://alpha.geexfinance.com', 'gonggongUrl': 'https://alpha.geexfinance.com' , 'qiguanUrl': 'https://alpha.geexfinance.com', 'zhangwuUrl': 'https://alpha.geexfinance.com', 'dingdanUrl': 'https://alpha.geexfinance.com', 'zijinUrl': 'https://alpha.geexfinance.com' }"
 
 
 
