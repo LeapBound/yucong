@@ -21,7 +21,14 @@ static def getExternal(String arguments) {
     String externalFrontUrl = args.containsKey('frontUrl') ? args.getString('frontUrl') : ''
     String externalHubUrl = args.containsKey('hubUrl') ? args.getString('hubUrl') : ''
     String externalAlphaUrl = args.containsKey('alphaUrl') ? args.getString('alphaUrl') : ''
-    return ['frontUrl': externalFrontUrl, 'hubUrl': externalHubUrl, 'alphaUrl': externalAlphaUrl]
+    String gonggongUrl = args.containsKey('gonggongUrl') ? args.getString('gonggongUrl') : ''
+    String qiguanUrl = args.containsKey('qiguanUrl') ? args.getString('qiguanUrl') : ''
+    String zhangwuUrl = args.containsKey('zhangwuUrl') ? args.getString('zhangwuUrl') : ''
+    String dingdanUrl = args.containsKey('dingdanUrl') ? args.getString('dingdanUrl') : ''
+    String zijinUrl = args.containsKey('zijinUrl') ? args.getString('zijinUrl') : ''
+    return ['frontUrl'   : externalFrontUrl, 'hubUrl': externalHubUrl, 'alphaUrl': externalAlphaUrl,
+            'gonggongUrl': gonggongUrl, 'qiguanUrl': qiguanUrl, 'zhangwuUrl': zhangwuUrl,
+            'dingdanUrl' : dingdanUrl, 'zijinUrl': zijinUrl]
 }
 
 static def noticeHubMethod(String arguments) {
