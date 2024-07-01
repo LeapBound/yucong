@@ -20,6 +20,7 @@ public class ChannelEntity {
     private String botId;
     private String corpId;
     private String agentId;
+    private String openKfId;
     @TableField(value = "secret_content")
     private String secret;
     @TableField(value = "token_content")

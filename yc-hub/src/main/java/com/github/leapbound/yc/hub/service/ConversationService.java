@@ -10,7 +10,7 @@ public interface ConversationService {
 
     List<MyMessage> getByConversationId(String conversationId);
 
-    List<MyMessage> getByBotIdAndAccountId(String botId, String externalId);
+    List<MyMessage> getByBotIdAndAccountId(String botId, String accountId);
 
     MyMessage chat(SingleChatDto singleChatModel);
 
@@ -19,8 +19,6 @@ public interface ConversationService {
     void notifyUser(SingleChatDto singleChatModel);
 
     Boolean checkNotify(String accountId);
-
-    void switchToHuman();
 
     void summaryDialog(String conversationId);
 

@@ -10,10 +10,18 @@ import com.github.leapbound.yc.hub.model.ChannelDto;
 public class ChannelBeanMapper {
 
 
-    public static ChannelDto mapEntityToModel(ChannelEntity channelEntity) {
-        ChannelDto channelDto = new ChannelDto();
-        channelDto.setCorpId(channelEntity.getCorpId());
-        channelDto.setAgentId(channelEntity.getAgentId());
-        return channelDto;
+    public static ChannelDto mapEntityToModel(ChannelEntity entity) {
+        ChannelDto dto = new ChannelDto();
+
+        dto.setBotId(entity.getBotId());
+        dto.setChannelId(entity.getChannelId());
+
+        dto.setCorpId(entity.getCorpId());
+        dto.setAgentId(entity.getAgentId());
+        dto.setSecret(entity.getSecret());
+        dto.setToken(entity.getToken());
+        dto.setAesKey(entity.getAesKey());
+
+        return dto;
     }
 }

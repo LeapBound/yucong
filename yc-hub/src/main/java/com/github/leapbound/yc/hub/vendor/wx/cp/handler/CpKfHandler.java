@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.hub.handler.wx.cp;
+package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
 import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import com.github.leapbound.yc.hub.consts.RedisConsts;
@@ -45,11 +45,11 @@ public class CpKfHandler extends AbstractHandler {
 
         String openKfId = wxMessage.getOpenKfId();
         String botId = this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), String.valueOf(wxCpService.getWxCpConfigStorage().getAgentId()));
-        String nextCursor = getNextCursor(botId, openKfId);
 
+        String nextCursor = getNextCursor(botId, openKfId);
         WxCpKfServiceImpl wxCpKfService = new WxCpKfServiceImpl(wxCpService);
         WxCpKfMsgListResp wxCpKfMsgListResp = wxCpKfService.syncMsg(nextCursor, wxMessage.getToken(), 100, 0, openKfId);
-        log.info("CpKfHandler 接收到请求消息 botId: {}, username: {}, nextCursor: {}", botId, openKfId, wxCpKfMsgListResp.getNextCursor());
+        log.info("CpKfHandler 接收到请求消息 botId: {}, openKfId: {}, nextCursor: {}", botId, openKfId, wxCpKfMsgListResp.getNextCursor());
 
         if (wxCpKfMsgListResp != null) {
             nextCursor = wxCpKfMsgListResp.getNextCursor();
@@ -65,7 +65,7 @@ public class CpKfHandler extends AbstractHandler {
 
             SingleChatDto singleChatModel = new SingleChatDto();
             singleChatModel.setBotId(botId);
-            singleChatModel.setAccountId(openKfId);
+            singleChatModel.setAccountId(null);
             singleChatModel.setContent(sb.toString());
             singleChatModel.setType(MyMessageType.TEXT);
             String msg = this.conversationService.chat(singleChatModel).getContent();

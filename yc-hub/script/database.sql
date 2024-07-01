@@ -133,4 +133,11 @@ create table yc_wx_cp_kf
     service_user_id varchar(64) null,
     create_time     datetime    null
 );
+
+alter table yc_account
+    change account_name external_id varchar(64) null;
+
+alter table yc_channel_config
+    add open_kf_id varchar(64) null after agent_id;
+
 -- 20240702

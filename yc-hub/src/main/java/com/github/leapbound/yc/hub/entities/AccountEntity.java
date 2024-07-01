@@ -16,7 +16,6 @@ public class AccountEntity {
     private Long id;
     @TableField("account_uuid")
     private String accountId;
-    @TableField("account_name")
     private String externalId;
     @TableField(value = "channel_uuid")
     private String channelId;

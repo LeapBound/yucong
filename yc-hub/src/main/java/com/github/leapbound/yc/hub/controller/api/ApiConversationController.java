@@ -6,6 +6,7 @@ import com.github.leapbound.yc.hub.model.wx.WxCpKfDto;
 import com.github.leapbound.yc.hub.service.ChannelService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 import com.github.leapbound.yc.hub.service.impl.runnable.NotifyUserRunnable;
+import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ public class ApiConversationController {
 
     private final ConversationService conversationService;
     private final ChannelService channelService;
+    private final YcWxCpService ycWxCpService;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors() - 1,
             Runtime.getRuntime().availableProcessors() * 2,
@@ -57,31 +59,31 @@ public class ApiConversationController {
     @PostMapping("/servicer/list")
     public void servicerList(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
         WxCpKfDto switchKfDto = responseDto.getData();
-        this.channelService.listCpKfServicer(switchKfDto);
+        this.ycWxCpService.listCpKfServicer(switchKfDto);
     }
 
     @PostMapping("/servicer/add")
     public void servicerAdd(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
         WxCpKfDto switchKfDto = responseDto.getData();
-        this.channelService.addCpKfServicer(switchKfDto);
+        this.ycWxCpService.addCpKfServicer(switchKfDto);
     }
 
     @PostMapping("/servicer/switch")
     public void switchDealer(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
         WxCpKfDto switchKfDto = responseDto.getData();
-        this.channelService.switchCpKfServicer(switchKfDto);
+        this.ycWxCpService.switchCpKfServicer(switchKfDto);
     }
 
     @PostMapping("/servicer/switch/group")
     public void switchDealerByGroup(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
         WxCpKfDto switchKfDto = responseDto.getData();
-        this.channelService.switchCpKfServicer(switchKfDto);
+        this.ycWxCpService.switchCpKfServicer(switchKfDto);
     }
 
     @PostMapping("/servicer/del")
     public void servicerDel(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
         WxCpKfDto switchKfDto = responseDto.getData();
-        this.channelService.switchCpKfServicer(switchKfDto);
+        this.ycWxCpService.switchCpKfServicer(switchKfDto);
     }
 
 }

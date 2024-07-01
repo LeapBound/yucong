@@ -52,6 +52,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Value("${yucong.conversation.expire:300}")
     private int expires;
     private final Map<String, Boolean> notifyMap = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> testMap = new ConcurrentHashMap<>();
 
     @Override
     public List<MyMessage> getByConversationId(String conversationId) {
@@ -179,12 +180,6 @@ public class ConversationServiceImpl implements ConversationService {
         Boolean notify = this.notifyMap.get(accountId);
         this.notifyMap.remove(accountId);
         return notify;
-    }
-
-    @Override
-    public void switchToHuman() {
-        // 通知用户切换到人工服务
-        // 向人工队列分发任务
     }
 
     @Override

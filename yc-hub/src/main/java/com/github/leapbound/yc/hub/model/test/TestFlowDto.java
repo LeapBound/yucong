@@ -1,6 +1,5 @@
 package com.github.leapbound.yc.hub.model.test;
 
-import com.github.leapbound.yc.hub.model.SingleChatDto;
 import lombok.Data;
 
 import java.util.List;
@@ -13,6 +12,13 @@ import java.util.List;
 public class TestFlowDto {
     private String channel;
 
-    private SingleChatDto chat;
+    private String botId;
+    private String accountId;
+
+    private String corpId;
+    private Integer agentId;
+    private String openKfId;
+    private String externalId;
+
     private List<TestMessageDto> messages;
 }

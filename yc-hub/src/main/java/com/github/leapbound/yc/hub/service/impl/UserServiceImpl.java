@@ -7,7 +7,9 @@ import com.github.leapbound.yc.hub.entities.UserEntity;
 import com.github.leapbound.yc.hub.mapper.AccountMapper;
 import com.github.leapbound.yc.hub.mapper.RoleMapper;
 import com.github.leapbound.yc.hub.mapper.UserMapper;
+import com.github.leapbound.yc.hub.model.AccountDto;
 import com.github.leapbound.yc.hub.service.UserService;
+import com.github.leapbound.yc.hub.utils.bean.AccountBeanMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,6 +59,16 @@ public class UserServiceImpl implements UserService {
             return accountEntity.getAccountId();
         }
         return null;
+    }
+
+    @Override
+    public AccountDto getAccountByChannelIdAndExternalId(String channelId, String externalId) {
+        LambdaQueryWrapper<AccountEntity> queryWrapper = new LambdaQueryWrapper<AccountEntity>()
+                .eq(AccountEntity::getChannelId, channelId)
+                .eq(AccountEntity::getExternalId, externalId)
+                .last("limit 1");
+        AccountEntity accountEntity = this.accountMapper.selectOne(queryWrapper);
+        return AccountBeanMapper.mapEntityToModel(accountEntity);
     }
 
     @Override

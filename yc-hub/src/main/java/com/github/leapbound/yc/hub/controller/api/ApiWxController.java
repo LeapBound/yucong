@@ -1,5 +1,7 @@
 package com.github.leapbound.yc.hub.controller.api;
 
+import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
+import com.github.leapbound.yc.hub.vendor.wx.mp.YcWxMpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.api.WxConsts;
@@ -20,7 +22,8 @@ import com.github.leapbound.yc.hub.service.ChannelService;
 @RequiredArgsConstructor
 public class ApiWxController {
 
-    private final ChannelService channelService;
+    private final YcWxCpService ycWxCpService;
+    private final YcWxMpService ycWxMpService;
 
     @PostMapping("/message/receive")
     public R<String> dealMessage(@RequestParam String type,
@@ -42,7 +45,7 @@ public class ApiWxController {
         inMessage.setContent(content);
 
         log.debug("goMp inMessage：\n{} ", inMessage);
-        WxMpXmlOutMessage outMessage = this.channelService.getMpRouter(appId).route(inMessage);
+        WxMpXmlOutMessage outMessage = this.ycWxMpService.getMpRouter(appId).route(inMessage);
 
         log.debug("goMp outMessage：\n{}", outMessage);
         return outMessage;
@@ -56,7 +59,7 @@ public class ApiWxController {
         inMessage.setAgentId(agentId.toString());
 
         log.debug("goCp inMessage：\n{} ", inMessage);
-        WxCpXmlOutMessage outMessage = this.channelService.getCpRouter(corpId, agentId).route(inMessage);
+        WxCpXmlOutMessage outMessage = this.ycWxCpService.getCpRouter(corpId, agentId).route(inMessage);
 
         log.debug("goCp outMessage：\n{}", outMessage);
         return outMessage;

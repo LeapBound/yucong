@@ -1,11 +1,10 @@
-package com.github.leapbound.yc.hub.handler.wx.cp;
+package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
 import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.common.session.WxSessionManager;
-import me.chanjar.weixin.cp.api.WxCpKfService;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.api.impl.WxCpMessageServiceImpl;
 import me.chanjar.weixin.cp.bean.message.WxCpMessage;

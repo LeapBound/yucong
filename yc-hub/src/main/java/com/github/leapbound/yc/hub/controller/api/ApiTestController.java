@@ -4,20 +4,20 @@ import com.alibaba.fastjson.JSON;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
-import com.github.leapbound.yc.hub.model.ChannelDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.model.test.TestFlowDto;
 import com.github.leapbound.yc.hub.model.test.TestMessageDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
-import com.github.leapbound.yc.hub.service.ChannelService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 import com.github.leapbound.yc.hub.service.gpt.GptMockHandler;
+import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
+import me.chanjar.weixin.cp.constant.WxCpConsts;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,17 +36,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApiTestController {
 
-    private final ChannelService channelService;
     private final ConversationService conversationService;
     private final ActionServerService actionServerService;
+
+    private final YcWxCpService ycWxCpService;
 
     private final GptMockHandler mockHandler;
 
     @PostMapping("/flow")
     public String testFlow(@RequestBody TestFlowDto testFlowDto) {
+        String botId = testFlowDto.getBotId();
+        String accountId = testFlowDto.getAccountId();
+
         // 清理历史聊天记录
-        String botId = testFlowDto.getChat().getBotId();
-        String accountId = testFlowDto.getChat().getAccountId();
         this.conversationService.clearMessageHistory(botId, accountId);
 
         // 删除现有流程
@@ -55,20 +57,48 @@ public class ApiTestController {
         // 判断渠道，运行流程
         switch (testFlowDto.getChannel()) {
             case "wxCpKf":
-                ChannelDto channelDto = this.channelService.getChannelByAccountId(testFlowDto.getChat().getAccountId());
-                final WxCpService wxCpService = this.channelService.getCpService(channelDto.getCorpId(), Integer.valueOf(channelDto.getAgentId()));
+                /*
+                 * 微信客服进来时，知道几个信息
+                 * 1. openKfId
+                 * 2. corpId
+                 * 3. agentId
+                 * 用户的externalUserId是需要根据openKfId去微信拉取的
+                 */
+                String corpId = testFlowDto.getCorpId();
+                Integer agentId = testFlowDto.getAgentId();
+                String openKfId = testFlowDto.getOpenKfId();
+                String externalUserId = testFlowDto.getExternalId();
+
+                final WxCpService wxCpService = this.ycWxCpService.getCpService(corpId, agentId);
                 if (wxCpService == null) {
-                    throw new IllegalArgumentException(String.format("未找到对应agentId=[%s]的配置，请核实！", channelDto.getAgentId()));
+                    throw new IllegalArgumentException(String.format("未找到对应agentId=[%d]的配置，请核实！", agentId));
                 }
+
                 for (TestMessageDto message : testFlowDto.getMessages()) {
                     WxCpXmlMessage inMessage = new WxCpXmlMessage();
+                    inMessage.setOpenKfId(openKfId);
+                    inMessage.setExternalUserId(externalUserId);
+                    inMessage.setMsgType("yc_test_event");
                     inMessage.setContent(message.getContent());
-                    WxCpXmlOutMessage outMessage = this.channelService.getCpRouter(channelDto.getCorpId(), Integer.valueOf(channelDto.getAgentId()))
+                    inMessage.setEvent(WxCpConsts.EventType.KF_MSG_OR_EVENT);
+
+                    if (message.getMock() == null || message.getMock()) {
+                        if (StringUtils.hasText(message.getFunction())) {
+                            MyFunctionCall functionCall = MyFunctionCall.builder()
+                                    .name(message.getFunction())
+                                    .arguments(message.getFunctionParam() == null ? "{}" : JSON.toJSONString(message.getFunctionParam()))
+                                    .build();
+                            this.mockHandler.setFunctionCall(functionCall);
+                        }
+                    }
+                    WxCpXmlOutMessage outMessage = this.ycWxCpService.getCpRouter(corpId, agentId)
                             .route(inMessage);
+
+                    log.info("outMessage： {}", outMessage);
                 }
                 break;
             default:
-                SingleChatDto singleChatDto = testFlowDto.getChat();
+                SingleChatDto singleChatDto = new SingleChatDto();
                 for (TestMessageDto message : testFlowDto.getMessages()) {
                     log.info("*".repeat(100));
                     log.info("user content: {}", message.getContent());

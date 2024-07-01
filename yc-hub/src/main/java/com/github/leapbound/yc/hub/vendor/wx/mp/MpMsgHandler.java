@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.hub.handler.wx.mp;
+package com.github.leapbound.yc.hub.vendor.wx.mp;
 
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.BotService;
