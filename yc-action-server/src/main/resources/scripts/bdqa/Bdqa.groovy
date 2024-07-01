@@ -22,7 +22,15 @@ import scripts.general.GeneralMethods
 @Field static String alphaUrl = ''
 @Field static String hubUrl = ''
 @Field static String getSmsRecordPath = '/geex-ops-web/task/getSmsRecord'
+@Field static String updateOrderResultPath = '/geex-ops-web/api/updOrderResult'
 @Field static String noticeHubGroupPath = '/geex-smart-robot/yc-hub/servicer/switch/group'
+@Field static Map<String, Integer> orderResultMap = ['回退'    : 1,
+                                                     '拒绝'    : 2,
+                                                     '取消'    : 3,
+                                                     '延迟取消': 6,
+                                                     '审批中'  : 10,
+                                                     '复合中'  : 11,
+                                                     '已保存'  : 12]
 
 execBdqaMethod(method, arguments)
 
@@ -49,6 +57,9 @@ static def execBdqaMethod(String method, String arguments) {
             break
         case 'human_process': // service task
             result = humanProcess(arguments)
+            break
+        case 'update_order_result':
+            result = updateOrderResult(arguments)
             break
         case 'notice_hub_method':
             result = GeneralMethods.noticeHubMethod(arguments)
@@ -93,15 +104,15 @@ static def getSmsRecord(String arguments) {
     // check task
     def taskId = checkTask(args)
     if (taskId == null) {
-        return ResponseVo.makeFail(9999, '没有任务')
+        return ResponseVo.makeFail(9999, '当前没有任务')
     }
     //
     try {
         RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
         def response = Alpha.doGetWithLogin(alphaUrl, getSmsRecordPath, params, requestAuth, 1)
         if (response == null) {
-            logger.error("[get_sms_record]请求无反应")
-            return ResponseVo.makeFail(9999, '[get_sms_record]没有反应')
+            logger.error("[get_sms_record] no response")
+            return ResponseVo.makeFail(9999, '没有响应，联系管理员')
         }
         if (response.isOk()) {
             logger.info("[get_sms_record]请求结果: {}", response.body())
@@ -120,7 +131,7 @@ static def getSmsRecord(String arguments) {
                 return ResponseVo.makeSuccess('没有查询到短信发送记录')
             }
         } else {
-            logger.error("[get_sms_record]请求失败: status:{}, {}", response.getStatus(), response.body())
+            logger.error('[get_sms_record] response status:{}, {}', response.getStatus(), response.body())
             return ResponseVo.makeFail(response.getStatus(), response.body())
         }
     } finally {
@@ -132,7 +143,7 @@ static def checkProblemSolved(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String taskId = checkTask(args)
     if (taskId == null) {
-        return ResponseVo.makeFail(9999, '没有任务')
+        return ResponseVo.makeFail(9999, '当前没有任务')
     }
     doCompleteTask(args, taskId, ['solved'])
     return ResponseVo.makeSuccess(null)
@@ -158,6 +169,51 @@ static def humanProcess(String arguments) {
         {
             put('afterFunction', afterFunctionMap)
         }
+    }
+}
+
+static def updateOrderResult(String arguments) {
+    JSONObject args = JSON.parseObject(arguments)
+    String accountId = args.containsKey('accountid') ? args.getString('accountid') : ''
+    String username = args.containsKey('username') ? args.getString('username') : accountId
+    String orderResult = args.containsKey('orderResult') ? args.getString('orderResult') : ''
+    String appId = args.containsKey('appId') ? args.getString('appId') : ''
+    if (StrUtil.isEmptyIfStr(appId)) {
+        return ResponseVo.makeFail(9999, '订单号不能为空')
+    }
+    if (StrUtil.isEmptyIfStr(orderResult)) {
+        return ResponseVo.makeFail(9998, '要更改的状态不能为空')
+    }
+    def result = 0
+    orderResultMap.forEach {
+        String key, String value ->
+            if (key.contains(orderResult)) {
+                result = value
+            }
+    }
+    if (result == 0) {
+        return ResponseVo.makeFail(9998, '要更改的状态不支持: [' + orderResult + ']')
+    }
+    //
+    def params = ['appId': appId, 'username': username, 'result': result]
+    RequestAuth requestAuth = Alpha.setLoginRequestAuth(alphaUrl)
+    def response = Alpha.doGetWithLogin(alphaUrl, updateOrderResultPath, params, requestAuth, 1)
+    if (response == null) {
+        logger.error('[update_order_result] no response')
+        return ResponseVo.makeFail(9999, '[小工具]更改订单状态没有响应')
+    }
+    if (response.isOk()) {
+        logger.info('[update_order_result] result: {}', response.body())
+        JSONObject jsonObject = JSON.parseObject(response.body())
+        boolean success = jsonObject.getBooleanValue('success')
+        if (success) {
+            return ResponseVo.makeSuccess(jsonObject.get('result'))
+        } else {
+            return ResponseVo.makeFail(999, jsonObject.getString('errorMessage'))
+        }
+    } else {
+        logger.error('[update_order_result] response status: {}, {}', response.getStatus(), response.body())
+        return ResponseVo.makeFail(response.getStatus(), response.body())
     }
 }
 

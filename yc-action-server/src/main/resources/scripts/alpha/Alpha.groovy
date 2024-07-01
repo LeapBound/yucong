@@ -25,6 +25,28 @@ import java.time.LocalDateTime
 @Field static String BOT_SALT = 'e77989ed21758e78331b20e477fc5582'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.alpha.Alpha');
 
+static def doPostParamsWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    HttpResponse response = RestClient.doPostWithParams(url, path, params, auth)
+    if (response != null) {
+        if (response.status == 302 && retry > 0) {
+            RequestAuth retryAuth = setLoginRequestAuthWithoutRedis(url)
+            response = doPostParamsWithLogin(url, path, params, retryAuth, retry - 1)
+        }
+    }
+    return response
+}
+
+static def doPostFormWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    HttpResponse response = RestClient.doPostWithForm(url, path, params, auth)
+    if (response != null) {
+        if (response.status == 302 && retry > 0) {
+            RequestAuth retryAuth = setLoginRequestAuthWithoutRedis(url)
+            response = doPostFormWithLogin(url, path, params, retryAuth, retry - 1)
+        }
+    }
+    return response
+}
+
 static def doPostBodyWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
     HttpResponse response = RestClient.doPostWithBody(url, path, params, auth)
     if (response != null) {
