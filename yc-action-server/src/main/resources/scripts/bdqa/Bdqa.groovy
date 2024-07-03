@@ -23,7 +23,7 @@ import scripts.general.GeneralMethods
 @Field static String qiguanUrl = ''
 @Field static String getSmsRecordPath = '/geex-ops-web/task/getSmsRecord'
 @Field static String updateOrderResultPath = '/geex-ops-web/api/updOrderResult'
-@Field static String noticeHubGroupPath = '/geex-smart-robot/yc-hub/servicer/switch/group'
+@Field static String noticeHubGroupPath = '/geex-smart-robot/yc-hub/api/conversation/servicer/switch/group'
 @Field static Map<String, Integer> orderResultMap = ['回退'    : 1,
                                                      '拒绝'    : 2,
                                                      '取消'    : 3,
@@ -154,13 +154,21 @@ static def humanProcess(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String serviceGroupTag = args.containsKey('service_group_tag') ? args.getString('service_group_tag') : ''
     String accountId = args.containsKey('accountId') ? args.getString('accountId') : ''
-    String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
+    String externalUserId = args.containsKey('externalUserId') ? args.getString('externalUserId') : ''
+    String openKfId = args.containsKey('openKfId') ? args.getString('openKfId') : ''
+    def data = new JSONObject() {
+        {
+            put('accountId', accountId)
+            put('externalUserId', externalUserId)
+            put('serviceGroup', serviceGroupTag)
+            put('serviceState', 3)
+            put('openKfId', openKfId)
+        }
+    }
     //
     def noticeData = new JSONObject() {
         {
-            put('accountId', accountId)
-            put('externalUserId', externalId)
-            put('serviceGroup', serviceGroupTag)
+            put('data', data)
             put('noticeHubUrl', gonggongUrl)
             put('noticeHubPath', noticeHubGroupPath)
         }
