@@ -1,6 +1,5 @@
 package scripts.alpha
 
-
 import cn.hutool.crypto.digest.DigestUtil
 import cn.hutool.extra.spring.SpringUtil
 import cn.hutool.http.HttpResponse
@@ -19,22 +18,42 @@ import java.time.LocalDateTime
  * @since 2024/4/3 9:43
  */
 
-@Field static String alphaUrl = 'https://beta.geexfinance.com'
-
 @Field static String botLoginPath = '/geex-portal-ng/user/botLogin'
 @Field static String REDIS_COOKIE_KEY = 'alpha.cookie.key'
 @Field static String EMPLOYEE_NO = 'bot002'
 @Field static String USER_NAME = 'bot002'
 @Field static String BOT_SALT = 'e77989ed21758e78331b20e477fc5582'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.alpha.Alpha');
+@Field static String alphaLoginUrl = ''
 
+static def doPostParamsWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    HttpResponse response = RestClient.doPostWithParams(url, path, params, auth)
+    if (response != null) {
+        if (response.status == 302 && retry > 0) {
+            RequestAuth retryAuth = setLoginRequestAuthWithoutRedis()
+            response = doPostParamsWithLogin(url, path, params, retryAuth, retry - 1)
+        }
+    }
+    return response
+}
+
+static def doPostFormWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    HttpResponse response = RestClient.doPostWithForm(url, path, params, auth)
+    if (response != null) {
+        if (response.status == 302 && retry > 0) {
+            RequestAuth retryAuth = setLoginRequestAuthWithoutRedis()
+            response = doPostFormWithLogin(url, path, params, retryAuth, retry - 1)
+        }
+    }
+    return response
+}
 
 static def doPostBodyWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
     HttpResponse response = RestClient.doPostWithBody(url, path, params, auth)
     if (response != null) {
         if (response.status == 302 && retry > 0) {
-            loginAlpha()
-            response = doPostBodyWithLogin(url, path, params, auth, retry - 1)
+            RequestAuth retryAuth = setLoginRequestAuthWithoutRedis()
+            response = doPostBodyWithLogin(url, path, params, retryAuth, retry - 1)
         }
     }
     return response
@@ -44,8 +63,8 @@ static def doGetWithLogin(String url, String path, Map<String, Object> params, R
     HttpResponse response = RestClient.doGet(url, path, params, auth)
     if (response != null) {
         if (response.status == 302 && retry > 0) {
-            loginAlpha()
-            response = doGetWithLogin(url, path, params, auth, retry - 1)
+            RequestAuth retryAuth = setLoginRequestAuthWithoutRedis()
+            response = doGetWithLogin(url, path, params, retryAuth, retry - 1)
         }
     }
     return response
@@ -56,7 +75,7 @@ static def loginAlpha() {
     int dateHour = nowDateTime.getYear() + (nowDateTime.getMonthValue() - 1) + 5 + nowDateTime.getHour()
     String token = DigestUtil.md5Hex((EMPLOYEE_NO + USER_NAME + dateHour + BOT_SALT).getBytes())
     def params = ['employeeNo': EMPLOYEE_NO, 'username': USER_NAME, 'token': token]
-    def response = RestClient.doGet(alphaUrl, botLoginPath, params, null)
+    def response = RestClient.doGet(alphaLoginUrl, botLoginPath, params, null)
     if (response == null) {
         logger.error('login alpha no response')
         return null
@@ -66,6 +85,8 @@ static def loginAlpha() {
         response.getCookies().each {
             cookieList.add(it.name + '=' + it.value)
         }
+    } else {
+        logger.error('login alpha error: status: {}, {}', response.getStatus(), response.body())
     }
     if (!cookieList.isEmpty()) {
         StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
@@ -75,13 +96,20 @@ static def loginAlpha() {
     return cookieList
 }
 
+static def setLoginRequestAuthWithoutRedis() {
+    List<String> cookieList = loginAlpha()
+    def addHeaders = ['Cookie': cookieList.join('; ')]
+    RequestAuth requestAuth = new RequestAuth(null, null, null, addHeaders)
+    return requestAuth
+}
+
 static def setLoginRequestAuth() {
     StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
     if (!stringRedisTemplate.hasKey(REDIS_COOKIE_KEY)) {
         loginAlpha()
     }
     List<String> cookieList = stringRedisTemplate.opsForList().range(REDIS_COOKIE_KEY, 0, -1)
-    def addHeaders = ['Cookie': cookieList.join(': ')]
+    def addHeaders = ['Cookie': cookieList.join('; ')]
     RequestAuth requestAuth = new RequestAuth(null, null, null, addHeaders)
     return requestAuth
 }

@@ -11,6 +11,7 @@ import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import scripts.alpha.Alpha
+import scripts.general.GeneralMethods
 
 import java.util.concurrent.atomic.AtomicReference
 
@@ -20,7 +21,8 @@ import java.util.concurrent.atomic.AtomicReference
  * @since 2023/10/13 17:25
  */
 
-@Field static String alphaUrl = 'https://beta.geexfinance.com'
+@Field static String gonggongUrl = ''
+@Field static String qiguanUrl = ''
 @Field static String getSalesListPath = '/geex-platform-web/management/user/getSalesList'
 @Field static String getSalesDetailListPath = '/geex-platform-web/management/user/getSalesDetailList'
 @Field static String updateSalesInfoPath = '/geex-platform-web/management/user/updateSalesInfo'
@@ -43,10 +45,9 @@ static def execAccountMethod(String method, String arguments) {
         return result
     }
     //
-    def externalUrl = getExternalUrl(arguments)
-    if (!StrUtil.isEmptyIfStr(externalUrl)) {
-        alphaUrl = externalUrl
-    }
+    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
+    Alpha.alphaLoginUrl = gonggongUrl
+    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
     //
     switch (method) {
         case 'close_user_account': // 关闭域账号和销售账号
@@ -66,12 +67,6 @@ static def execAccountMethod(String method, String arguments) {
             break
     }
     return result
-}
-
-static def getExternalUrl(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
-    return externalHost
 }
 
 /**
@@ -212,7 +207,7 @@ static def closeSalesAccount(String name, String ldapAccount) {
     //
     def params = ['userName': name, 'status': '1', 'page': '1', 'rows': 50]
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(alphaUrl, getSalesListPath, params, requestAuth, 1)
+    def response = Alpha.doPostBodyWithLogin(qiguanUrl, getSalesListPath, params, requestAuth, 1)
     if (response == null) {
         logger.error('closeSalesAccount no response')
         return null
@@ -223,7 +218,7 @@ static def closeSalesAccount(String name, String ldapAccount) {
         for (int i = 0; i < rows.size(); i++) {
             String userId = rows.getJSONObject(i).get('userId')
             requestAuth = Alpha.setLoginRequestAuth()
-            def response1 = Alpha.doGetWithLogin(alphaUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
+            def response1 = Alpha.doGetWithLogin(qiguanUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
             if (response1 == null) {
                 logger.warn('getSalesDetailList no response')
                 continue
@@ -235,7 +230,7 @@ static def closeSalesAccount(String name, String ldapAccount) {
                     basicInfo.put('status', 0)
                     def closeMap = ['basicInfo': basicInfo, 'rolesList': new ArrayList<>(0), 'teamList': new ArrayList<>(0)]
                     requestAuth = Alpha.setLoginRequestAuth()
-                    def response2 = Alpha.doPostBodyWithLogin(alphaUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
+                    def response2 = Alpha.doPostBodyWithLogin(qiguanUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
                     if (response2 == null) {
                         logger.warn('updateSalesInfo no response')
                         continue

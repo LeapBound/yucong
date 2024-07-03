@@ -1,12 +1,13 @@
 package scripts.order
 
-import cn.hutool.core.util.StrUtil
+
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import groovy.transform.Field
 import scripts.alpha.Alpha
+import scripts.general.GeneralMethods
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -18,7 +19,11 @@ import java.time.format.DateTimeFormatter
  *
  */
 // alpha 地址
-@Field static String alphaUrl = 'https://beta.geexfinance.com'
+@Field static String gonggongUrl = ''
+@Field static String qiguanUrl = ''
+@Field static String zhangwuUrl = ''
+@Field static String dingdanUrl = ''
+@Field static String zijinUrl = ''
 // 通过订单号获取还款计划 yrl
 @Field static String getRepayPlanByOrderPath = '/geex-csorder/order/repayPlan/'
 // 查询订单放款状态 url
@@ -61,10 +66,12 @@ static def execOrderMethod(String method, String arguments) {
         return result
     }
     //
-    def externalUrl = getExternalUrl(arguments)
-    if (!StrUtil.isEmptyIfStr(externalUrl)) {
-        alphaUrl = externalUrl
-    }
+    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
+    Alpha.alphaLoginUrl = gonggongUrl
+    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
+    zhangwuUrl = GeneralMethods.getExternal(arguments).get('zhangwuUrl')
+    dingdanUrl = GeneralMethods.getExternal(arguments).get('dingdanUrl')
+    zijinUrl = GeneralMethods.getExternal(arguments).get('zijinUrl')
     //
     switch (method) {
         case 'get_user_repayment_by_order': // 订单号查询用户还款计划
@@ -89,12 +96,6 @@ static def execOrderMethod(String method, String arguments) {
     return result
 }
 
-static def getExternalUrl(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String externalHost = args.containsKey('externalHost') ? args.getString('externalHost') : ''
-    return externalHost
-}
-
 /**
  * 订单号查询用户还款计划
  * @param arguments 入参
@@ -117,7 +118,7 @@ static def getUserRepaymentByOrder(String arguments) {
     def params = ['orderNo': orderNo]
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doGetWithLogin(alphaUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
+    def response = Alpha.doGetWithLogin(dingdanUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '没有查询到用户的还款计划')
@@ -186,7 +187,7 @@ static def getUserLoanTimeByOrder(String arguments) {
     def params = ['orderNo': orderNo]
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
+    def response = Alpha.doPostBodyWithLogin(zijinUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '没有查询到订单的放款信息')
@@ -262,7 +263,7 @@ static def getLoanStatusByOrder(String arguments) {
     def params = ['orderNo': orderNo]
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
+    def response = Alpha.doPostBodyWithLogin(zhangwuUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '没有查询到订单借据状态信息')
@@ -319,7 +320,7 @@ static def tryOrderRepay(String arguments) {
     def params = ['orderNo': orderNo]
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRepayPath, params, requestAuth, 1)
+    def response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRepayPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '获取还款试算结果失败')
@@ -372,7 +373,7 @@ static def tryOrderRefund(String arguments) {
     def params = ['orderNo': orderNo]
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRefundPath, params, requestAuth, 1)
+    def response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRefundPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         result.put('结果', '获取退款试算结果失败')

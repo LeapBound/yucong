@@ -17,6 +17,8 @@ import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.StringRedisTemplate
+import scripts.alpha.Alpha
+import scripts.general.GeneralMethods
 
 import java.util.concurrent.TimeUnit
 
@@ -25,7 +27,7 @@ import java.util.concurrent.TimeUnit
  * @author yamath
  * @since 2024/3/26 9:42
  */
-@Field static String frontUrl = ''
+@Field static String dingdanUrl = ''
 @Field static String loginAppPath = '/front-api/geex_capp/v1/user/loginApp'
 @Field static String getAppVerifyCodeCheckPath = '/front-api/geex_capp/v1/sms/getAppVerifyCodeCheck'
 @Field static String getCommonVerifyCodePath = '/front-api/geex_capp/v1/newOrder/inner/alpha/common/verification/code'
@@ -42,7 +44,7 @@ import java.util.concurrent.TimeUnit
 @Field static String faceDetectPath = '/front2-provider/geex_capp/v1/order/getStoreConfigs'
 @Field static String webankH5Path = '/front2-provider/geex_capp/v1/face/getH5Login'
 @Field static String validateH5FacePath = '/front2-provider/geex_capp/v1/face/validateH5Face'
-@Field static String hubUrl = ''
+@Field static String gonggongUrl = ''
 @Field static String noticeHubPath = '/geex-smart-robot/yc-hub/api/conversation/notice'
 @Field static String APP_TOKEN_KEY = 'yc.a.s.app.token.'
 @Field static Map<String, String> maritalStatusMap = ['未婚': '01', '已婚': '02', '离异': '03', '其他': '04']
@@ -60,7 +62,9 @@ static def execLoanMethod(String method, String arguments) {
         return result
     }
     // get external args
-    getExternal(arguments)
+    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
+    Alpha.alphaLoginUrl = gonggongUrl
+    dingdanUrl = GeneralMethods.getExternal(arguments).get('dingdanUrl')
     //
     switch (method) {
         case 'start_loan_process':
@@ -149,14 +153,6 @@ static def execLoanMethod(String method, String arguments) {
             break
     }
     return result
-}
-
-static def getExternal(String arguments) {
-    JSONObject args = JSON.parseObject(arguments)
-    String externalFrontUrl = args.containsKey('frontUrl') ? args.getString('frontUrl') : ''
-    String externalHubUrl = args.containsKey('hubUrl') ? args.getString('hubUrl') : ''
-    frontUrl = externalFrontUrl
-    hubUrl = externalHubUrl
 }
 
 //
@@ -988,7 +984,7 @@ static def faceDetect(String method, String arguments) {
     def detectResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
     if (detectResult.containsKey('needFace') && detectResult.getIntValue('needFace') == 1) {
         // 需要人脸识别
-        def redirectUrl = frontUrl + '/geexSmartRobot/robot/' + externalId
+        def redirectUrl = gonggongUrl + '/geexSmartRobot/robot/' + externalId
         def params = new JSONObject() {
             {
                 put('appId', appId);
@@ -1129,7 +1125,7 @@ static def loginApp(String userMobile, String verifyCode, String deviceId) {
     def params = ['deviceId': deviceId, 'account': userMobile, 'veriCode': verifyCode]
     def token = '';
     try {
-        def response = RestClient.doPostWithBody(frontUrl, loginAppPath, params, null)
+        def response = RestClient.doPostWithBody(dingdanUrl, loginAppPath, params, null)
         if (response == null) {
             logger.error('user login App no response')
             return token;
@@ -1178,7 +1174,7 @@ static def getAppToken(String mobile, String verifyCode, String deviceId) {
 }
 
 static def getCommonVerifyCode() {
-    def response = RestClient.doGet(frontUrl, getCommonVerifyCodePath, null, null)
+    def response = RestClient.doGet(dingdanUrl, getCommonVerifyCodePath, null, null)
     if (response == null) {
         logger.error("getCommonVerifyCode no response")
         return null
@@ -1197,7 +1193,7 @@ static def sendLoginSms(String userMobile) {
     int randomInt = RandomUtil.getSecureRandom().nextInt(10)
     String checkKey = DigestUtil.md5Hex(('verify_code_check' + userMobile + randomInt).getBytes())
     def params = ['mobile': userMobile, 'random': String.valueOf(randomInt), 'requestKey': checkKey]
-    def response = RestClient.doPostWithBody(frontUrl, getAppVerifyCodeCheckPath, params, null)
+    def response = RestClient.doPostWithBody(dingdanUrl, getAppVerifyCodeCheckPath, params, null)
     if (response == null) {
         logger.error('send login sms no response')
         return new AppCommonResult(false, '短信验证码发送失败', 1, 0, result)
@@ -1217,7 +1213,7 @@ static def preApply(String token, String mobile) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, preApplyPath + token, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, preApplyPath + token, params, requestAuth)
         if (response == null) {
             logger.error('preApply no response')
             return new AppCommonResult(false, '没有取得门店配置，联系管理员', 1, 0, result)
@@ -1240,7 +1236,7 @@ static def loadIdentity(String appId, String token) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, loadIdentityPath + token, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, loadIdentityPath + token, params, requestAuth)
         if (response == null) {
             logger.error('loadIdentity no response')
             return new AppCommonResult(false, '加载用户信息失败', 1, 0, result)
@@ -1272,7 +1268,7 @@ static def doIdCardOcr(String url, String fileType, String token) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithForm(frontUrl, doIdCardOcrPath + token, params, requestAuth)
+        def response = RestClient.doPostWithForm(dingdanUrl, doIdCardOcrPath + token, params, requestAuth)
         if (response == null) {
             logger.error('doIdCardOcr no response')
             return new AppCommonResult(false, '身份证识别失败', 1, 0, result)
@@ -1290,7 +1286,7 @@ static def doIdCardOcr(String url, String fileType, String token) {
 static def doBankCode(Map<String, Object> params) {
     JSONObject result = new JSONObject()
     try {
-        def response = RestClient.doPostWithBody(frontUrl, getSupportBankListPath, params, null)
+        def response = RestClient.doPostWithBody(dingdanUrl, getSupportBankListPath, params, null)
         if (response == null) {
             logger.error('bankCodeConfig no response')
             return new AppCommonResult(false, '获取银行列表失败', 1, 0, result)
@@ -1332,7 +1328,7 @@ static def checkBankCardLimit(String token, String name, String idNo, String ban
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, checkBankCardLimitPath, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, checkBankCardLimitPath, params, requestAuth)
         if (response == null) {
             logger.error('checkBankCardLimit no response')
             return new AppCommonResult(false, '银行卡限额校验失败', 1, 0, result)
@@ -1358,7 +1354,7 @@ static def checkOldIdentity(String token, String name, String idNo) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, checkOldIdentityPath + token, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, checkOldIdentityPath + token, params, requestAuth)
         if (response == null) {
             logger.error('checkIdentity no response')
             return new AppCommonResult(false, '老客户信息检测失败', 1, 0, result)
@@ -1381,7 +1377,7 @@ static def checkPayProtocol(String token, String appId, String name, String idNo
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, checkProtocolPath + token, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, checkProtocolPath + token, params, requestAuth)
         if (response == null) {
             logger.error('checkUserPayProtocol no response')
             return new AppCommonResult(false, '用户支付协议检测失败', 1, 0, result)
@@ -1404,7 +1400,7 @@ static def submitPayProtocol(String appId, String bankCode, String bankMobile, S
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, submitProtocolPath + token, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, submitProtocolPath + token, params, requestAuth)
         if (response == null) {
             logger.error('submitUserPayProtocol no response')
             return new AppCommonResult(false, '提交用户支付协议失败，联系管理员', 1, 0, result)
@@ -1427,7 +1423,7 @@ static def submitIdentity(String appId, String name, String idNo, String idValid
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, submitIdentityPath + token, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, submitIdentityPath + token, params, requestAuth)
         if (response == null) {
             logger.error('submitIdentity no response')
             return new AppCommonResult(false, '提交身份信息失败，联系管理员', 1, 0, result)
@@ -1448,7 +1444,7 @@ static def submitApplyStep(String token, JSONObject info) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, submitApplyStepPath + token, info, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, submitApplyStepPath + token, info, requestAuth)
         if (response == null) {
             logger.error('submitApplyStep no response')
             return new AppCommonResult(false, '进件提交订单信息失败，联系管理员', 1, 0, result)
@@ -1468,7 +1464,7 @@ static def doFaceCheck(String token, Map<String, Object> params) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithForm(frontUrl, faceDetectPath, params, requestAuth)
+        def response = RestClient.doPostWithForm(dingdanUrl, faceDetectPath, params, requestAuth)
         if (response == null) {
             logger.error('doFaceCheck no response')
             return new AppCommonResult(false, '检测活体人脸启动失败', 1, 0, result)
@@ -1488,7 +1484,7 @@ def static doWebankFace(String token, JSONObject params) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, webankH5Path, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, webankH5Path, params, requestAuth)
         if (response == null) {
             logger.error('doWebankFace no response')
             return new AppCommonResult(false, '启动活体人脸失败', 1, 0, result)
@@ -1508,7 +1504,7 @@ static def validateH5Face(String token, JSONObject params) {
     def headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(frontUrl, validateH5FacePath, params, requestAuth)
+        def response = RestClient.doPostWithBody(dingdanUrl, validateH5FacePath, params, requestAuth)
         if (response == null) {
             logger.error('validateH5Face no response')
             return new AppCommonResult(false, '人脸验证提交失败， 联系管理员', 1, 0, result)
@@ -1596,7 +1592,7 @@ static def noticeData(String botId, String accountId, String content, String pic
 }
 
 static def noticeHub(JSONObject responseVo) {
-    def response = RestClient.doPostWithBody(hubUrl, noticeHubPath, responseVo, null)
+    def response = RestClient.doPostWithBody(gonggongUrl, noticeHubPath, responseVo, null)
     if (!StrUtil.isEmpty(response.body())) {
         logger.info('noticeHub response {}', response.body())
     }
