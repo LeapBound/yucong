@@ -14,6 +14,8 @@ public interface BotService {
 
     Long getBotNIdByBotId(String botId);
 
+    BotDto getBotByBotId(String botId);
+
     void create(BotDto botModel);
 
 

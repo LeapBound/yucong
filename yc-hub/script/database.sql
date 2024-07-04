@@ -1,30 +1,3 @@
-create table ths_stock
-(
-    id          bigint auto_increment
-        primary key,
-    stock_code  varchar(8) null,
-    stock_area  varchar(8) null,
-    create_date datetime   null
-);
-
-create table ths_stock_transaction
-(
-    id               bigint auto_increment
-        primary key,
-    stock_code       varchar(8) null,
-    trans_type       int        null comment '0 买入, 1 卖出',
-    trans_num        int        null,
-    trans_price      double     null,
-    target_price     double     null,
-    trans_amount     double     null,
-    brokerage_amount double     null,
-    trans_remain_num int        null,
-    trans_profit     double     null,
-    trans_time       datetime   null,
-    create_time      datetime   null,
-    update_time      datetime   null
-);
-
 create table yc_account
 (
     id           bigint auto_increment
@@ -143,3 +116,28 @@ create table yc_user
     update_time datetime    null
 );
 -- 2023/10/08
+alter table yc_channel_config
+    change bot_id bot_uuid varchar(64) null;
+
+alter table yc_channel_config
+    add channel_uuid varchar(33) null after bot_uuid;
+
+alter table yc_account
+    add channel_uuid varchar(33) null after account_uuid;
+
+create table yc_wx_cp_kf
+(
+    id              bigint auto_increment
+        primary key,
+    group_tag       varchar(32) null,
+    service_user_id varchar(64) null,
+    create_time     datetime    null
+);
+
+alter table yc_account
+    change account_name external_id varchar(64) null;
+
+alter table yc_channel_config
+    add open_kf_id varchar(64) null after agent_id;
+
+-- 20240702

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * function link task service info
  *
  * @author tangxu
- * @since 2024/3/29 14:59
+ * @date 2024/3/29 14:59
  */
 @Data
 @TableName("yc_function_task")

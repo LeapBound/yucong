@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 
 /**
  * @author yamath
- * @since 2023/7/12 9:48
+ * @date 2023/7/12 9:48
  */
 @RestController
 @RequestMapping("/function/openai")

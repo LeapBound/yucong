@@ -1,11 +1,13 @@
 package com.github.leapbound.yc.hub.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
@@ -32,7 +34,9 @@ public class FuncServiceImpl implements FuncService {
         if (currentTask == null) {
             functionList = this.functionMapper.listByBotId(botId);
         } else if (StringUtils.hasText(currentTask.getTaskName())) {
-            functionList = this.functionMapper.listByTaskName(currentTask.getTaskName());
+            LambdaQueryWrapper<FunctionEntity> lqw = new LambdaQueryWrapper<FunctionEntity>()
+                    .eq(FunctionEntity::getFunctionUuid, this.actionServerService.getTaskFunction(currentTask));
+            functionList = this.functionMapper.selectList(lqw);
         }
 
         if (functionList == null || functionList.isEmpty()) {
@@ -81,7 +85,7 @@ public class FuncServiceImpl implements FuncService {
     }
 
     @Override
-    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+    public FunctionExecResultDto invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         return this.actionServerService.invokeFunc(botId, accountId, functionCall);
     }
 }

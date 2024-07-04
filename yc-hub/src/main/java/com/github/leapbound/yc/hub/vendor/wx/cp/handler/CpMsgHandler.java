@@ -1,5 +1,6 @@
-package com.github.leapbound.yc.hub.handler.wx.cp;
+package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
+import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -26,7 +27,7 @@ public class CpMsgHandler extends AbstractHandler {
 
     @Override
     public WxCpXmlOutMessage handle(WxCpXmlMessage wxMessage, Map<String, Object> map, WxCpService wxCpService, WxSessionManager wxSessionManager) throws WxErrorException {
-        log.debug("MsgHandler 接收到请求消息，WxCpXmlMessage：{} map: {}", wxMessage, map);
+        log.debug("CpMsgHandler 接收到请求消息，WxCpXmlMessage：{} map: {}", wxMessage, map);
 
         String username = wxMessage.getFromUserName();
         String content = wxMessage.getContent();
@@ -36,6 +37,7 @@ public class CpMsgHandler extends AbstractHandler {
         singleChatModel.setBotId(this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), wxMessage.getAgentId()));
         singleChatModel.setAccountId(username);
         singleChatModel.setContent(content);
+        singleChatModel.setType(MyMessageType.TEXT);
         String msg = this.conversationService.chat(singleChatModel).getContent();
 
         try {
@@ -49,7 +51,7 @@ public class CpMsgHandler extends AbstractHandler {
             WxCpMessageServiceImpl wxCpMessageService = new WxCpMessageServiceImpl(wxCpService);
             wxCpMessageService.send(message);
         } catch (WxErrorException e) {
-            log.error("send error", e);
+            log.error("CpMsgHandler send error", e);
         }
 
         return null;

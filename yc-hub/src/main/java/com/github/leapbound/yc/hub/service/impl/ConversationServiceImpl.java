@@ -14,6 +14,7 @@ import com.github.leapbound.yc.hub.external.HubInteractiveService;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
@@ -30,10 +31,8 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -43,7 +42,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
     private final MessageSummaryMapper messageSummaryMapper;
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final GptService gptService;
     private final ActionServerService actionServerService;
     private final MilvusService milvusService;
@@ -51,8 +50,9 @@ public class ConversationServiceImpl implements ConversationService {
     private final AmqpTemplate amqpTemplate;
 
     private final ObjectMapper mapper;
-    @Value("${yucong.conversation.expire:300}")
+    @Value("${yucong.conversation.expire:3600}")
     private int expires;
+    private final Map<String, Boolean> notifyMap = new ConcurrentHashMap<>();
 
     @Override
     public List<MyMessage> getByConversationId(String conversationId) {
@@ -84,69 +84,85 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public MyMessage chat(SingleChatDto singleChatModel) {
+        return chat(singleChatModel, false);
+    }
+
+    @Override
+    public MyMessage chat(SingleChatDto singleChatModel, Boolean isTest) {
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
         String content = singleChatModel.getContent();
 
-        List<MyMessage> messageList = getByBotIdAndAccountId(botId, accountId);
-        if (messageList == null) {
+        String conversationId = getConversationId(botId, accountId);
+        if (!StringUtils.hasText(conversationId)) {
             if (!start(botId, accountId)) {
                 MyMessage userMsg = new MyMessage();
                 userMsg.setContent("该bot没有调用权限");
                 return userMsg;
+            } else {
+                conversationId = getConversationId(botId, accountId);
             }
         }
-        String conversationId = getConversationId(botId, accountId);
 
-        // 匹配历史记忆
-//        List<BigDecimal> embedding = this.gptService.embedding(content);
-//        List<Float> floatList = new ArrayList<>(embedding.size());
-//        embedding.forEach(item -> floatList.add(item.floatValue()));
-//        String summaryConversationId = this.milvusService.search(floatList, 0.4);
-//        if (StringUtils.hasText(summaryConversationId)) {
-//            LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
-//                    .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
-//                    .last("limit 1");
-//            MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
-//            MyMessage botMemory = new MyMessage();
-//            botMemory.setRole(Message.Role.SYSTEM.getName());
-//            botMemory.setContent(summaryEntity.getContent());
-//            addMessage(conversationId, botId, accountId, botMemory);
-//        }
+        // 判断是对人还是对AI
+        Boolean isDealWithAI = isDealWithAI(botId, accountId);
+        if (isDealWithAI != null && isDealWithAI) {
+            // 匹配历史记忆
+            /*
+            List<BigDecimal> embedding = this.gptService.embedding(content);
+            List<Float> floatList = new ArrayList<>(embedding.size());
+            embedding.forEach(item -> floatList.add(item.floatValue()));
+            String summaryConversationId = this.milvusService.search(floatList, 0.4);
+            if (StringUtils.hasText(summaryConversationId)) {
+                LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
+                        .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
+                        .last("limit 1");
+                MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
+                MyMessage botMemory = new MyMessage();
+                botMemory.setRole(Message.Role.SYSTEM.getName());
+                botMemory.setContent(summaryEntity.getContent());
+                addMessage(conversationId, botId, accountId, botMemory);
+            }
+            */
+            // 客户消息
+            MyMessage userMsg = new MyMessage();
+            userMsg.setRole(Message.Role.USER.getName());
+            switch (singleChatModel.getType()) {
+                case IMAGE, VIDEO:
+                    userMsg.setContent(singleChatModel.getType().getName());
+                    userMsg.setPicUrl(singleChatModel.getPicUrl());
+                    break;
+                default:
+                    userMsg.setContent(content);
+            }
+            userMsg.setType(singleChatModel.getType());
+            addMessage(conversationId, botId, accountId, userMsg);
 
-        // 客户消息
-        MyMessage userMsg = new MyMessage();
-        userMsg.setRole(Message.Role.USER.getName());
-        switch (singleChatModel.getType()) {
-            case "image":
-                userMsg.setContent("图片");
-                userMsg.setPicUrl(singleChatModel.getPicUrl());
-                break;
-            case "video":
-                userMsg.setContent("视频");
-                userMsg.setPicUrl(singleChatModel.getPicUrl());
-                break;
-            default:
-                userMsg.setContent(content);
+            // 调用gpt服务
+            List<MyMessage> messageList = getByConversationId(conversationId);
+            List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
+            String finalConversationId = conversationId;
+            gptMessageList.forEach(myMessage -> addMessage(finalConversationId, botId, accountId, myMessage));
+
+            return gptMessageList.get(gptMessageList.size() - 1);
+        } else {
+            return null;
         }
-        userMsg.setType(singleChatModel.getType());
-        addMessage(conversationId, botId, accountId, userMsg);
-
-        // 调用gpt服务
-        messageList = getByBotIdAndAccountId(botId, accountId);
-        List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, messageList);
-        gptMessageList.forEach(myMessage -> addMessage(conversationId, botId, accountId, myMessage));
-
-        return gptMessageList.get(gptMessageList.size() - 1);
     }
 
     @Override
     public void notifyUser(SingleChatDto singleChatModel) {
+        if (singleChatModel == null) {
+            log.error("notifyUser singleChatModel is null");
+            return;
+        }
+
         String botId = singleChatModel.getBotId();
         String accountId = singleChatModel.getAccountId();
         String conversationId = getConversationId(botId, accountId);
 
-        String remind = this.actionServerService.getProcessTaskRemind(singleChatModel.getAccountId(), null, true);
+        FunctionExecResultDto functionExecResultDto = new FunctionExecResultDto(true, null);
+        String remind = this.actionServerService.getProcessTaskRemind(singleChatModel.getAccountId(), null, functionExecResultDto);
         singleChatModel.setContent(remind);
 
         MyMessage assistantMsg = new MyMessage();
@@ -156,6 +172,15 @@ public class ConversationServiceImpl implements ConversationService {
         addMessage(conversationId, botId, accountId, assistantMsg);
 
         this.hubInteractiveService.receiveMsg(singleChatModel);
+
+        this.notifyMap.put(accountId, true);
+    }
+
+    @Override
+    public Boolean checkNotify(String accountId) {
+        Boolean notify = this.notifyMap.get(accountId);
+        this.notifyMap.remove(accountId);
+        return notify;
     }
 
     @Override
@@ -242,6 +267,7 @@ public class ConversationServiceImpl implements ConversationService {
         String conversationId = generateConversationId();
         String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
         this.redisTemplate.opsForHash().put(mapKey, "conversationId", conversationId);
+        this.redisTemplate.opsForHash().put(mapKey, "dealWithAI", true);
         this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
 
         // 保留对话key，供定时任务使用
@@ -258,6 +284,15 @@ public class ConversationServiceImpl implements ConversationService {
         return true;
     }
 
+    private Boolean isDealWithAI(String botId, String accountId) {
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
+        if (Boolean.FALSE.equals(this.redisTemplate.hasKey(mapKey))) {
+            return null;
+        }
+
+        return (Boolean) this.redisTemplate.opsForHash().get(mapKey, "dealWithAI");
+    }
+
     private String getConversationId(String botId, String accountId) {
         String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
         this.redisTemplate.expire(mapKey, Duration.ofSeconds(this.expires));
@@ -265,8 +300,11 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     private void addMessage(String conversationId, String botId, String accountId, MyMessage message) {
-        if (StringUtils.hasText(message.getContent())
-                || StringUtils.hasText(message.getPicUrl())) {
+        String mapKey = RedisConsts.ACCOUNT_MAP_KEY + botId + accountId;
+
+        if ((StringUtils.hasText(message.getContent())
+                || StringUtils.hasText(message.getPicUrl()))
+                && Boolean.TRUE.equals(this.redisTemplate.hasKey(mapKey))) {
             this.redisTemplate.opsForList().rightPush(conversationId, message);
             this.redisTemplate.expire(conversationId, Duration.ofSeconds(this.expires));
 

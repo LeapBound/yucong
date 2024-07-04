@@ -2,16 +2,16 @@ package com.github.leapbound.yc.hub.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.github.leapbound.yc.hub.service.BotService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import com.github.leapbound.yc.hub.entities.BotEntity;
 import com.github.leapbound.yc.hub.entities.ChannelEntity;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.ChannelMapper;
 import com.github.leapbound.yc.hub.model.BotDto;
+import com.github.leapbound.yc.hub.service.BotService;
 import com.github.leapbound.yc.hub.utils.bean.BotBeanMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -75,6 +75,19 @@ public class BotServiceImpl implements BotService {
         }
 
         return botEntity.getId();
+    }
+
+    @Override
+    public BotDto getBotByBotId(String botId) {
+        LambdaQueryWrapper<BotEntity> queryWrapper = new LambdaQueryWrapper<BotEntity>()
+                .eq(BotEntity::getBotId, botId)
+                .last("limit 1");
+        BotEntity botEntity = this.botMapper.selectOne(queryWrapper);
+        if (botEntity == null) {
+            return null;
+        }
+
+        return mapBotEntityToModel(botEntity);
     }
 
     @Override

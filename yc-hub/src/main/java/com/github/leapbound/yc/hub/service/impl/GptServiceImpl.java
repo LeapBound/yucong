@@ -5,6 +5,7 @@ import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
@@ -29,27 +30,32 @@ public class GptServiceImpl implements GptService {
     private final FuncService funcService;
     private final ActionServerService actionServerService;
 
+    private final GptHandler mockHandler;
     private final GptHandler openAiHandler;
     private final GptHandler qianfanHandler;
 
     @Override
-    public List<MyMessage> completions(String botId, String accountId, List<MyMessage> messageList) {
+    public List<MyMessage> completions(String botId, String accountId, Map<String, Object> params, List<MyMessage> messageList, Boolean isTest) {
         ProcessTaskDto currentTask = this.actionServerService.queryNextTask(accountId);
 
         MyChatCompletionResponse response;
         switch (messageList.get(messageList.size() - 1).getType()) {
-            case "image":
-            case "video":
+            case IMAGE, VIDEO:
                 response = processImg(botId, accountId, messageList.get(messageList.size() - 1), currentTask);
                 break;
-            case "text":
+            case TEXT:
             default:
-                response = sendToChatServer(botId, accountId, messageList, currentTask);
+                response = sendToChatServer(botId, accountId, messageList, currentTask, isTest);
         }
         List<MyMessage> gptMessageList = new ArrayList<>(2);
 
+        // 入参
+        if (currentTask != null && params != null && !params.isEmpty()) {
+            this.actionServerService.inputProcessVariable(currentTask.getProcessInstanceId(), accountId, params);
+        }
+
         // 处理function
-        Boolean functionExecuteResult = null;
+        FunctionExecResultDto functionExecuteResult = null;
         if (response.getMessage().getFunctionCall() != null) {
             // 执行function
             functionExecuteResult = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());
@@ -81,6 +87,7 @@ public class GptServiceImpl implements GptService {
         myFunctionCall.setArguments(JSON.toJSONString(args));
 
         MyMessage outMessage = new MyMessage();
+        outMessage.setRole(MyMessage.Role.ASSISTANT.getName());
         outMessage.setFunctionCall(myFunctionCall);
 
         MyChatCompletionResponse response = new MyChatCompletionResponse();
@@ -98,13 +105,16 @@ public class GptServiceImpl implements GptService {
         return getHandler().embedding(content);
     }
 
-    private MyChatCompletionResponse sendToChatServer(String botId, String accountId, List<MyMessage> messageList, ProcessTaskDto currentTask) {
+    private MyChatCompletionResponse sendToChatServer(String botId, String accountId, List<MyMessage> messageList, ProcessTaskDto currentTask, Boolean isTest) {
         List<MyFunctions> functionsList = this.funcService.getListByAccountIdAndBotId(accountId, botId, currentTask);
-        return getHandler().chatCompletion(messageList, functionsList);
-//        return getHandler().chatCompletion(messageList, functionsList);
+        return getHandler(isTest).chatCompletion(messageList, functionsList);
     }
 
     private GptHandler getHandler() {
-        return this.openAiHandler;
+        return getHandler(false);
+    }
+
+    private GptHandler getHandler(Boolean isTest) {
+        return isTest ? this.mockHandler : this.openAiHandler;
     }
 }

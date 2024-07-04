@@ -8,9 +8,8 @@ import com.github.leapbound.yc.action.func.groovy.GeneralMethods
 /**
  *
  * @author yamath
- * @since 2023/12/8 9:35
+ * @date 2023/12/8 9:35
  */
-
 static def execWeatherMethod(String method, String arguments) {
     JSONObject result = new JSONObject()
     //

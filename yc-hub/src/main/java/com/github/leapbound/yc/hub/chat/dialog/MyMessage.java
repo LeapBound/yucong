@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.Map;
 
 @Data
 public class MyMessage implements Serializable {
@@ -13,8 +14,9 @@ public class MyMessage implements Serializable {
     private String role;
     private String content;
     private String picUrl;
-    private String type;
+    private MyMessageType type;
     private String name;
+    private Map<String, Object> param;
 
     private MyFunctionCall functionCall;
 

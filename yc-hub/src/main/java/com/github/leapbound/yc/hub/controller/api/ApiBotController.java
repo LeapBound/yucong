@@ -18,7 +18,7 @@ public class ApiBotController {
 
     private final BotService botService;
 
-    @PostMapping("/bot/create")
+    @PostMapping("/create")
     public R<String> createBot(@RequestBody BotDto botModel) {
         this.botService.create(botModel);
         return R.ok();

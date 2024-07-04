@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * @author yamath
- * @since 2024/3/28 9:46
+ * @date 2024/3/28 9:46
  */
 @SpringBootApplication
 public class YcActionServerApplication {

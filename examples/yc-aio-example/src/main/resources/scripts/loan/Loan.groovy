@@ -18,7 +18,7 @@ import org.springframework.data.redis.core.StringRedisTemplate
 /**
  *
  * @author yamath
- * @since 2024/3/26 9:42
+ * @date 2024/3/26 9:42
  */
 @Field static String frontUrl = 'https://beta.geexfinance.com'
 @Field static String loginAppPath = '/front-api/geex_capp/v1/user/loginApp'

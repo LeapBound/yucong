@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * @author yamath
- * @since 2023/6/28 14:04
+ * @date 2023/6/28 14:04
  */
 @Configuration
 public class RedisConfig {

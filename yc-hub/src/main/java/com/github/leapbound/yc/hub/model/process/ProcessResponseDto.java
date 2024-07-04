@@ -12,5 +12,8 @@ public class ProcessResponseDto<T> {
     private Boolean success;
     private Integer code;
     private T data;
+    /*
+     * error message
+     */
     private String msg;
 }
