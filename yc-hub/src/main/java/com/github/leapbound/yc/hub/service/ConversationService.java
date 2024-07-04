@@ -14,7 +14,11 @@ public interface ConversationService {
 
     MyMessage chat(SingleChatDto singleChatModel);
 
+    MyMessage chat(SingleChatDto singleChatModel, Boolean isTest);
+
     void notifyUser(SingleChatDto singleChatModel);
+
+    Boolean checkNotify(String accountId);
 
     void summaryDialog(String conversationId);
 

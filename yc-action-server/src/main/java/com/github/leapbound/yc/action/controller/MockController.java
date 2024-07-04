@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author yamath
- * @since 2023/7/17 10:37
+ * @date 2023/7/17 10:37
  */
 @RestController
 @RequestMapping("/mock")

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author yamath
- * @since 2023-10-12
+ * @date 2023-10-12
  */
 @TableName("yc_function_groovy")
 public class YcFunctionGroovy implements Serializable {

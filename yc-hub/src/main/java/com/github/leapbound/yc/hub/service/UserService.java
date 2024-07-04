@@ -1,14 +1,18 @@
 package com.github.leapbound.yc.hub.service;
 
+import com.github.leapbound.yc.hub.model.AccountDto;
+
 public interface UserService {
 
-    Long getUserByUsername(String username);
+    String getUserByUsername(String username);
 
-    Long createUser(String username);
+    String createUser(String username);
 
-    Long getAccountNId(Long userId, Long botId);
+    String getAccountId(String userId, String botId);
 
-    Long createAccount(String accountName, Long userNId, Long botUId);
+    AccountDto getAccountByChannelIdAndExternalId(String channelId, String externalId);
 
-    void addAccountRoleRelation(String roleName, Long accountNId);
+    String createAccount(String accountName, String externalId, String userId, String botId);
+
+    void addAccountRoleRelation(String roleName, String accountId);
 }

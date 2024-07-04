@@ -1,6 +1,6 @@
 <h2 align="center">yucong</h2>
 
-<h4 align=center>*An Epoch-marking Intelligent Order Service System*</h4>
+<h4 align=center>*An AI Agents Collaboration Platform*</h4>
 
 ****
 
@@ -18,10 +18,18 @@ A chat system that can be used in multiple scenarios. For example, orders and cu
 - yc-hub (*integrate with openai*)
 - yc-process (*integrate with camunda*)
 
-Demo is coming.
-
 ## Contributors
 
 Thanks to all the contributors!
 
 [![contributors](https://contrib.rocks/image?repo=LeapBound/yucong)](https://github.com/LeapBound/yucong/graphs/contributors)
+
+## Sponsors
+
+<p>
+ <a href="https://www.jetbrains.com/community/opensource/#support" target="_blank">
+   <img height="60" src="https://github.com/LeapBound/leapbound.github.io/blob/main/docs/jetbrains.png?raw=true">
+ </a>
+</p>
+
+Thank you to JetBrains, who provide Open Source License for IDEA.

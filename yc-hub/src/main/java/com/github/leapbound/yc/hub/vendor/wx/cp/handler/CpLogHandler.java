@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.hub.handler.wx.cp;
+package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;

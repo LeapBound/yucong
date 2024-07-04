@@ -24,7 +24,8 @@ public class NotifyUserRunnable implements Runnable {
             times++;
 
             try {
-                Thread.sleep(1000L * times);
+                Thread.sleep(500L * times);
+
                 this.conversationService.notifyUser(singleChatModel);
                 execFlag = false;
             } catch (Exception e) {

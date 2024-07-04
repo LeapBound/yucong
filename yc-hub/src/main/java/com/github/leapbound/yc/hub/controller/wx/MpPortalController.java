@@ -1,5 +1,6 @@
 package com.github.leapbound.yc.hub.controller.wx;
 
+import com.github.leapbound.yc.hub.vendor.wx.mp.YcWxMpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.mp.api.WxMpService;
@@ -17,7 +18,7 @@ import com.github.leapbound.yc.hub.service.ChannelService;
 @RequiredArgsConstructor
 public class MpPortalController {
 
-    private final ChannelService channelService;
+    private final YcWxMpService wxMpService;
 
     @GetMapping(produces = MediaType.TEXT_PLAIN_VALUE)
     public String authGet(@PathVariable String appId,
@@ -33,7 +34,7 @@ public class MpPortalController {
             throw new IllegalArgumentException("请求参数非法，请核实!");
         }
 
-        final WxMpService wxMpService = this.channelService.getMpService(appId);
+        final WxMpService wxMpService = this.wxMpService.getMpService(appId);
         if (wxMpService == null) {
             throw new IllegalArgumentException(String.format("未找到对应appId=[%s]的配置，请核实！", appId));
         }
@@ -59,7 +60,7 @@ public class MpPortalController {
         log.debug("接收微信请求：[signature=[{}], timestamp=[{}], nonce=[{}], requestBody=[\n{}\n] ",
                 signature, timestamp, nonce, requestBody);
 
-        final WxMpService wxMpService = this.channelService.getMpService(appId);
+        final WxMpService wxMpService = this.wxMpService.getMpService(appId);
         if (wxMpService == null) {
             throw new IllegalArgumentException(String.format("未找到对应appId=[%s]的配置，请核实！", appId));
         }
@@ -89,7 +90,7 @@ public class MpPortalController {
 
     private WxMpXmlOutMessage route(String appId, WxMpXmlMessage message) {
         try {
-            return this.channelService.getMpRouter(appId).route(message);
+            return this.wxMpService.getMpRouter(appId).route(message);
         } catch (Exception e) {
             log.error("route", e);
         }

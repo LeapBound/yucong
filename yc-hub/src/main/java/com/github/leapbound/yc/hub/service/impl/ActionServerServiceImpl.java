@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.consts.ProcessConsts;
+import com.github.leapbound.yc.hub.mapper.AccountMapper;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
@@ -35,6 +37,7 @@ public class ActionServerServiceImpl implements ActionServerService {
 
     private final RestTemplate actionRestTemplate;
     private final ObjectMapper objectMapper;
+    private final AccountMapper accountMapper;
 
     @Override
     public ProcessTaskDto queryNextTask(String accountId) {
@@ -51,7 +54,7 @@ public class ActionServerServiceImpl implements ActionServerService {
                     });
 
             task = entity.getBody().getData();
-            log.debug("queryNextTask {}", task);
+            log.debug("queryNextTask {} {}", task != null ? task.getTaskName() : null, task);
             if (task != null && task.getTaskId() == null) {
                 task = null;
             }
@@ -63,7 +66,7 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, Boolean functionExecuteResult) {
+    public String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, FunctionExecResultDto functionExecuteResult) {
         if (functionExecuteResult != null) {
             // 用户触发了开始流程前的function，currentTask为空
             if (currentTask == null) {
@@ -71,13 +74,20 @@ public class ActionServerServiceImpl implements ActionServerService {
             }
 
             // 触发了流程中的function
-            if (functionExecuteResult) {
+            if (functionExecuteResult.getExecuteResult()) {
                 String afterRemindSuccess = getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_SUCCESS);
                 // 判断当前task是否有结束提醒
+                String remind;
                 if (StringUtils.hasText(afterRemindSuccess)) {
-                    return afterRemindSuccess;
+                    remind = afterRemindSuccess;
                 } else {
-                    return getNextTaskRemind(queryNextTask(accountId));
+                    remind = getNextTaskRemind(queryNextTask(accountId));
+                }
+
+                if (StringUtils.hasText(functionExecuteResult.getMsg())) {
+                    return functionExecuteResult.getMsg() + "\n" + remind;
+                } else {
+                    return remind;
                 }
             } else {
                 return getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_FAIL);
@@ -163,15 +173,38 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+    public void inputProcessVariable(String processInstanceId, String businessKey, Map<String, Object> params) {
+        // 请求action server执行方法
         try {
+            // 创建表单数据
+            ProcessRequestDto processRequestDto = new ProcessRequestDto();
+            processRequestDto.setProcessInstanceId(processInstanceId);
+            processRequestDto.setInputVariables(params);
+
+            processRequestDto.setBusinessKey(businessKey);
+            HttpEntity<ProcessRequestDto> requestEntity = new HttpEntity<>(processRequestDto);
+            ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity(
+                    "/business/process/variables/input", requestEntity, ProcessResponseDto.class);
+
+            log.debug("inputProcessVariable {}", entity.getBody());
+        } catch (Exception e) {
+            log.error("inputProcessVariable error", e);
+        }
+    }
+
+    @Override
+    public FunctionExecResultDto invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+        try {
+//            LambdaQueryWrapper<AccountEntity> lqw = new LambdaQueryWrapper<AccountEntity>()
+//                    .eq(AccountEntity::getAccountId, accountId);
+//            AccountEntity accountEntity = this.accountMapper.selectOne(lqw);
+
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_JSON);
             requestHeaders.add("accountId", accountId);
             requestHeaders.add("botId", botId);
-            // todo
-            requestHeaders.add("deviceId", "deviceId001");
+//            requestHeaders.add("externalId", accountEntity.getExternalId());
             // body
             String json = this.objectMapper.writeValueAsString(functionCall);
             log.debug("invokeFunc json {}", json);
@@ -181,53 +214,60 @@ public class ActionServerServiceImpl implements ActionServerService {
                     requestEntity,
                     ProcessResponseDto.class);
 
-            log.debug("invokeFunc {}", entity.getBody());
-            return entity.getBody().getSuccess();
+            ProcessResponseDto responseDto = entity.getBody();
+            log.debug("invokeFunc {}", responseDto);
+            FunctionExecResultDto execResultDto = new FunctionExecResultDto();
+            execResultDto.setExecuteResult(responseDto.getSuccess());
+            if (responseDto.getData() != null && responseDto.getData() instanceof String) {
+                execResultDto.setMsg((String) responseDto.getData());
+            }
+            return execResultDto;
         } catch (Exception e) {
             log.error("invokeFunc error", e);
         }
 
-        return false;
+        return new FunctionExecResultDto(false, null);
     }
 
     @Override
     public Set<String> loadTaskFunctionOptions(ProcessTaskDto task, boolean showRemind) {
-        Map<String, Object> showVariable = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
+        Map<String, String> showVariableMap = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
+        if (showVariableMap != null) {
+            String showVariable = showVariableMap.get("name");
+            JSONObject config = loadProcessVariables(task.getProcessInstanceId());
 
-        String optionName;
-        if (showVariable != null && StringUtils.hasText(optionName = (String) showVariable.get("name"))) {
-            boolean isShowRemind = Boolean.parseBoolean((String) showVariable.get("isShow"));
-
-            if (!showRemind || isShowRemind) {
-                if ("set".equals(showVariable.get("type"))) {
-                    JSONObject config = loadProcessVariables(task.getProcessInstanceId());
-                    List<String> configList = (config.getObject(optionName, List.class));
+            switch (showVariableMap.get("type")) {
+                case "set":
+                case "list":
+                    List<String> configList = (config.getObject(showVariable, List.class));
                     return configList.stream().collect(Collectors.toSet());
-                } else if ("map".equals(showVariable.get("type"))) {
-                    JSONObject config = loadProcessVariables(task.getProcessInstanceId());
-                    Map<String, String> configMap = (config.getObject(optionName, Map.class));
-                    return configMap.keySet();
-                }
+                case "map":
+                    Map<String, String> configMap = (config.getObject(showVariable, Map.class));
+                    return configMap.keySet().stream().collect(Collectors.toSet());
             }
-
         }
 
         return null;
     }
 
-    private <T> T getTaskProperty(ProcessTaskDto task, String name) {
-        AtomicReference<T> type = new AtomicReference<>();
+    @Override
+    public String getTaskFunction(ProcessTaskDto task) {
+        return getTaskProperty(task, ProcessConsts.TASK_FUNCTION_UUID);
+    }
 
-        if (task != null) {
-            task.getTaskProperties().stream()
-                    .filter(property -> {
-                        String propertyName = (String) property.get("name");
-                        return propertyName.equals(name);
-                    })
-                    .findFirst()
-                    .ifPresent(property -> type.set((T) property.get("type")));
+    private <T> T getTaskProperty(ProcessTaskDto task, String name) {
+        if (task == null) {
+            return null;
         }
 
+        AtomicReference<T> type = new AtomicReference<>();
+        task.getTaskProperties().stream()
+                .filter(property -> {
+                    String propertyName = (String) property.get("name");
+                    return propertyName.equals(name);
+                })
+                .findFirst()
+                .ifPresent(property -> type.set((T) property.get("type")));
         return type.get();
     }
 
