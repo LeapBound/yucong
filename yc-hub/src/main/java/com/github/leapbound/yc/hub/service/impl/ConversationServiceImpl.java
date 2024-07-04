@@ -14,6 +14,7 @@ import com.github.leapbound.yc.hub.external.HubInteractiveService;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
@@ -49,10 +50,9 @@ public class ConversationServiceImpl implements ConversationService {
     private final AmqpTemplate amqpTemplate;
 
     private final ObjectMapper mapper;
-    @Value("${yucong.conversation.expire:300}")
+    @Value("${yucong.conversation.expire:3600}")
     private int expires;
     private final Map<String, Boolean> notifyMap = new ConcurrentHashMap<>();
-    private final Map<String, Boolean> testMap = new ConcurrentHashMap<>();
 
     @Override
     public List<MyMessage> getByConversationId(String conversationId) {
@@ -161,7 +161,8 @@ public class ConversationServiceImpl implements ConversationService {
         String accountId = singleChatModel.getAccountId();
         String conversationId = getConversationId(botId, accountId);
 
-        String remind = this.actionServerService.getProcessTaskRemind(singleChatModel.getAccountId(), null, true);
+        FunctionExecResultDto functionExecResultDto = new FunctionExecResultDto(true, null);
+        String remind = this.actionServerService.getProcessTaskRemind(singleChatModel.getAccountId(), null, functionExecResultDto);
         singleChatModel.setContent(remind);
 
         MyMessage assistantMsg = new MyMessage();

@@ -16,8 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
-import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import me.chanjar.weixin.cp.constant.WxCpConsts;
+import me.chanjar.weixin.cp.message.WxCpMessageRouter;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author Fred
@@ -73,16 +74,27 @@ public class ApiTestController {
                 if (wxCpService == null) {
                     throw new IllegalArgumentException(String.format("未找到对应agentId=[%d]的配置，请核实！", agentId));
                 }
+                WxCpMessageRouter wxCpMessageRouter = this.ycWxCpService.getCpRouter(corpId, agentId);
 
                 for (TestMessageDto message : testFlowDto.getMessages()) {
+                    log.info("*".repeat(100));
+                    log.info("user content: {}", message.getContent());
+
                     WxCpXmlMessage inMessage = new WxCpXmlMessage();
+                    inMessage.setMsgType("yc_test_event");
+                    inMessage.setMsgId(new Random().nextLong());
                     inMessage.setOpenKfId(openKfId);
                     inMessage.setExternalUserId(externalUserId);
-                    inMessage.setMsgType("yc_test_event");
                     inMessage.setContent(message.getContent());
                     inMessage.setEvent(WxCpConsts.EventType.KF_MSG_OR_EVENT);
 
                     if (message.getMock() == null || message.getMock()) {
+                        WxCpXmlMessage.ExtAttr extAttr = new WxCpXmlMessage.ExtAttr();
+                        WxCpXmlMessage.ExtAttr.Item item = new WxCpXmlMessage.ExtAttr.Item();
+                        item.setName("mock");
+                        extAttr.getItems().add(item);
+                        inMessage.setExtAttrs(extAttr);
+
                         if (StringUtils.hasText(message.getFunction())) {
                             MyFunctionCall functionCall = MyFunctionCall.builder()
                                     .name(message.getFunction())
@@ -91,10 +103,14 @@ public class ApiTestController {
                             this.mockHandler.setFunctionCall(functionCall);
                         }
                     }
-                    WxCpXmlOutMessage outMessage = this.ycWxCpService.getCpRouter(corpId, agentId)
-                            .route(inMessage);
 
-                    log.info("outMessage： {}", outMessage);
+                    wxCpMessageRouter.route(inMessage);
+
+                    // 检查action server是否通知完成
+                    if (message.getNeedNotify() != null && message.getNeedNotify()) {
+                        checkTaskNotified(accountId);
+                    }
+
                 }
                 break;
             default:

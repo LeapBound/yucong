@@ -5,6 +5,7 @@ import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
@@ -49,12 +50,12 @@ public class GptServiceImpl implements GptService {
         List<MyMessage> gptMessageList = new ArrayList<>(2);
 
         // 入参
-        if (params != null && !params.isEmpty()) {
+        if (currentTask != null && params != null && !params.isEmpty()) {
             this.actionServerService.inputProcessVariable(currentTask.getProcessInstanceId(), accountId, params);
         }
 
         // 处理function
-        Boolean functionExecuteResult = null;
+        FunctionExecResultDto functionExecuteResult = null;
         if (response.getMessage().getFunctionCall() != null) {
             // 执行function
             functionExecuteResult = this.funcService.invokeFunc(botId, accountId, response.getMessage().getFunctionCall());

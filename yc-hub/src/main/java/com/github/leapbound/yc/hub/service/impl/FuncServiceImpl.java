@@ -7,6 +7,7 @@ import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
@@ -84,7 +85,7 @@ public class FuncServiceImpl implements FuncService {
     }
 
     @Override
-    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+    public FunctionExecResultDto invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         return this.actionServerService.invokeFunc(botId, accountId, functionCall);
     }
 }

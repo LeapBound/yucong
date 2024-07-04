@@ -16,7 +16,9 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Fred
@@ -46,7 +48,18 @@ public class CpKfTestHandler extends AbstractHandler {
         singleChatModel.setAccountId(accountDto.getAccountId());
         singleChatModel.setContent(wxMessage.getContent());
         singleChatModel.setType(MyMessageType.TEXT);
-        String msg = this.conversationService.chat(singleChatModel, true).getContent();
+        Map<String, Object> params = new HashMap<>();
+        params.put("openKfId", openKfId);
+        params.put("externalUserId", externalUserId);
+        singleChatModel.setParam(params);
+
+        AtomicReference<Boolean> goTest = new AtomicReference<>(false);
+        wxMessage.getExtAttrs().getItems().forEach(item -> {
+            if ("mock".equals(item.getName())) {
+                goTest.set(true);
+            }
+        });
+        String msg = this.conversationService.chat(singleChatModel, goTest.get()).getContent();
         log.debug("msg: {}", msg);
 
         return null;

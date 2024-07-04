@@ -2,6 +2,7 @@ package com.github.leapbound.yc.hub.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ public interface ActionServerService {
 
     ProcessTaskDto queryNextTask(String accountId);
 
-    String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, Boolean functionExecuteResult);
+    String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, FunctionExecResultDto functionExecuteResult);
 
     JSONObject loadProcessVariables(String processInstanceId);
 
@@ -27,6 +28,6 @@ public interface ActionServerService {
 
     void inputProcessVariable(String processInstanceId, String businessKey, Map<String, Object> params);
 
-    Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
+    FunctionExecResultDto invokeFunc(String botId, String accountId, MyFunctionCall functionCall);
 
 }

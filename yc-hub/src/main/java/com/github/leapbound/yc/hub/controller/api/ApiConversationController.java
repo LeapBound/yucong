@@ -3,7 +3,6 @@ package com.github.leapbound.yc.hub.controller.api;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.wx.WxCpKfDto;
-import com.github.leapbound.yc.hub.service.ChannelService;
 import com.github.leapbound.yc.hub.service.ConversationService;
 import com.github.leapbound.yc.hub.service.impl.runnable.NotifyUserRunnable;
 import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
@@ -25,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 public class ApiConversationController {
 
     private final ConversationService conversationService;
-    private final ChannelService channelService;
     private final YcWxCpService ycWxCpService;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors() - 1,
@@ -77,7 +75,7 @@ public class ApiConversationController {
     @PostMapping("/servicer/switch/group")
     public void switchDealerByGroup(@RequestBody ProcessResponseDto<WxCpKfDto> responseDto) {
         WxCpKfDto switchKfDto = responseDto.getData();
-        this.ycWxCpService.switchCpKfServicer(switchKfDto);
+        this.ycWxCpService.switchCpKfServicerByGroupTag(switchKfDto);
     }
 
     @PostMapping("/servicer/del")

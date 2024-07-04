@@ -1,12 +1,11 @@
 package com.github.leapbound.yc.hub.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.consts.ProcessConsts;
-import com.github.leapbound.yc.hub.entities.AccountEntity;
 import com.github.leapbound.yc.hub.mapper.AccountMapper;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
@@ -67,7 +66,7 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, Boolean functionExecuteResult) {
+    public String getProcessTaskRemind(String accountId, ProcessTaskDto currentTask, FunctionExecResultDto functionExecuteResult) {
         if (functionExecuteResult != null) {
             // 用户触发了开始流程前的function，currentTask为空
             if (currentTask == null) {
@@ -75,13 +74,20 @@ public class ActionServerServiceImpl implements ActionServerService {
             }
 
             // 触发了流程中的function
-            if (functionExecuteResult) {
+            if (functionExecuteResult.getExecuteResult()) {
                 String afterRemindSuccess = getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_SUCCESS);
                 // 判断当前task是否有结束提醒
+                String remind;
                 if (StringUtils.hasText(afterRemindSuccess)) {
-                    return afterRemindSuccess;
+                    remind = afterRemindSuccess;
                 } else {
-                    return getNextTaskRemind(queryNextTask(accountId));
+                    remind = getNextTaskRemind(queryNextTask(accountId));
+                }
+
+                if (StringUtils.hasText(functionExecuteResult.getMsg())) {
+                    return functionExecuteResult.getMsg() + "\n" + remind;
+                } else {
+                    return remind;
                 }
             } else {
                 return getTaskProperty(currentTask, ProcessConsts.TASK_REMIND_AFTER_FAIL);
@@ -170,17 +176,15 @@ public class ActionServerServiceImpl implements ActionServerService {
     public void inputProcessVariable(String processInstanceId, String businessKey, Map<String, Object> params) {
         // 请求action server执行方法
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             // 创建表单数据
-            MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
-            formData.add("processInstanceId", processInstanceId);
-            formData.add("businessKey", businessKey);
-            formData.add("inputVariables", params);
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(formData, headers);
+            ProcessRequestDto processRequestDto = new ProcessRequestDto();
+            processRequestDto.setProcessInstanceId(processInstanceId);
+            processRequestDto.setInputVariables(params);
+
+            processRequestDto.setBusinessKey(businessKey);
+            HttpEntity<ProcessRequestDto> requestEntity = new HttpEntity<>(processRequestDto);
             ResponseEntity<ProcessResponseDto> entity = this.actionRestTemplate.postForEntity(
-                    "/process/variables/input", requestEntity, ProcessResponseDto.class
-            );
+                    "/business/process/variables/input", requestEntity, ProcessResponseDto.class);
 
             log.debug("inputProcessVariable {}", entity.getBody());
         } catch (Exception e) {
@@ -189,20 +193,18 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public Boolean invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
+    public FunctionExecResultDto invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
         try {
-            LambdaQueryWrapper<AccountEntity> lqw = new LambdaQueryWrapper<AccountEntity>()
-                    .eq(AccountEntity::getAccountId, accountId);
-            AccountEntity accountEntity = this.accountMapper.selectOne(lqw);
+//            LambdaQueryWrapper<AccountEntity> lqw = new LambdaQueryWrapper<AccountEntity>()
+//                    .eq(AccountEntity::getAccountId, accountId);
+//            AccountEntity accountEntity = this.accountMapper.selectOne(lqw);
 
             // 请求action server执行方法
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_JSON);
             requestHeaders.add("accountId", accountId);
             requestHeaders.add("botId", botId);
-            requestHeaders.add("externalId", accountEntity.getExternalId());
-            // todo
-            requestHeaders.add("deviceId", "deviceId001");
+//            requestHeaders.add("externalId", accountEntity.getExternalId());
             // body
             String json = this.objectMapper.writeValueAsString(functionCall);
             log.debug("invokeFunc json {}", json);
@@ -212,13 +214,19 @@ public class ActionServerServiceImpl implements ActionServerService {
                     requestEntity,
                     ProcessResponseDto.class);
 
-            log.debug("invokeFunc {}", entity.getBody());
-            return entity.getBody().getSuccess();
+            ProcessResponseDto responseDto = entity.getBody();
+            log.debug("invokeFunc {}", responseDto);
+            FunctionExecResultDto execResultDto = new FunctionExecResultDto();
+            execResultDto.setExecuteResult(responseDto.getSuccess());
+            if (responseDto.getData() != null && responseDto.getData() instanceof String) {
+                execResultDto.setMsg((String) responseDto.getData());
+            }
+            return execResultDto;
         } catch (Exception e) {
             log.error("invokeFunc error", e);
         }
 
-        return false;
+        return new FunctionExecResultDto(false, null);
     }
 
     @Override

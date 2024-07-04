@@ -2,9 +2,11 @@ package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
 import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
 import com.github.leapbound.yc.hub.consts.RedisConsts;
+import com.github.leapbound.yc.hub.model.ChannelDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
-import com.github.leapbound.yc.hub.service.BotService;
+import com.github.leapbound.yc.hub.service.ChannelService;
 import com.github.leapbound.yc.hub.service.ConversationService;
+import com.github.leapbound.yc.hub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -21,8 +23,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Fred
@@ -35,8 +37,9 @@ public class CpKfHandler extends AbstractHandler {
 
     private final RedisTemplate<Object, Object> redisTemplate;
     private final ConversationService conversationService;
-    private final BotService botService;
-    @Value("${yucong.conversation.expire:300}")
+    private final UserService userService;
+    private final ChannelService channelService;
+    @Value("${yucong.conversation.expire:3600}")
     private int expires;
 
     @Override
@@ -44,7 +47,8 @@ public class CpKfHandler extends AbstractHandler {
         log.debug("CpKfHandler 接收到请求消息，WxCpXmlMessage：{} map: {}", wxMessage, map);
 
         String openKfId = wxMessage.getOpenKfId();
-        String botId = this.botService.getBotId(wxCpService.getWxCpConfigStorage().getCorpId(), String.valueOf(wxCpService.getWxCpConfigStorage().getAgentId()));
+        ChannelDto channelDto = this.channelService.getChannelByOpenKfId(openKfId);
+        String botId = channelDto.getBotId();
 
         String nextCursor = getNextCursor(botId, openKfId);
         WxCpKfServiceImpl wxCpKfService = new WxCpKfServiceImpl(wxCpService);
@@ -55,31 +59,44 @@ public class CpKfHandler extends AbstractHandler {
             nextCursor = wxCpKfMsgListResp.getNextCursor();
             setNextCursor(botId, openKfId, nextCursor);
 
-            AtomicReference<String> externalUserId = new AtomicReference<>();
-            StringBuilder sb = new StringBuilder();
+            Map<String, StringBuilder> messageMap = new HashMap<>();
             wxCpKfMsgListResp.getMsgList().forEach(wxCpKfMsgItem -> {
-                sb.append(wxCpKfMsgItem.getText().getContent()).append("\n");
-                externalUserId.set(wxCpKfMsgItem.getExternalUserId());
+                if (!StringUtils.hasText(wxCpKfMsgItem.getServicerUserId())) {
+                    String externalUserId = wxCpKfMsgItem.getExternalUserId();
+                    messageMap.putIfAbsent(externalUserId, new StringBuilder());
+                    WxCpKfTextMsg textMsg = wxCpKfMsgItem.getText();
+                    if (textMsg != null && StringUtils.hasText(textMsg.getContent())) {
+                        messageMap.get(externalUserId).append(textMsg.getContent()).append("\n");
+                    }
+                }
             });
-            log.debug("wxCpKfMsgListResp content {}", sb);
+            log.debug("wxCpKfMsgListResp content {}", messageMap);
 
-            SingleChatDto singleChatModel = new SingleChatDto();
-            singleChatModel.setBotId(botId);
-            singleChatModel.setAccountId(null);
-            singleChatModel.setContent(sb.toString());
-            singleChatModel.setType(MyMessageType.TEXT);
-            String msg = this.conversationService.chat(singleChatModel).getContent();
-            log.debug("wxCpKfMsgListResp chat {}", msg);
+            for (String externalUserId : messageMap.keySet()) {
+                String accountId = this.userService.getAccountByChannelIdAndExternalId(channelDto.getChannelId(), externalUserId).getAccountId();
 
-            if (StringUtils.hasText(msg)) {
-                WxCpKfMsgSendRequest request = new WxCpKfMsgSendRequest();
-                request.setToUser(externalUserId.get());
-                request.setOpenKfid(openKfId);
-                request.setMsgType("text");
-                WxCpKfTextMsg wxCpKfTextMsg = new WxCpKfTextMsg();
-                wxCpKfTextMsg.setContent(msg);
-                request.setText(wxCpKfTextMsg);
-                wxCpKfService.sendMsg(request);
+                SingleChatDto singleChatModel = new SingleChatDto();
+                singleChatModel.setBotId(botId);
+                singleChatModel.setAccountId(accountId);
+                singleChatModel.setContent(messageMap.get(externalUserId).toString());
+                singleChatModel.setType(MyMessageType.TEXT);
+                Map<String, Object> params = new HashMap<>();
+                params.put("openKfId", openKfId);
+                params.put("externalUserId", externalUserId);
+                singleChatModel.setParam(params);
+                String msg = this.conversationService.chat(singleChatModel).getContent();
+                log.debug("wxCpKfMsgListResp chat {}", msg);
+
+                if (StringUtils.hasText(msg)) {
+                    WxCpKfMsgSendRequest request = new WxCpKfMsgSendRequest();
+                    request.setToUser(externalUserId);
+                    request.setOpenKfid(openKfId);
+                    request.setMsgType("text");
+                    WxCpKfTextMsg wxCpKfTextMsg = new WxCpKfTextMsg();
+                    wxCpKfTextMsg.setContent(msg);
+                    request.setText(wxCpKfTextMsg);
+                    wxCpKfService.sendMsg(request);
+                }
             }
         }
 
