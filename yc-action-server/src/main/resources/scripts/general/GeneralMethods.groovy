@@ -15,27 +15,39 @@ import org.slf4j.LoggerFactory
  */
 
 @Field static Logger logger = LoggerFactory.getLogger('scripts.general.GeneralMethods');
+@Field static List<String> externalKeys = ['frontUrl', 'hubUrl', 'alphaUrl', 'gonggongUrl', 'qiguanUrl', 'zhangwuUrl', 'zijinUrl', 'dingdanUrl']
 
 static def getExternal(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    String externalFrontUrl = args.containsKey('frontUrl') ? args.getString('frontUrl') : ''
-    String externalHubUrl = args.containsKey('hubUrl') ? args.getString('hubUrl') : ''
-    String externalAlphaUrl = args.containsKey('alphaUrl') ? args.getString('alphaUrl') : ''
-    String gonggongUrl = args.containsKey('gonggongUrl') ? args.getString('gonggongUrl') : ''
-    String qiguanUrl = args.containsKey('qiguanUrl') ? args.getString('qiguanUrl') : ''
-    String zhangwuUrl = args.containsKey('zhangwuUrl') ? args.getString('zhangwuUrl') : ''
-    String dingdanUrl = args.containsKey('dingdanUrl') ? args.getString('dingdanUrl') : ''
-    String zijinUrl = args.containsKey('zijinUrl') ? args.getString('zijinUrl') : ''
-    return ['frontUrl'   : externalFrontUrl, 'hubUrl': externalHubUrl, 'alphaUrl': externalAlphaUrl,
-            'gonggongUrl': gonggongUrl, 'qiguanUrl': qiguanUrl, 'zhangwuUrl': zhangwuUrl,
-            'dingdanUrl' : dingdanUrl, 'zijinUrl': zijinUrl]
+    JSONObject result = new JSONObject()
+    externalKeys.each { String key ->
+        if (args.containsKey(key)) {
+            String value = args.getString(key)
+            result.put(key, value)
+        }
+    }
+    return result
+}
+
+static def removeExternal(JSONObject args, List<String> removeKeys) {
+    JSONObject result = args
+    removeKeys.each { String key ->
+        if (result.containsKey(key)) {
+            result.remove(key)
+        }
+    }
+    return result
 }
 
 static def noticeHubMethod(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String noticeHubPath = args.containsKey('noticeHubPath') ? args.getString('noticeHubPath') : ''
     String noticeHubUrl = args.containsKey('noticeHubUrl') ? args.getString('noticeHubUrl') : ''
-    def response = RestClient.doPostWithBody(noticeHubUrl, noticeHubPath, args, null)
+    List<String> removeKeys = ['noticeHubPath', 'noticeHubUrl']
+    removeKeys.addAll(externalKeys)
+    def params = removeExternal(args, removeKeys)
+    //
+    def response = RestClient.doPostWithBody(noticeHubUrl, noticeHubPath, params, null)
     if (!StrUtil.isEmpty(response.body())) {
         logger.info('noticeHub response {}', response.body())
     }
