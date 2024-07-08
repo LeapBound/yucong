@@ -1,6 +1,7 @@
 package com.github.leapbound.yc.action.utils.ldap;
 
-import com.alibaba.fastjson.JSONObject;
+import com.github.leapbound.yc.action.model.vo.ResponseVo;
+import com.github.leapbound.yc.action.utils.mapstruct.LdapUserMapStruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.LdapTemplate;
@@ -8,7 +9,6 @@ import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
 import org.springframework.stereotype.Service;
-import com.github.leapbound.yc.action.utils.mapstruct.LdapUserMapStruct;
 
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.DirContext;
@@ -35,112 +35,85 @@ public class LdapAccountServiceImpl implements LdapAccountService {
         this.ldapTemplate = ldapTemplate;
     }
 
-    public JSONObject getUserByAccount(String account) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("account", account);
+
+    @Override
+    public ResponseVo<Object> getUserByAccount(String account) {
         List<LdapUser> list = this.getLdapUserByAccount(account);
-        // no user
         if (list == null || list.isEmpty()) {
             logger.warn("no user found, account = {}", account);
-            jsonObject.put("执行结果", "没有找到账号信息");
-            return jsonObject;
+            return ResponseVo.fail(3204, "没有找到账号信息");
         }
-        // multi account
         if (list.size() > 1) {
             logger.warn("multi user found, account = {}", account);
-            jsonObject.put("执行结果", "找到多个账号");
-            jsonObject.put("账号", list);
-            return jsonObject;
+            return ResponseVo.fail(3204, "找到多个账号", list);
         }
         LdapUser vo = list.get(0);
-        logger.debug("ldap user, {}", vo);
-        jsonObject.put("账号信息", LdapUserMapStruct.INSTANCE.ldapUserToVo(vo));
-        return jsonObject;
+        return ResponseVo.success(LdapUserMapStruct.INSTANCE.ldapUserToVo(vo));
     }
 
     @Override
-    public JSONObject getUserByName(String name) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("username", name);
+    public ResponseVo<Object> getUserByName(String name) {
         List<LdapUser> list = this.getLdapUserByName(name);
         // no user
         if (list == null || list.isEmpty()) {
             logger.warn("no user found, name = {}", name);
-            jsonObject.put("执行结果", "没有找到账号信息");
-            return jsonObject;
+            return ResponseVo.fail(3204, "没有找到账号信息");
         }
         // multi account
         if (list.size() > 1) {
             logger.warn("multi user found, name = {}", name);
-            jsonObject.put("执行结果", "找到多个账号");
-            jsonObject.put("账号", list);
-            return jsonObject;
+            return ResponseVo.fail(3204, "找到多个账号", list);
         }
         LdapUser vo = list.get(0);
-        logger.debug("ldap user, {}", vo);
-        jsonObject.put("账号信息", LdapUserMapStruct.INSTANCE.ldapUserToVo(vo));
-        return jsonObject;
+        return ResponseVo.success(LdapUserMapStruct.INSTANCE.ldapUserToVo(vo));
     }
 
-    public JSONObject closeLdapAccount(String account) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("account", account);
+    public ResponseVo<Object> closeLdapAccount(String account) {
         try {
             List<LdapUser> list = this.getLdapUserByAccount(account);
             // no user
             if (list == null || list.isEmpty()) {
                 logger.warn("no user found, account = {}", account);
-                jsonObject.put("执行结果", "没有找到账号");
-                return jsonObject;
+                return ResponseVo.fail(3204, "没有找到账号");
             }
             // multi account
             if (list.size() > 1) {
-                jsonObject.put("执行结果", "找到多个账号，请确认");
-                jsonObject.put("账号", list);
-                return jsonObject;
+                logger.warn("multi user found, account = {}", account);
+                return ResponseVo.fail(3204, "找到多个账号", list);
             }
             // find account
             LdapUser vo = list.get(0);
             // disable account, 512 + 2 = 514
             this.modifyUserAttribute(vo, NORMAL_ACCOUNT + ACCOUNT_DISABLE);
             //
-            jsonObject.put("执行成功", "成功关闭账号");
-            return jsonObject;
+            return ResponseVo.success("成功关闭账号");
         } catch (Exception ex) {
             logger.error("close ldap account error", ex);
-            jsonObject.put("执行异常", "关闭账号时发生异常");
-            return jsonObject;
+            return ResponseVo.fail(3204, "关闭账号时发生异常");
         }
     }
 
-    public JSONObject enableLdapAccount(String account) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("account", account);
+    public ResponseVo<Object> enableLdapAccount(String account) {
         try {
             List<LdapUser> list = this.getLdapUserByAccount(account);
             // no user
             if (list == null || list.isEmpty()) {
                 logger.warn("no user found, account = {}", account);
-                jsonObject.put("执行结果", "没有找到账号");
-                return jsonObject;
+                return ResponseVo.fail(3204, "没有找到账号");
             }
             // multi account
             if (list.size() > 1) {
-                jsonObject.put("执行结果", "找到多个账号，请确认");
-                jsonObject.put("账号", list);
-                return jsonObject;
+                return ResponseVo.fail(3204, "找到多个账号", list);
             }
             //
             LdapUser vo = list.get(0);
             // enable account
             this.modifyUserAttribute(vo, NORMAL_ACCOUNT + DONT_EXPIRE_PASSWORD);
             //
-            jsonObject.put("执行成功", "成功重新启用账号");
-            return jsonObject;
+            return ResponseVo.success("成功重新启用账号");
         } catch (Exception ex) {
-            logger.error("close ldap account error", ex);
-            jsonObject.put("执行异常", "启用账号时发生异常");
-            return jsonObject;
+            logger.error("enable ldap account error", ex);
+            return ResponseVo.fail(3204, "启用账号时发生异常");
         }
     }
 

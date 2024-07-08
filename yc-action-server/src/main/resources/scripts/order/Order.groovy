@@ -1,6 +1,7 @@
 package scripts.order
 
 import cn.hutool.core.util.StrUtil
+import cn.hutool.http.HttpResponse
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
@@ -8,6 +9,7 @@ import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import groovy.transform.Field
 import scripts.alpha.Alpha
+import scripts.general.GeneralCodes
 import scripts.general.GeneralMethods
 
 import java.time.LocalDateTime
@@ -64,9 +66,8 @@ static def execOrderMethod(String method, String arguments) {
     // result init
     JSONObject result = new JSONObject()
     // check arguments
-    if (arguments == null || arguments == '') {
-        result.put('错误', '没有提供必要的信息')
-        return result
+    if (StrUtil.isEmptyIfStr(arguments)) {
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     //
     gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
@@ -93,7 +94,7 @@ static def execOrderMethod(String method, String arguments) {
             result = tryOrderRefund(arguments)
             break
         default: // no method exist
-            result.put('错误', '没有执行方法')
+            result = ResponseVo.makeFail(GeneralCodes.MISSING_EXEC_METHOD, '没有执行方法')
             break
     }
     return result
@@ -106,22 +107,20 @@ static def execOrderMethod(String method, String arguments) {
  */
 static def getUserRepaymentByOrder(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    // result init
-    JSONObject result = new JSONObject()
     // check order no
     String orderNo = args.containsKey('orderNo') ? args.getString('orderNo') : ''
     if (StrUtil.isEmptyIfStr(orderNo)) {
-        return ResponseVo.makeFail(9999, '执行参数没有 orderNo')
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '执行参数没有 orderNo')
     }
     if (!matchOrderNo(orderNo)) {
-        return ResponseVo.makeFail(9999, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_PARAMS_INVALID, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
     }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doGetWithLogin(dingdanUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
+    HttpResponse response = Alpha.doGetWithLogin(dingdanUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
     // no response
     if (response == null) {
-        return ResponseVo.makeFail(9999, '查询用户的还款计划没有响应')
+        return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询用户的还款计划没有响应')
     }
     // response status = 200
     if (response.isOk()) {
@@ -134,7 +133,8 @@ static def getUserRepaymentByOrder(String arguments) {
                 BigDecimal remain = new BigDecimal('0.0')
                 String date = ''
                 // 找到第一个未完成的期数和金额
-                for (JSONObject replayPlan : array) {
+                for (int i = 0; i < array.size(); i++) {
+                    JSONObject replayPlan = array.getJSONObject(i)
                     if (replayPlan.containsKey('status')
                             && '正常' != replayPlan.getString('status')) {
                         continue
@@ -158,7 +158,7 @@ static def getUserRepaymentByOrder(String arguments) {
         }
         return ResponseVo.makeSuccess('没有查询到用户的还款计划')
     }
-    return ResponseVo.makeFail(9999, response.status + ' 查询用户的还款计划失败')
+    return ResponseVo.makeFail(response.status, ' 查询用户的还款计划失败')
 }
 
 /**
@@ -171,19 +171,23 @@ static def getUserLoanTimeByOrder(String arguments) {
     // check order no
     String orderNo = args.containsKey('orderNo') ? args.getString('orderNo') : ''
     if (StrUtil.isEmptyIfStr(orderNo)) {
-        return ResponseVo.makeFail(9999, '执行参数没有 orderNo')
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '执行参数没有 orderNo')
     }
     if (!matchOrderNo(orderNo)) {
-        return ResponseVo.makeFail(9999, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_PARAMS_INVALID, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
     }
     // params init
-    def params = ['orderNo': orderNo]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('orderNo', orderNo)
+        }
+    }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(zijinUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(zijinUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
-        return ResponseVo.makeFail(9999, '查询订单的放款信息没有响应')
+        return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单的放款信息没有响应')
     }
     // response status = 200
     if (response.isOk()) {
@@ -222,7 +226,7 @@ static def getUserLoanTimeByOrder(String arguments) {
         }
         return ResponseVo.makeSuccess('没有查询到订单的放款信息')
     }
-    return ResponseVo.makeFail(9999, response.status + ' 查询订单的放款信息失败')
+    return ResponseVo.makeFail(response.status, ' 查询订单的放款信息失败')
 }
 
 /**
@@ -235,19 +239,23 @@ static def getLoanStatusByOrder(String arguments) {
     // check order no
     String orderNo = args.containsKey('orderNo') ? args.getString('args') : ''
     if (StrUtil.isEmptyIfStr(orderNo)) {
-        return ResponseVo.makeFail(9999, '执行参数没有 orderNo')
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '执行参数没有 orderNo')
     }
     if (!matchOrderNo(orderNo)) {
-        return ResponseVo.makeFail(9999, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_PARAMS_INVALID, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
     }
     // params init
-    def params = ['orderNo': orderNo]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('orderNo', orderNo)
+        }
+    }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(zhangwuUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(zhangwuUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
-        return ResponseVo.makeFail(9999, '查询订单借据状态信息没有响应')
+        return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单借据状态信息没有响应')
     }
     // response status = 200
     if (response.isOk()) {
@@ -270,7 +278,7 @@ static def getLoanStatusByOrder(String arguments) {
         }
         return ResponseVo.makeSuccess('没有查询到订单借据状态信息')
     }
-    return ResponseVo.makeFail(9999, response.status + ' 查询订单借据状态信息失败')
+    return ResponseVo.makeFail(response.status, ' 查询订单借据状态信息失败')
 }
 
 /**
@@ -280,24 +288,26 @@ static def getLoanStatusByOrder(String arguments) {
  */
 static def tryOrderRepay(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    // result init
-    JSONObject result = new JSONObject()
     // check order no
     String orderNo = args.containsKey('orderNo') ? args.getString('orderNo') : ''
     if (StrUtil.isEmptyIfStr(orderNo)) {
-        return ResponseVo.makeFail(9999, '执行参数没有 orderNo')
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '执行参数没有 orderNo')
     }
     if (!matchOrderNo(orderNo)) {
-        return ResponseVo.makeFail(9999, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_PARAMS_INVALID, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
     }
     // params init
-    def params = ['orderNo': orderNo]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('orderNo', orderNo)
+        }
+    }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRepayPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRepayPath, params, requestAuth, 1)
     // no response
     if (response == null) {
-        return ResponseVo.makeFail(9999, '获取还款试算结果没有响应')
+        return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取还款试算结果没有响应')
     }
     // response status = 200
     if (response.isOk()) {
@@ -318,7 +328,7 @@ static def tryOrderRepay(String arguments) {
         return ResponseVo.makeSuccess('没有获取到还款试算结果')
 
     }
-    return ResponseVo.makeFail(9999, response.status + ' 获取还款试算结果失败')
+    return ResponseVo.makeFail(response.status, ' 获取还款试算结果失败')
 }
 
 /**
@@ -328,24 +338,26 @@ static def tryOrderRepay(String arguments) {
  */
 static def tryOrderRefund(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    // result init
-    JSONObject result = new JSONObject()
     // check order no
     String orderNo = args.containsKey('orderNo') ? args.getString('orderNo') : ''
     if (StrUtil.isEmptyIfStr(orderNo)) {
-        return ResponseVo.makeFail(9999, '执行参数没有 orderNo')
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '执行参数没有 orderNo')
     }
     if (!matchOrderNo(orderNo)) {
-        return ResponseVo.makeFail(9999, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_PARAMS_INVALID, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
     }
     // params init
-    def params = ['orderNo': orderNo]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('orderNo', orderNo)
+        }
+    }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRefundPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRefundPath, params, requestAuth, 1)
     // no response
     if (response == null) {
-        return ResponseVo.makeFail(9999, '获取退款试算结果没有响应')
+        return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取退款试算结果没有响应')
     }
     // response status = 200
     if (response.isOk()) {
@@ -364,11 +376,11 @@ static def tryOrderRefund(String arguments) {
         }
         return ResponseVo.makeSuccess('没有获取到退款试算结果')
     }
-    return ResponseVo.makeFail(9999, response.status + ' 获取退款试算结果失败')
+    return ResponseVo.makeFail(response.status, ' 获取退款试算结果失败')
 }
 
 static def matchOrderNo(orderNo) {
-    def reg = /^[A-Z]{3}[0-9]{2}-[0-9]{6}-[0-9]{6}$/
+    String reg = /^[A-Z]{3}[0-9]{2}-[0-9]{6}-[0-9]{6}$/
     if (orderNo.matches(reg)) {
         return true
     }

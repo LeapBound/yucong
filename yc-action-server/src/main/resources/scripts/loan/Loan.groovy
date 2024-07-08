@@ -5,12 +5,14 @@ import cn.hutool.core.util.RandomUtil
 import cn.hutool.core.util.StrUtil
 import cn.hutool.crypto.digest.DigestUtil
 import cn.hutool.extra.spring.SpringUtil
+import cn.hutool.http.HttpResponse
 import cn.hutool.http.HttpUtil
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.CamundaService
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
+import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import com.github.leapbound.yc.action.func.groovy.RestClient
 import com.github.leapbound.yc.camunda.model.vo.TaskReturn
 import groovy.transform.Field
@@ -18,6 +20,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.StringRedisTemplate
 import scripts.alpha.Alpha
+import scripts.general.GeneralCodes
 import scripts.general.GeneralMethods
 
 import java.util.concurrent.TimeUnit
@@ -57,9 +60,8 @@ execLoanMethod(method, arguments)
 static def execLoanMethod(String method, String arguments) {
     JSONObject result = new JSONObject()
     // check arguments
-    if (arguments == null || arguments.isEmpty()) {
-        result.put('错误', '没有提供必要的信息')
-        return result
+    if (StrUtil.isBlankIfStr(arguments)) {
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     // get external args
     gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
@@ -74,7 +76,7 @@ static def execLoanMethod(String method, String arguments) {
             result = bindMobile(arguments)
             break
         case 'send_code': // service task called by java delegate
-            result = sendCode(method, arguments)
+            result = sendCode(arguments)
             break
         case 'verify_mobile_code':
             result = verifyMobileCode(arguments)
@@ -86,13 +88,13 @@ static def execLoanMethod(String method, String arguments) {
             result = productInfo(method, arguments)
             break
         case 'loan_config':
-            result = loanConfig(method, arguments)
+            result = loanConfig(arguments)
             break
         case 'loan_term':
             result = loanTerm(method, arguments)
             break
         case 'load_client_identity': // service task called by java delegate
-            result = loadClientIdentity(method, arguments)
+            result = loadClientIdentity(arguments)
             break
         case 'id_photo_front':
             result = doIdCardOcr(method, arguments)
@@ -101,13 +103,13 @@ static def execLoanMethod(String method, String arguments) {
             result = doIdCardOcr(method, arguments)
             break
         case 'bank_code_config':
-            result = bankCodeConfig(method, arguments)
+            result = bankCodeConfig(arguments)
             break
         case 'bank_card':
             result = bankCard(method, arguments)
             break
         case 'check_bank_card': // service task called by java delegate
-            result = checkBankCard(method, arguments)
+            result = checkBankCard(arguments)
             break
         case 'submit_pay_protocol':
             result = submitPayProtocol(method, arguments)
@@ -134,7 +136,7 @@ static def execLoanMethod(String method, String arguments) {
             result = forthStep(method, arguments)
             break
         case 'face_detect': // service task called by java delegate
-            result = faceDetect(method, arguments)
+            result = faceDetect(arguments)
             break
         case 'face_verify':
             result = faceVerify(method, arguments)
@@ -149,7 +151,7 @@ static def execLoanMethod(String method, String arguments) {
             result = deleteLoanProcess(arguments)
             break
         default:
-            result.put('结果', '没有执行方法')
+            result = ResponseVo.makeFail(GeneralCodes.MISSING_EXEC_METHOD, '没有对应的执行方法')
             break
     }
     return result
@@ -157,53 +159,58 @@ static def execLoanMethod(String method, String arguments) {
 
 //
 static def startLoanProcess(String arguments) {
-    JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
     String botId = args.containsKey('botid') ? args.getString('botid') : ''
-    def startFormVariables = ['accountId': userId, 'botId': botId, 'externalId': externalId]
+    Map<String, Object> startFormVariables = new HashMap() {
+        {
+            put('accountId', userId)
+            put('botId', botId)
+            put('externalId', externalId)
+        }
+    }
     // process key = 'Process_chatin'
     String processInstanceId = CamundaService.startProcess('Process_chatin', userId, startFormVariables)
     //
     logger.info('{},{}, start_loan_process', userId, externalId)
-    result.put('functionContent', '好的，请提供您的手机号')
-    return makeResponseVo(true, null, result)
+    return ResponseVo.makeSuccess(null)
 }
 
 // 绑定手机号
 static def bindMobile(String arguments) {
-    JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
     if (taskReturn == null) {
         logger.error('bindMobile no current task, businessKey: {}', userId)
-        result.put('functionContent', '获取流程失败，请联系管理员')
-        return makeResponseVo(false, '[bind_mobile]获取流程失败，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[bind_mobile]获取流程失败，请联系管理员')
     } else {
-        def taskId = taskReturn.getTaskId()
-        def inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
+        String taskId = taskReturn.getTaskId()
+        Map<String, Object> inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
         CamundaService.completeTask(taskId, inputForm)
-        return makeResponseVo(true, null, result)
+        return ResponseVo.makeSuccess(null)
     }
 }
-
-static def sendCode(String method, String arguments) {
+// service task
+static def sendCode(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
-    def appCommonResult = sendLoginSms(mobile) as AppCommonResult
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    AppCommonResult appCommonResult = sendLoginSms(mobile)
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(false, appCommonResult.errMsg, data)
-        result.put('s_taskResult', false)
-        result.put('z_sendUserMobileVerifyCode', true)
-        result.put('afterFunction', afterFunctionMap)
-        return result
+        return new JSONObject() {
+            {
+                put('s_taskResult', false)
+                put('z_sendUserMobileVerifyCode', true)
+                put('afterFunction', afterFunctionMap)
+            }
+        }
     }
     if (appCommonResult.responseObject != null) {
-        result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
+        result.putAll(JSONObject.parseObject(JSON.toJSONString(appCommonResult.responseObject)))
     }
     //
     Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
@@ -216,7 +223,6 @@ static def sendCode(String method, String arguments) {
 
 static def verifyMobileCode(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String verifyCode = args.containsKey('smsCode') ? args.getString('smsCode') : ''
     String deviceId = args.containsKey('deviceId') ? args.getString('deviceId') : ''
@@ -224,100 +230,100 @@ static def verifyMobileCode(String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('verifyMobileCode no current task, businessKey: {}', userId)
-            result.put('functionContent', '获取当前流程失败，请联系管理员')
-            return makeResponseVo(false, '[verify_mobile_code]获取当前流程失败，联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[verify_mobile_code]获取当前流程失败，联系管理员')
         } else {
-            def taskId = taskReturn.getTaskId()
-            def processInstanceId = taskReturn.getProcessInstanceId()
+            String taskId = taskReturn.getTaskId()
+            String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             //
             String appToken = getAppToken(mobile, verifyCode, deviceId)
             if (!StrUtil.isEmptyIfStr(appToken)) {
                 args.put('z_userMobileVerify', true)
-                def inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
+                Map<String, Object> inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
                 CamundaService.completeTask(taskId, inputForm)
-                return makeResponseVo(true, null, result)
+                return ResponseVo.makeSuccess(null)
             }
-            return makeResponseVo(false, '验证登录失败', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_COMPLETE_FAILED, '验证登录失败')
         }
     } catch (Exception ex) {
         logger.error('verifyMobileCode error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[verify_mobile_code]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[verify_mobile_code]系统错误，联系管理员')
     }
 }
 
 static def configByBdMobile(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String bdMobile = args.containsKey('bdMobile') ? args.getString('bdMobile') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('configByBdMobile no current task, businessKey: {}', userId)
-            result.put('functionContent', '获取当前流程失败，请联系管理员')
-            return makeResponseVo(false, '[config_bd_mobile]获取当前流程失败，联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[config_bd_mobile]获取当前流程失败，联系管理员')
         } else {
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
-            def appCommonResult = preApply(appToken, bdMobile) as AppCommonResult
+            AppCommonResult appCommonResult = preApply(appToken, bdMobile)
             if (!appCommonResult.result) {
-                result.put('functionContent', appCommonResult.errMsg)
-                return makeResponseVo(false, appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
-            def storeConfig = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+            JSONObject storeConfig = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
             String storeCode = storeConfig.containsKey('storeCode') ? storeConfig.getString('storeCode') : ''
             JSONObject config = storeConfig.containsKey('config') ? storeConfig.getJSONObject('config') : null
-            def configForm = ['bdMobile': bdMobile, 'storeCode': storeCode, 'loanConfig': config]
+            Map<String, Object> configForm = new HashMap() {
+                {
+                    put('bdMobile', bdMobile)
+                    put('storeCode', storeCode)
+                    put('loanConfig', config)
+                }
+            }
             CamundaService.completeTask(taskId, configForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('configByBdMobile error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[config_bd_mobile]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[config_bd_mobile]系统错误，请联系管理员')
     }
 }
 
 static def productInfo(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String productName = args.containsKey('productName') ? args.getString('productName') : ''
     Integer applyAmount = args.containsKey('productAmount') ? args.getInteger('productAmount') : null
     if (StrUtil.isEmptyIfStr(productName) || null == applyAmount) {
-        result.put('functionContent', '[product_info]获取产品失败，联系管理员')
-        return makeResponseVo(false, '[product_info]获取产品失败，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '获取产品信息失败')
     }
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('productInfo no current task, businessKey: {}', userId)
-            result.put('functionContent', '获取当前流程失败，请联系管理员')
-            return makeResponseVo(false, '[product_info]获取当前流程失败，联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[product_info]获取当前流程失败，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程操作失败，请联系管理员')
-                return makeResponseVo(false, '[product_info]当前流程操作失败，请联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[product_info]当前流程操作失败，请联系管理员')
             }
             String taskId = taskReturn.getTaskId()
-            def loanInfoForm = ['applyAmount': applyAmount, 'productName': productName]
+            Map<String, Object> loanInfoForm = new HashMap() {
+                {
+                    put('applyAmount', applyAmount)
+                    put('productName', productName)
+                }
+            }
             CamundaService.completeTask(taskId, loanInfoForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('productInfo error,', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[product_info]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[product_info]系统错误，请联系管理员')
     }
 }
 
-static def loanConfig(String method, String arguments) {
+static def loanConfig(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject loanConfig = args.containsKey('loanConfig') ? args.getJSONObject('loanConfig') : null
     JSONObject result = new JSONObject()
@@ -325,10 +331,13 @@ static def loanConfig(String method, String arguments) {
     JSONArray stages = (loanConfig != null && loanConfig.containsKey('StageCount')) ? loanConfig.getJSONArray('StageCount') : null
     if (stages != null && !stages.isEmpty()) {
         Set<String> terms = new HashSet<>()
-        for (JSONObject stage : stages) {
-            String value = stage.getString('value')
-            if ('请选择' != value) {
-                terms.add(value)
+        for (int i = 0; i < stages.size(); i++) {
+            JSONObject stage = stages.getJSONObject(i)
+            if (stage.containsKey('value')) {
+                String value = stage.getString('value')
+                if ('请选择' != value) {
+                    terms.add(value)
+                }
             }
         }
         result.put('termConfig', terms)
@@ -339,10 +348,13 @@ static def loanConfig(String method, String arguments) {
     JSONArray married = (loanConfig != null && loanConfig.containsKey('Married')) ? loanConfig.getJSONArray('Married') : null
     if (married != null && !married.isEmpty()) {
         Set<String> maritalStatus = new HashSet<>()
-        for (JSONObject statusItem : married) {
-            String value = statusItem.getString('value')
-            if ('请选择' != value) {
-                maritalStatus.add(value)
+        for (int i = 0; i < married.size(); i++) {
+            JSONObject statusItem = married.getJSONObject(i)
+            if (statusItem.containsKey('value')) {
+                String value = statusItem.getString('value')
+                if ('请选择' != value) {
+                    maritalStatus.add(value)
+                }
             }
         }
         result.put('maritalStatus', maritalStatus)
@@ -353,10 +365,13 @@ static def loanConfig(String method, String arguments) {
     JSONArray relationShip = (loanConfig != null && loanConfig.containsKey('Relationship')) ? loanConfig.getJSONArray('Relationship') : null
     if (relationShip != null && !relationShip.isEmpty()) {
         Set<String> relation = new HashSet<>()
-        for (JSONObject relationItem : relationShip) {
-            String value = relationItem.getString('value')
-            if ('请选择' != value) {
-                relation.add(value)
+        for (int i = 0; i < relationShip.size(); i++) {
+            JSONObject relationItem = relationShip.getJSONObject(i)
+            if (relationItem.containsKey('value')) {
+                String value = relationItem.getString('value')
+                if ('请选择' != value) {
+                    relation.add(value)
+                }
             }
         }
         result.put('relationShip', relation)
@@ -364,7 +379,7 @@ static def loanConfig(String method, String arguments) {
         logger.warn('no Relationship found in loanConfig')
     }
     //
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     //
     Map<String, Object> afterFunctionMap = noticeMap(data)
     result.put('afterFunction', afterFunctionMap)
@@ -375,38 +390,38 @@ static def loanConfig(String method, String arguments) {
 
 static def loanTerm(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String loanTerm = args.containsKey('loanTerm') ? args.getString('loanTerm') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('loanTerm no current task, businessKey: {}', userId)
-            result.put('functionContent', '获取当前流程失败，请联系管理员')
-            return makeResponseVo(false, '[loan_term]获取当前流程失败，联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[loan_term]获取当前流程失败，请联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程操作失败，请联系管理员')
-                return makeResponseVo(false, '[loan_term]当前流程操作失败，请联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[loan_term]当前流程操作失败，请联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
-            def loanConfig = processVariable.containsKey('loanConfig') ? processVariable.getJSONObject('loanConfig') : null
+            JSONObject loanConfig = processVariable.containsKey('loanConfig') ? processVariable.getJSONObject('loanConfig') : null
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             Integer amount = processVariable.containsKey('applyAmount') ? processVariable.getInteger('applyAmount') : 0
             String productName = processVariable.containsKey('productName') ? processVariable.getString('productName') : ''
-
+            // token
             String appToken = getAppToken(mobile, null, null)
-
-            def stages = loanConfig.containsKey('StageCount') ? loanConfig.getJSONArray('StageCount') : null
+            //
+            JSONArray stages = loanConfig.containsKey('StageCount') ? loanConfig.getJSONArray('StageCount') : null
             String loanProductId = ''
-            for (JSONObject stage : stages) {
-                String value = stage.getString('value')
-                if (loanTerm == value) {
-                    loanProductId = stage.getString('key')
+            for (int i = 0; i < stages.size(); i++) {
+                JSONObject stage = stages.getJSONObject(i)
+                if (stage.containsKey('value') && stage.containsKey('key')) {
+                    if (stage.getString('value') == loanTerm) {
+                        loanProductId = stage.getString('key')
+                    }
                 }
             }
+            //
             JSONObject firstSubmitObj = new JSONObject() {
                 {
                     put('C_STEP_ID', 'NYB01_01');
@@ -416,26 +431,30 @@ static def loanTerm(String method, String arguments) {
                     put('N_GEEX_LOAN_PDT_ID', loanProductId);
                 }
             }
-            def appCommonResult = submitApplyStep(appToken, firstSubmitObj) as AppCommonResult
+            AppCommonResult appCommonResult = submitApplyStep(appToken, firstSubmitObj)
             if (!appCommonResult.result) {
-                logger.warn('[loan_term]submitApplyStep error, ', appCommonResult.errMsg)
-                return makeResponseVo(false, appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
-            def firstSubmit = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+            JSONObject firstSubmit = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
             String appId = firstSubmit.containsKey('C_APP_ID') ? firstSubmit.getString('C_APP_ID') : ''
-            def appIdForm = ['appId': appId, 'loanTerm': loanTerm]
+            Map<String, Object> appIdForm = new HashMap() {
+                {
+                    put('appId', appId)
+                    put('loanTerm', loanTerm)
+                }
+            }
             CamundaService.completeTask(taskId, appIdForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('loanTerm error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[loan_term]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[loan_term]系统错误，联系管理员')
     }
 }
 
 // 加载用户信息
-static def loadClientIdentity(String method, String arguments) {
+// service task
+static def loadClientIdentity(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
@@ -443,19 +462,15 @@ static def loadClientIdentity(String method, String arguments) {
     //
     String appToken = getAppToken(mobile, null, null)
     // call load identity
-    def appCommonResult = loadIdentity(appId, appToken) as AppCommonResult
+    AppCommonResult appCommonResult = loadIdentity(appId, appToken)
     //
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(false, appCommonResult.errMsg, data)
         result.put('afterFunction', afterFunctionMap)
         result.put('s_taskResult', false)
         return result
     }
-    // todo 先不塞
-//    if (appCommonResult.responseObject != null) {
-//        result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
-//    }
     //
     Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
     result.put('afterFunction', afterFunctionMap)
@@ -465,7 +480,6 @@ static def loadClientIdentity(String method, String arguments) {
 
 static def doIdCardOcr(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String url = ''
     String fileType = ''
@@ -477,51 +491,47 @@ static def doIdCardOcr(String method, String arguments) {
         fileType = 'idnoBack'
     }
     if (StrUtil.isEmpty(url) || StrUtil.isEmpty(fileType)) {
-        return makeResponseVo(false, '[' + method + ']没有照片參數', result)
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '[' + method + ']没有照片參數')
     }
     //
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('doIdCardOcr no current task, businessKey: {}', userId)
-            result.put('functionContent', '获取当前流程失败，请联系管理员')
-            return makeResponseVo(false, '[' + method + ']获取当前流程失败，联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[' + method + ']获取当前流程失败，请联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程操作失败，请联系管理员')
-                return makeResponseVo(false, '[' + method + ']当前流程操作失败，联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[' + method + ']当前流程操作失败，请联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
-            def appCommonResult = doIdCardOcr(url, fileType, appToken) as AppCommonResult
+            AppCommonResult appCommonResult = doIdCardOcr(url, fileType, appToken)
             if (!appCommonResult.result) {
-                result.put('functionContent', '[' + method + ']' + appCommonResult.errMsg)
-                return makeResponseVo(false, '[' + method + ']' + appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
-            def ocrResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
-            def inputForm = new HashMap() {
+            JSONObject ocrResult = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
+            Map<String, Object> inputForm = new HashMap() {
                 {
                     put('ocr' + fileType, ocrResult)
                 }
             }
             CamundaService.completeTask(taskId, inputForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('doIdCardOcr error', ex)
-        result.put('错误', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[' + method + ']系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[' + method + ']系统错误，请联系管理员')
     }
 }
-
-static def bankCodeConfig(String method, String arguments) {
+// service task
+static def bankCodeConfig(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
-    def appCommonResult = doBankCode(['action': 'cardPackage']) as AppCommonResult
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    AppCommonResult appCommonResult = doBankCode(['action': 'cardPackage'])
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
         result.put('afterFunction', afterFunctionMap)
@@ -529,7 +539,7 @@ static def bankCodeConfig(String method, String arguments) {
         return result
     }
     //
-    result.putAll(JSON.toJSON(appCommonResult.responseObject) as JSONObject)
+    result.putAll(JSONObject.parseObject(JSON.toJSONString(appCommonResult.responseObject)))
     //
     Map<String, Object> afterFunctionMap = noticeMap(true, '', data)
     result.put('afterFunction', afterFunctionMap)
@@ -539,7 +549,6 @@ static def bankCodeConfig(String method, String arguments) {
 
 static def bankCard(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String bankCard = args.containsKey('bankCard') ? args.getString('bankCard') : ''
     String bankMobile = args.containsKey('bankMobile') ? args.getString('bankMobile') : ''
@@ -548,15 +557,13 @@ static def bankCard(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId);
         if (taskReturn == null) {
             logger.error('bankCard no current task, businessKey: {}', userId)
-            result.put('functionContent', '无法获取当前流程，联系管理员')
-            return makeResponseVo(false, '[back_card]无法获取当前流程，联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[back_card]无法获取当前流程，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，请联系管理员')
-                return makeResponseVo(false, '[back_card]当前流程失败，请联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[back_card]当前流程操作失败，请联系管理员')
             }
             // transfer bankName to bankCode
-            def bankCode = bankName
+            String bankCode = bankName
             CamundaService.getProcessVariable(taskReturn.getProcessInstanceId()).getJSONObject('bankCodeConfig').forEach {
                 String key, String value ->
                     if (key == bankName) {
@@ -564,18 +571,23 @@ static def bankCard(String method, String arguments) {
                     }
             }
             String taskId = taskReturn.getTaskId()
-            def inputForm = ['bankCard': bankCard, 'bankMobile': bankMobile, 'bankCode': bankCode]
+            Map<String, Object> inputForm = new HashMap() {
+                {
+                    put('bankCard', bankCard)
+                    put('bankMobile', bankMobile)
+                    put('bankCode', bankCode)
+                }
+            }
             CamundaService.completeTask(taskId, inputForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('bankCard error,', ex)
-        result.put('functionContent', '系统错误，联系管理员')
-        return makeResponseVo(false, '[back_card]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[back_card]系统错误，联系管理员')
     }
 }
-
-static def checkBankCard(String method, String arguments) {
+// service task
+static def checkBankCard(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
@@ -594,10 +606,10 @@ static def checkBankCard(String method, String arguments) {
 
     String appToken = getAppToken(mobile, null, null)
     //
-    def responseData = new JSONObject()
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    JSONObject responseData = new JSONObject()
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     // check bank card limit
-    def appCommonResult = checkBankCardLimit(appToken, name, idNo, bankCard, amount) as AppCommonResult
+    AppCommonResult appCommonResult = checkBankCardLimit(appToken, name, idNo, bankCard, amount)
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
         result.put('afterFunction', afterFunctionMap)
@@ -605,14 +617,14 @@ static def checkBankCard(String method, String arguments) {
         return result
     }
     // check old identity
-    appCommonResult = checkOldIdentity(appToken, name, idNo) as AppCommonResult
+    appCommonResult = checkOldIdentity(appToken, name, idNo)
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
         result.put('afterFunction', afterFunctionMap)
         result.put('s_taskResult', false)
         return result
     } else {
-        JSONObject responseObject = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+        JSONObject responseObject = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
         boolean needVerify = responseObject.getBooleanValue('needVerify')
         result.put('needOldIdentity', needVerify)
     }
@@ -624,7 +636,7 @@ static def checkBankCard(String method, String arguments) {
         result.put('s_taskResult', false)
         return result
     }
-    JSONObject checkProtocolResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+    JSONObject checkProtocolResult = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
     String protocolKey = checkProtocolResult.containsKey('makeProtocolKey') ? checkProtocolResult.getString('makeProtocolKey') : ''
     boolean needMakeProtocol = checkProtocolResult.containsKey('needMakeProtocol') ? checkProtocolResult.getBooleanValue('needMakeProtocol') : false
     //
@@ -639,19 +651,16 @@ static def checkBankCard(String method, String arguments) {
 // 提交用户支付协议
 static def submitPayProtocol(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String verifyCode = args.containsKey('payProtocolVerifyCode') ? args.getString('payProtocolVerifyCode') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('submitUserPayProtocol no current task, businessKey: {}', userId)
-            result.put('functionContent', '提交支付协议失败， 联系管理员')
-            return makeResponseVo(false, '[submit_pay_protocol]提交支付协议失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[submit_pay_protocol]无法获取当前流程，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，联系管理员')
-                return makeResponseVo(false, '[submit_pay_protocol]当前流程失败，联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[submit_pay_protocol]流程操作失败，联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -661,7 +670,7 @@ static def submitPayProtocol(String method, String arguments) {
             if (!needMakeProtocol) {
                 logger.info('submitUserPayProtocol no need make protocol')
                 CamundaService.completeTask(taskId, [:])
-                return makeResponseVo(true, null, result)
+                return ResponseVo.makeSuccess(null)
             }
             //
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
@@ -671,36 +680,33 @@ static def submitPayProtocol(String method, String arguments) {
             String bankMobile = processVariable.containsKey('bankMobile') ? processVariable.getString('bankMobile') : ''
             String bankCode = processVariable.containsKey('bankCode') ? processVariable.getString('bankCode') : ''
             String storeCode = processVariable.containsKey('storeCode') ? processVariable.getString('storeCode') : ''
-            def ocrFront = processVariable.containsKey('ocridnoFront') ? processVariable.getJSONObject('ocridnoFront') : null
-            def ocrFrontDetail = ocrFront.containsKey('ocrDetail') ? ocrFront.getJSONObject('ocrDetail') : null
+            JSONObject ocrFront = processVariable.containsKey('ocridnoFront') ? processVariable.getJSONObject('ocridnoFront') : null
+            JSONObject ocrFrontDetail = ocrFront.containsKey('ocrDetail') ? ocrFront.getJSONObject('ocrDetail') : null
             String name = ocrFrontDetail.containsKey('name') ? ocrFrontDetail.getString('name') : ''
             String idNo = ocrFrontDetail.containsKey('idCardNumber') ? ocrFrontDetail.getString('idCardNumber') : ''
-            def ocrBack = processVariable.containsKey('ocridnoBack') ? processVariable.getJSONObject('ocridnoBack') : null
-            def ocrBackDetail = ocrBack.containsKey('ocrDetail') ? ocrBack.getJSONObject('ocrDetail') : null
+            JSONObject ocrBack = processVariable.containsKey('ocridnoBack') ? processVariable.getJSONObject('ocridnoBack') : null
+            JSONObject ocrBackDetail = ocrBack.containsKey('ocrDetail') ? ocrBack.getJSONObject('ocrDetail') : null
             String idValid = ocrBackDetail.containsKey('validDate') ? ocrBackDetail.getString('validDate') : ''
             String appToken = getAppToken(mobile, null, null)
-            def appCommonResult = submitPayProtocol(appId, bankCode, bankMobile, verifyCode, payProtocolKey, bankCard, appToken) as AppCommonResult
+            AppCommonResult appCommonResult = submitPayProtocol(appId, bankCode, bankMobile, verifyCode, payProtocolKey, bankCard, appToken)
             if (!appCommonResult.result) {
-                result.put('functionContent', '提交支付协议失败， 联系管理员')
-                return makeResponseVo(false, appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
             logger.info('submitPayProtocol result: {}', appCommonResult)
             //
-            appCommonResult = submitIdentity(appId, name, idNo, idValid, bankCode, storeCode, bankCard, bankMobile, appToken) as AppCommonResult
+            appCommonResult = submitIdentity(appId, name, idNo, idValid, bankCode, storeCode, bankCard, bankMobile, appToken)
             if (!appCommonResult.result) {
-                result.put('functionContent', '提交支付协议失败， 联系管理员')
-                return makeResponseVo(false, appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
             CamundaService.completeTask(taskId, [:])
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(appCommonResult.responseObject)
         }
     } catch (Exception ex) {
         logger.error('processPayProtocol error, ', ex)
-        result.put('functionContent', '系统错误，联系管理员')
-        return makeResponseVo(false, '[submit_pay_protocol]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[submit_pay_protocol]系统错误，联系管理员')
     }
 }
-
+// service task
 static def contractPreviewNotice(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
 
@@ -725,10 +731,23 @@ static def contractPreviewNotice(String arguments) {
     String product = args.containsKey('productId') ? args.getString('productId') : ''
     // 产品id
     String icName = args.containsKey('icName') ? args.getString('icName') : '' // 工商名称
-    def inputForm = ['name'    : name, 'idno': idNo, 'mobile': mobile, 'amt': amt, 'tenor': tenor, 'addr': addr,
-                     'bankcard': bankCard, 'userPoint': userPoint, 'amtTenor': amtTenor, 'itemName': itemName,
-                     'product' : product, 'icName': icName] as Map<String, Object>
-    def data = noticeData(botId, accountId, '', '', 'contract', inputForm)
+    Map<String, Object> inputForm = new HashMap() {
+        {
+            put('name', name)
+            put('idNo', idNo)
+            put('mobile', mobile)
+            put('amt', amt)
+            put('tenor', tenor)
+            put('addr', addr)
+            put('bankcard', bankCard)
+            put('userPoint', userPoint)
+            put('amtTenor', amtTenor)
+            put('itemName', itemName)
+            put('product', product)
+            put('icName', icName)
+        }
+    }
+    JSONObject data = noticeData(botId, accountId, '', '', 'contract', inputForm)
     Map<String, Object> afterFunctionMap = noticeMap(data)
     return new JSONObject() {
         {
@@ -740,30 +759,26 @@ static def contractPreviewNotice(String arguments) {
 
 static def contractPreview(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('contractPreview no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[contract_preview]失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[contract_preview]获取当前流程失败，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，联系管理员')
-                return makeResponseVo(false, '[contract_preview]当前流程失败， 联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[contract_preview]流程操作失败，联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             CamundaService.completeTask(taskId, [:])
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('contractPreview error, ', ex)
-        result.put('functionContent', '系统错误，联系管理员')
-        return makeResponseVo(false, '[contract_preview]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[contract_preview]系统错误，联系管理员')
     }
 }
-
+// service task
 static def secondStep(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
@@ -778,8 +793,8 @@ static def secondStep(String arguments) {
             put('C_FORM_ID', 'NYB01')
         }
     }
-    def appCommonResult = submitApplyStep(appToken, info) as AppCommonResult
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    AppCommonResult appCommonResult = submitApplyStep(appToken, info)
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     //
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
@@ -796,42 +811,40 @@ static def secondStep(String arguments) {
 
 static def maritalStatus(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject();
     String marital = args.containsKey('marital') ? args.getString('marital') : ''
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('maritalStatus no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[marital_status]失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[marital_status]获取当前流程失败， 联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，联系管理员')
-                return makeResponseVo(false, '[marital_status]当前流程失败， 联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[marital_status]操作流程失败， 联系管理员')
             }
             String taskId = taskReturn.getTaskId()
-            def maritalKey = marital
-            maritalStatusMap.forEach {
-                String key, String value ->
-                    if (key == marital) {
-                        maritalKey = value
-                    }
+            String maritalKey = marital
+            for (String key : maritalStatusMap.keySet()) {
+                if (key == marital) {
+                    maritalKey = maritalStatusMap.get(key)
+                }
             }
-            def inputForm = ['maritalKey': maritalKey]
+            Map<String, Object> inputForm = new HashMap() {
+                {
+                    put('maritalKey', maritalKey)
+                }
+            }
             CamundaService.completeTask(taskId, inputForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('maritalStatus error, ', ex)
-        result.put('functionContent', '系统错误，联系管理员')
-        return makeResponseVo(false, '[marital_status]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[marital_status]系统错误，联系管理员')
     }
 }
 
 static def relationInfo(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String relationName = args.containsKey('relationName') ? args.getString('relationName') : '' // 联系人
     String relationTel = args.containsKey('relationTel') ? args.getString('relationTel') : '' // 联系人电话
@@ -839,40 +852,39 @@ static def relationInfo(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('relationInfo no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[relation_info]失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[relation_info]获取当前流程失败， 联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，联系管理员')
-                return makeResponseVo(false, '[relation_info]当前流程失败， 联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[relation_info]操作流程失败， 联系管理员')
             }
             String taskId = taskReturn.getTaskId()
-            def inputForm = ['relationName': relationName, 'relationTel': relationTel]
+            Map<String, Object> inputForm = new HashMap() {
+                {
+                    put('relationName', relationName)
+                    put('relationTel', relationTel)
+                }
+            }
             CamundaService.completeTask(taskId, inputForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(null)
         }
     } catch (Exception ex) {
         logger.error('relationInfo error, ', ex)
-        result.put('functionContent', '系统错误，联系管理员')
-        return makeResponseVo(false, '[relation_info]系统错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[relation_info]系统错误，联系管理员')
     }
 }
 
 static def thirdStep(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String relation = args.containsKey('relation') ? args.getString('relation') : '' // 联系人关系
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('thirdStep no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[third_step]失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[third_step]获取当前流程失败， 联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，联系管理员')
-                return makeResponseVo(false, '[third_step]当前流程失败， 联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[third_step]操作流程失败， 联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -882,12 +894,11 @@ static def thirdStep(String method, String arguments) {
             String maritalKey = processVariable.containsKey('maritalKey') ? processVariable.getString('maritalKey') : ''
             String relationName = processVariable.containsKey('relationName') ? processVariable.getString('relationName') : ''
             String relationTel = processVariable.containsKey('relationTel') ? processVariable.getString('relationTel') : ''
-            def relationKey = relation
-            relationMap.forEach {
-                String key, String value ->
-                    if (key == relation) {
-                        relationKey = value
-                    }
+            String relationKey = relation
+            for (String key : relationMap.keySet()) {
+                if (key == relation) {
+                    relationKey = relationMap.get(key)
+                }
             }
             //
             JSONObject stepInputForm = new JSONObject() {
@@ -901,27 +912,34 @@ static def thirdStep(String method, String arguments) {
                 }
             }
             String appToken = getAppToken(mobile, null, null)
-            def appCommonResult = submitApplyStep(appToken, stepInputForm) as AppCommonResult
+            AppCommonResult appCommonResult = submitApplyStep(appToken, stepInputForm)
             if (!appCommonResult.result) {
-                def inputForm = ['step_3_result': false]
+                Map<String, Object> inputForm = new HashMap() {
+                    {
+                        put('step_3_result', false)
+                    }
+                }
                 CamundaService.completeTask(taskId, inputForm)
-                return makeResponseVo(appCommonResult.result, appCommonResult.errMsg, result)
+
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
-            result = JSON.toJSON(appCommonResult.responseObject) as JSONObject
-            def inputForm = ['relationKey': relationKey, 'step_3_result': true]
+            Map<String, Object> inputForm = new HashMap() {
+                {
+                    put('relationKey', relationKey)
+                    put('step_3_result', true)
+                }
+            }
             CamundaService.completeTask(taskId, inputForm)
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(appCommonResult.responseObject)
         }
     } catch (Exception ex) {
         logger.error('thirdStep error,', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[third_step]系统错误， 联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[third_step]系统错误， 联系管理员')
     }
 }
 
 static def forthStep(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String companyName = args.containsKey('companyName') ? args.getString('companyName') : ''
     String mailAddr = args.containsKey('mailAddr') ? args.getString('mailAddr') : ''
@@ -929,12 +947,10 @@ static def forthStep(String method, String arguments) {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('thirdStep no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[forth_step]失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[forth_step]当前流程失败， 联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，请联系管理员')
-                return makeResponseVo(false, '[forth_step]当前流程失败， 联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[forth_step]操作流程失败， 联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -950,30 +966,29 @@ static def forthStep(String method, String arguments) {
                 }
             }
             String appToken = getAppToken(mobile, null, null)
-            def appCommonResult = submitApplyStep(appToken, stepInputForm) as AppCommonResult
+            AppCommonResult appCommonResult = submitApplyStep(appToken, stepInputForm)
             if (!appCommonResult.result) {
-                return makeResponseVo(appCommonResult.result, appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
-            result = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+            //
             CamundaService.completeTask(taskId, [:])
-            return makeResponseVo(true, null, result)
+            return ResponseVo.makeSuccess(appCommonResult.responseObject)
         }
     } catch (Exception ex) {
         logger.error('forthStep error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[forth_step]系统错误， 联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[forth_step]系统错误， 联系管理员')
     }
 }
-
-static def faceDetect(String method, String arguments) {
+// service task
+static def faceDetect(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
     String appId = args.containsKey('appId') ? args.getString('appId') : ''
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
     String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
     String appToken = getAppToken(mobile, null, null)
-    def appCommonResult = doFaceCheck(appToken, ['appId': appId]) as AppCommonResult
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    AppCommonResult appCommonResult = doFaceCheck(appToken, ['appId': appId])
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     if (!appCommonResult.result) {
         Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
         result.put('afterFunction', afterFunctionMap)
@@ -981,11 +996,11 @@ static def faceDetect(String method, String arguments) {
         return result
     }
     //
-    def detectResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+    JSONObject detectResult = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
     if (detectResult.containsKey('needFace') && detectResult.getIntValue('needFace') == 1) {
         // 需要人脸识别
-        def redirectUrl = gonggongUrl + '/geexSmartRobot/robot/' + externalId
-        def params = new JSONObject() {
+        String redirectUrl = gonggongUrl + '/geexSmartRobot/robot/' + externalId
+        JSONObject params = new JSONObject() {
             {
                 put('appId', appId);
                 put('appFrom', '1');
@@ -993,14 +1008,14 @@ static def faceDetect(String method, String arguments) {
                 put('videoType', '1');
             }
         }
-        appCommonResult = doWebankFace(appToken, params) as AppCommonResult
+        appCommonResult = doWebankFace(appToken, params)
         if (!appCommonResult.result) {
             Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
             result.put('afterFunction', afterFunctionMap)
             result.put('s_taskResult', false)
             return result
         }
-        def faceResult = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+        JSONObject faceResult = JSON.parseObject(JSON.toJSONString(appCommonResult.responseObject))
         //
         data = noticeData(args, '', '', 'redirect', faceResult)
         Map<String, Object> afterFunctionMap = noticeMap(true, '', data)
@@ -1012,19 +1027,16 @@ static def faceDetect(String method, String arguments) {
 
 static def faceVerify(String method, String arguments) {
     JSONObject args = JSON.parseObject(arguments)
-    JSONObject result = new JSONObject()
 
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     try {
         TaskReturn taskReturn = CamundaService.queryCurrentTask(userId)
         if (taskReturn == null) {
             logger.error('faceValidate no current task, businessKey: {}', userId)
-            result.put('functionContent', '当前流程失败，联系管理员')
-            return makeResponseVo(false, '[face_validate]失败， 联系管理员', result)
+            return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[face_validate]当前流程失败，联系管理员')
         } else {
             if (!checkTaskPosition(method, taskReturn.getTaskName())) {
-                result.put('functionContent', '当前流程失败，请联系管理员')
-                return makeResponseVo(false, '[face_validate]当前流程失败， 联系管理员', result)
+                return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_TASK_NOT_MATCH, '[face_validate]操作流程失败，联系管理员')
             }
             String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
@@ -1038,7 +1050,7 @@ static def faceVerify(String method, String arguments) {
             String type = processVariable.containsKey('type') ? processVariable.getString('type') : ''
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
             String appToken = getAppToken(mobile, null, null)
-            def params = new JSONObject() {
+            JSONObject params = new JSONObject() {
                 {
                     put('code', code)
                     put('orderNo', orderNo)
@@ -1049,23 +1061,21 @@ static def faceVerify(String method, String arguments) {
                     put('type', type)
                 }
             }
-            def appCommonResult = validateH5Face(appToken, params) as AppCommonResult
+            AppCommonResult appCommonResult = validateH5Face(appToken, params)
             if (!appCommonResult.result) {
                 CamundaService.completeTask(taskId, ['face_result': false])
-                result.put('functionContent', appCommonResult.errMsg)
-                return makeResponseVo(false, appCommonResult.errMsg, result)
+                return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_RESULT_INVALID, appCommonResult.errMsg)
             }
-            result = JSON.toJSON(appCommonResult.responseObject) as JSONObject
+            //
             CamundaService.completeTask(taskId, ['face_result': true])
-            return makeResponseVo(true, null, result)
+            return makeResponseVo(true, null, appCommonResult.responseObject)
         }
     } catch (Exception ex) {
         logger.error('faceValidate error, ', ex)
-        result.put('functionContent', '系统错误，请联系管理员')
-        return makeResponseVo(false, '[face_validate]系统错误， 联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[face_validate]系统错误， 联系管理员')
     }
 }
-
+// service task
 static def submitAudit(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
@@ -1078,43 +1088,40 @@ static def submitAudit(String arguments) {
             put('C_STEP_ID', 'PREVIEW')
         }
     }
-    def appCommonResult = submitApplyStep(appToken, info) as AppCommonResult
-    def data = noticeData(args, '', '', '', new HashMap<String, Object>())
+    AppCommonResult appCommonResult = submitApplyStep(appToken, info)
+    JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
 
     if (!appCommonResult.result) {
         logger.error('submit_audit error, {}', appCommonResult.errMsg)
-        def afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+        Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
         result.put('afterFunction', afterFunctionMap)
         result.put('s_taskResult', false)
         return result
     }
-    def afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
+    Map<String, Object> afterFunctionMap = noticeMap(appCommonResult.result, appCommonResult.errMsg, data)
     result.put('afterFunction', afterFunctionMap)
     result.put('s_taskResult', true)
     return result
 }
-
+// service task
 static def noticeHub(String arguments) {
     JSONObject args = JSON.parseObject(arguments) // notice response
-    def success = args.containsKey('success') ? args.getBooleanValue('success') : true
-    def msg = args.containsKey('msg') ? args.getString('msg') : ''
-    def data = args.containsKey('data') ? args.getJSONObject('data') : null
+    Boolean success = args.containsKey('success') ? args.getBooleanValue('success') : true
+    String msg = args.containsKey('msg') ? args.getString('msg') : ''
+    JSONObject data = args.containsKey('data') ? args.getJSONObject('data') : null
 
     noticeHub(success, msg, data)
 }
 
 static def deleteLoanProcess(String arguments) {
-    JSONObject result = new JSONObject()
     JSONObject args = JSON.parseObject(arguments)
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     try {
         CamundaService.deleteProcess(userId)
-        result.put('functionContent', '好的，您的贷款申请已取消')
-        return makeResponseVo(true, null, result)
+        return ResponseVo.makeSuccess(null)
     } catch (Exception ex) {
         logger.error('deleteLoanProcess error, ', ex)
-        result.put('functionContent', '[delete_loan_process]后台错误，联系管理员')
-        return makeResponseVo(false, '[delete_loan_process]后台错误，联系管理员', result)
+        return ResponseVo.makeFail(GeneralCodes.LOGIC_EXCEPTION, '[delete_loan_process]后台错误，联系管理员')
     }
 }
 
@@ -1122,10 +1129,16 @@ static def deleteLoanProcess(String arguments) {
 // ####################################### 非 function 方法 #################################################
 // 登录app
 static def loginApp(String userMobile, String verifyCode, String deviceId) {
-    def params = ['deviceId': deviceId, 'account': userMobile, 'veriCode': verifyCode]
-    def token = '';
+    Map<String, Object> params = new HashMap() {
+        {
+            put('deviceId', deviceId)
+            put('account', userMobile)
+            put('veriCode', verifyCode)
+        }
+    }
+    String token = '';
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, loginAppPath, params, null)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, loginAppPath, params, null)
         if (response == null) {
             logger.error('user login App no response')
             return token;
@@ -1174,7 +1187,7 @@ static def getAppToken(String mobile, String verifyCode, String deviceId) {
 }
 
 static def getCommonVerifyCode() {
-    def response = RestClient.doGet(dingdanUrl, getCommonVerifyCodePath, null, null)
+    HttpResponse response = RestClient.doGet(dingdanUrl, getCommonVerifyCodePath, null, null)
     if (response == null) {
         logger.error("getCommonVerifyCode no response")
         return null
@@ -1192,8 +1205,14 @@ static def sendLoginSms(String userMobile) {
     JSONObject result = new JSONObject()
     int randomInt = RandomUtil.getSecureRandom().nextInt(10)
     String checkKey = DigestUtil.md5Hex(('verify_code_check' + userMobile + randomInt).getBytes())
-    def params = ['mobile': userMobile, 'random': String.valueOf(randomInt), 'requestKey': checkKey]
-    def response = RestClient.doPostWithBody(dingdanUrl, getAppVerifyCodeCheckPath, params, null)
+    Map<String, Object> params = new HashMap() {
+        {
+            put('mobile', userMobile)
+            put('random', String.valueOf(randomInt))
+            put('requestKey', checkKey)
+        }
+    }
+    HttpResponse response = RestClient.doPostWithBody(dingdanUrl, getAppVerifyCodeCheckPath, params, null)
     if (response == null) {
         logger.error('send login sms no response')
         return new AppCommonResult(false, '短信验证码发送失败', 1, 0, result)
@@ -1208,12 +1227,17 @@ static def sendLoginSms(String userMobile) {
 static def preApply(String token, String mobile) {
     JSONObject result = new JSONObject()
     // post params body
-    def params = ['mobile': mobile, 'showLoanList': 'DDG']
+    Map<String, Object> params = new HashMap() {
+        {
+            put('mobile', mobile)
+            put('showLoanList', 'DDG')
+        }
+    }
     // post headers
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, preApplyPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, preApplyPath + token, params, requestAuth)
         if (response == null) {
             logger.error('preApply no response')
             return new AppCommonResult(false, '没有取得门店配置，联系管理员', 1, 0, result)
@@ -1231,12 +1255,16 @@ static def preApply(String token, String mobile) {
 static def loadIdentity(String appId, String token) {
     JSONObject result = new JSONObject()
     // post params body
-    def params = ['appId': appId]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('appId', appId)
+        }
+    }
     // post headers
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, loadIdentityPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, loadIdentityPath + token, params, requestAuth)
         if (response == null) {
             logger.error('loadIdentity no response')
             return new AppCommonResult(false, '加载用户信息失败', 1, 0, result)
@@ -1263,12 +1291,17 @@ static def doIdCardOcr(String url, String fileType, String token) {
     // base64 encoding
     String encodedString = Base64.getEncoder().encodeToString(fileContent)
     // post params body
-    def params = ['fileType': fileType, 'imgData': 'data:image/jpeg;base64,' + encodedString]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('fileType', fileType)
+            put('imgData', 'data:image/jpeg;base64,' + encodedString)
+        }
+    }
     // post header
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithForm(dingdanUrl, doIdCardOcrPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithForm(dingdanUrl, doIdCardOcrPath + token, params, requestAuth)
         if (response == null) {
             logger.error('doIdCardOcr no response')
             return new AppCommonResult(false, '身份证识别失败', 1, 0, result)
@@ -1286,7 +1319,7 @@ static def doIdCardOcr(String url, String fileType, String token) {
 static def doBankCode(Map<String, Object> params) {
     JSONObject result = new JSONObject()
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, getSupportBankListPath, params, null)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, getSupportBankListPath, params, null)
         if (response == null) {
             logger.error('bankCodeConfig no response')
             return new AppCommonResult(false, '获取银行列表失败', 1, 0, result)
@@ -1299,12 +1332,12 @@ static def doBankCode(Map<String, Object> params) {
             if (json != null && !json.isEmpty()) {
                 JSONArray allBanks = json.containsKey('allBanks') ? json.getJSONArray('allBanks') : null
                 if (allBanks != null && !allBanks.isEmpty()) {
-                    def bankMap = new HashMap()
-                    allBanks.forEach {
-                        JSONObject bank ->
-                            String bankCode = bank.containsKey('bankCode') ? bank.getString('bankCode') : ''
-                            String bankName = bank.containsKey('bankName') ? bank.getString('bankName') : ''
-                            bankMap.put(bankName, bankCode)
+                    Map<String, String> bankMap = new HashMap()
+                    for (int i = 0; i < allBanks.size(); i++) {
+                        JSONObject bank = allBanks.getJSONObject(i)
+                        String bankCode = bank.containsKey('bankCode') ? bank.getString('bankCode') : ''
+                        String bankName = bank.containsKey('bankName') ? bank.getString('bankName') : ''
+                        bankMap.put(bankName, bankCode)
                     }
                     if (!bankMap.isEmpty()) {
                         result.put('bankCodeConfig', bankMap)
@@ -1323,12 +1356,19 @@ static def doBankCode(Map<String, Object> params) {
 static def checkBankCardLimit(String token, String name, String idNo, String bankCard, Integer amount) {
     JSONObject result = new JSONObject()
     // post params body
-    def params = ['name': name, 'idNo': idNo, 'bankCard': bankCard, 'loanAmt': amount]
+    Map<String, Object> params = new HashMap() {
+        {
+            put('name', name)
+            put('idNo', idNo)
+            put('bankCard', bankCard)
+            put('loanAmt', amount)
+        }
+    }
     // post headers
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, checkBankCardLimitPath, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, checkBankCardLimitPath, params, requestAuth)
         if (response == null) {
             logger.error('checkBankCardLimit no response')
             return new AppCommonResult(false, '银行卡限额校验失败', 1, 0, result)
@@ -1350,11 +1390,16 @@ static def checkBankCardLimit(String token, String name, String idNo, String ban
 // check 老客户信息
 static def checkOldIdentity(String token, String name, String idNo) {
     JSONObject result = new JSONObject()
-    def params = ['name': name, 'idNo': idNo]
-    def headers = wrapHeadersWithToken(token)
+    Map<String, Object> params = new HashMap() {
+        {
+            put('name', name)
+            put('idNo', idNo)
+        }
+    }
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, checkOldIdentityPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, checkOldIdentityPath + token, params, requestAuth)
         if (response == null) {
             logger.error('checkIdentity no response')
             return new AppCommonResult(false, '老客户信息检测失败', 1, 0, result)
@@ -1373,11 +1418,22 @@ static def checkOldIdentity(String token, String name, String idNo) {
 static def checkPayProtocol(String token, String appId, String name, String idNo, String bankCard, String bankMobile, String bankCode) {
     JSONObject result = new JSONObject()
     // pageUrl 签约回调地址，不是招商银行，可以为空
-    def params = ['appId': appId, 'name': name, 'idNo': idNo, 'bankCode': bankCode, 'accountId': bankCard, 'rsvPhone': bankMobile, 'type': '1', 'pageUrl': '']
-    def headers = wrapHeadersWithToken(token)
+    Map<String, Object> params = new HashMap() {
+        {
+            put('appId', appId)
+            put('name', name)
+            put('idNo', idNo)
+            put('bankCode', bankCode)
+            put('accountId', bankCard)
+            put('rsvPhone', bankMobile)
+            put('type', '1')
+            put('pageUrl', '')
+        }
+    }
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, checkProtocolPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, checkProtocolPath + token, params, requestAuth)
         if (response == null) {
             logger.error('checkUserPayProtocol no response')
             return new AppCommonResult(false, '用户支付协议检测失败', 1, 0, result)
@@ -1395,12 +1451,22 @@ static def checkPayProtocol(String token, String appId, String name, String idNo
 static def submitPayProtocol(String appId, String bankCode, String bankMobile, String verifyCode, String payProtocolKey, String bankCard, String token) {
     JSONObject result = new JSONObject()
     // post params body
-    def params = ['appId': appId, 'cardCode': bankCode, 'reservedMobile': bankMobile, 'smsStr': verifyCode, 'makeProtocolKey': payProtocolKey, 'cardNo': bankCard, 'type': '1']
+    Map<String, Object> params = new HashMap() {
+        {
+            put('appId', appId)
+            put('cardCode', bankCode)
+            put('reservedMobile', bankMobile)
+            put('smsStr', verifyCode)
+            put('makeProtocolKey', payProtocolKey)
+            put('cardNo', bankCard)
+            put('type', '1')
+        }
+    }
     // post headers
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, submitProtocolPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, submitProtocolPath + token, params, requestAuth)
         if (response == null) {
             logger.error('submitUserPayProtocol no response')
             return new AppCommonResult(false, '提交用户支付协议失败，联系管理员', 1, 0, result)
@@ -1419,11 +1485,22 @@ static def submitIdentity(String appId, String name, String idNo, String idValid
                           String storeCode, String bankCard, String bankMobile, String token) {
     JSONObject result = new JSONObject()
     // post params body
-    def params = ['C_APP_ID': appId, 'name': name, 'C_ID_VALID': idValid, 'idNo': idNo, 'bankCode': bankCode, 'storeCode': storeCode, 'accountId': bankCard, 'rsvPhone': bankMobile]
-    def headers = wrapHeadersWithToken(token)
+    Map<String, Object> params = new HashMap() {
+        {
+            put('C_APP_ID', appId)
+            put('name', name)
+            put('C_ID_VALID', idValid)
+            put('idNo', idNo)
+            put('bankCode', bankCode)
+            put('storeCode', storeCode)
+            put('accountId', bankCard)
+            put('rsvPhone', bankMobile)
+        }
+    }
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, submitIdentityPath + token, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, submitIdentityPath + token, params, requestAuth)
         if (response == null) {
             logger.error('submitIdentity no response')
             return new AppCommonResult(false, '提交身份信息失败，联系管理员', 1, 0, result)
@@ -1441,10 +1518,10 @@ static def submitIdentity(String appId, String name, String idNo, String idValid
 // 提交申请
 static def submitApplyStep(String token, JSONObject info) {
     JSONObject result = new JSONObject()
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, submitApplyStepPath + token, info, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, submitApplyStepPath + token, info, requestAuth)
         if (response == null) {
             logger.error('submitApplyStep no response')
             return new AppCommonResult(false, '进件提交订单信息失败，联系管理员', 1, 0, result)
@@ -1461,10 +1538,10 @@ static def submitApplyStep(String token, JSONObject info) {
 
 static def doFaceCheck(String token, Map<String, Object> params) {
     JSONObject result = new JSONObject()
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithForm(dingdanUrl, faceDetectPath, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithForm(dingdanUrl, faceDetectPath, params, requestAuth)
         if (response == null) {
             logger.error('doFaceCheck no response')
             return new AppCommonResult(false, '检测活体人脸启动失败', 1, 0, result)
@@ -1479,12 +1556,12 @@ static def doFaceCheck(String token, Map<String, Object> params) {
     return new AppCommonResult(false, '检测活体人脸启动失败', 1, 0, result)
 }
 
-def static doWebankFace(String token, JSONObject params) {
+static def doWebankFace(String token, JSONObject params) {
     JSONObject result = new JSONObject()
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, webankH5Path, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, webankH5Path, params, requestAuth)
         if (response == null) {
             logger.error('doWebankFace no response')
             return new AppCommonResult(false, '启动活体人脸失败', 1, 0, result)
@@ -1501,10 +1578,10 @@ def static doWebankFace(String token, JSONObject params) {
 
 static def validateH5Face(String token, JSONObject params) {
     JSONObject result = new JSONObject()
-    def headers = wrapHeadersWithToken(token)
+    Map<String, String> headers = wrapHeadersWithToken(token)
     RequestAuth requestAuth = new RequestAuth(null, null, null, headers)
     try {
-        def response = RestClient.doPostWithBody(dingdanUrl, validateH5FacePath, params, requestAuth)
+        HttpResponse response = RestClient.doPostWithBody(dingdanUrl, validateH5FacePath, params, requestAuth)
         if (response == null) {
             logger.error('validateH5Face no response')
             return new AppCommonResult(false, '人脸验证提交失败， 联系管理员', 1, 0, result)
@@ -1521,7 +1598,11 @@ static def validateH5Face(String token, JSONObject params) {
 
 
 static def wrapHeadersWithToken(String token) {
-    def defaultHeaders = ['platform': 'wechat']
+    Map<String, String> defaultHeaders = new HashMap() {
+        {
+            put('platform', 'wechat')
+        }
+    }
     if (!StrUtil.isEmptyIfStr(token)) {
         defaultHeaders.put('appToken', token)
     }
@@ -1548,13 +1629,13 @@ static def noticeMap(JSONObject noticeData) {
 }
 
 static def noticeMap(JSONObject responseData, JSONObject noticeData) {
-    def success = responseData.containsKey('success') ? responseData.getBooleanValue('success') : true
-    def msg = responseData.containsKey('msg') ? responseData.getString('msg') : ''
+    Boolean success = responseData.containsKey('success') ? responseData.getBooleanValue('success') : true
+    String msg = responseData.containsKey('msg') ? responseData.getString('msg') : ''
     return noticeMap(success, msg, noticeData)
 }
 
 static def noticeMap(boolean success, String msg, JSONObject noticeData) {
-    def noticeArgs = makeResponseVo(success, msg, noticeData)
+    JSONObject noticeArgs = makeResponseVo(success, msg, noticeData)
     return new HashMap<String, Object>() {
         {
             put('notice_hub', noticeArgs)
@@ -1592,14 +1673,14 @@ static def noticeData(String botId, String accountId, String content, String pic
 }
 
 static def noticeHub(JSONObject responseVo) {
-    def response = RestClient.doPostWithBody(gonggongUrl, noticeHubPath, responseVo, null)
+    HttpResponse response = RestClient.doPostWithBody(gonggongUrl, noticeHubPath, responseVo, null)
     if (!StrUtil.isEmpty(response.body())) {
         logger.info('noticeHub response {}', response.body())
     }
 }
 
 static def noticeHub(boolean success, String msg, JSONObject noticeData) {
-    def params = makeResponseVo(success, msg, noticeData)
+    JSONObject params = makeResponseVo(success, msg, noticeData)
     noticeHub(params)
 }
 

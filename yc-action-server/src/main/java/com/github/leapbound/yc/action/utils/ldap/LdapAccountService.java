@@ -1,6 +1,7 @@
 package com.github.leapbound.yc.action.utils.ldap;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.leapbound.yc.action.model.vo.ResponseVo;
 
 /**
  * @author yamath
@@ -14,7 +15,7 @@ public interface LdapAccountService {
      * @param account user login account
      * @return ldap user info
      */
-    JSONObject getUserByAccount(String account);
+    ResponseVo<Object> getUserByAccount(String account);
 
     /**
      * get ldap user info by name
@@ -22,7 +23,7 @@ public interface LdapAccountService {
      * @param name user name
      * @return ldap user info
      */
-    JSONObject getUserByName(String name);
+    ResponseVo<Object> getUserByName(String name);
 
     /**
      * disable ldap user account
@@ -30,7 +31,7 @@ public interface LdapAccountService {
      * @param account user login account
      * @return result
      */
-    JSONObject closeLdapAccount(String account);
+    ResponseVo<Object> closeLdapAccount(String account);
 
     /**
      * enable ldap user account
@@ -38,7 +39,7 @@ public interface LdapAccountService {
      * @param account user login account
      * @return result
      */
-    JSONObject enableLdapAccount(String account);
+    ResponseVo<Object> enableLdapAccount(String account);
 
     LdapUserVo closeLdapAccountByAccount(String account);
 }

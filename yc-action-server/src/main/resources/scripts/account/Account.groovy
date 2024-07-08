@@ -2,15 +2,18 @@ package scripts.account
 
 import cn.hutool.core.util.StrUtil
 import cn.hutool.extra.spring.SpringUtil
+import cn.hutool.http.HttpResponse
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
+import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import com.github.leapbound.yc.action.utils.ldap.LdapAccountService
 import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import scripts.alpha.Alpha
+import scripts.general.GeneralCodes
 import scripts.general.GeneralMethods
 
 import java.util.concurrent.atomic.AtomicReference
@@ -40,9 +43,8 @@ static def execAccountMethod(String method, String arguments) {
     // result init
     JSONObject result = new JSONObject()
     // check
-    if (arguments == null || arguments == '') {
-        result.put('错误', '没有提供必要的信息')
-        return result
+    if (StrUtil.isEmptyIfStr(arguments)) {
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     //
     gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
@@ -63,7 +65,7 @@ static def execAccountMethod(String method, String arguments) {
             result = getUserByName(arguments)
             break
         default: // no method exist
-            result.put('结果', '没有执行方法')
+            result = ResponseVo.makeFail(GeneralCodes.MISSING_EXEC_METHOD, '没有执行方法')
             break
     }
     return result
@@ -76,17 +78,12 @@ static def execAccountMethod(String method, String arguments) {
  */
 static def closeUserAccount(String arguments) {
     // result init
-    JSONObject result = new JSONObject()
+    JSONObject args = JSON.parseObject(arguments)
     // check account
-    if (!JSON.parseObject(arguments).containsKey('account')) {
-        result.put('错误', '没有提供必要的 account')
-        return result
-    }
-    String account = JSON.parseObject(arguments).getString('account')
+    String account = args.containsKey('account') ? args.getString('account') : ''
     //
-    if (StrUtil.isBlankIfStr(account)) {
-        result.put('错误', '没有提供足够信息。要求用户提供域账号信息')
-        return result
+    if (StrUtil.isEmptyIfStr(account)) {
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供域账号，要求用户提供域账号信息')
     }
     // ldapAccountService init
     LdapAccountService ldapAccountService = SpringUtil.getBean(LdapAccountService.class)
@@ -94,32 +91,33 @@ static def closeUserAccount(String arguments) {
     JSONObject ldapUser = JSON.toJSON(ldapAccountService.closeLdapAccountByAccount(account)) as JSONObject
     if (ldapUser != null) {
         // check response
-        if (ldapUser.containsKey('error') && !StrUtil.isBlankIfStr(ldapUser.getString('error'))) {
+        if (ldapUser.containsKey('error') && !StrUtil.isEmptyIfStr(ldapUser.getString('error'))) {
             // error
-            result.put('LDAP操作结果', ldapUser.getString('error'))
+            return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_SERVER_FAILED, ldapUser.getString('error'))
         } else {
             // success
-            result.put('LDAP操作结果', 'LDAP 用户账号已关闭')
+            String resMsg = 'LDAP 用户账号已关闭。'
             // init
             String commonName = ldapUser.getString('commonName')
             // call close sales account
-            def response = closeSalesAccount(commonName, account)
+            Boolean response = closeSalesAccount(commonName, account)
             // no response
             if (response == null) {
-                result.put('销售账号操作错误', '操作无响应，联系管理员')
-                return result
+                resMsg += "关闭销售操作无响应，联系管理员。"
+                return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_SERVER_FAILED, resMsg)
             }
             // close status
             if (response) {
-                result.put('销售账号操作结果', '销售账号已关闭')
+                resMsg += '销售账号已关闭。'
+                return ResponseVo.makeSuccess(resMsg)
             } else {
-                result.put('销售账号操作结果', '销售账号关闭失败')
+                resMsg += '销售账号关闭失败。'
+                return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_SERVER_FAILED, resMsg)
             }
         }
-    } else { // ldap no response
-        result.put('LDAP操作结果', 'LDAP 账号关闭异常')
     }
-    return result
+    // ldap no response
+    return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, 'LDAP 账号关闭异常')
 }
 
 /**
@@ -129,23 +127,17 @@ static def closeUserAccount(String arguments) {
  */
 static def getUserByAccount(String arguments) {
     // result init
-    JSONObject result = new JSONObject()
+    JSONObject args = JSON.parseObject(arguments)
     // check account
-    if (!JSON.parseObject(arguments).containsKey('account')) {
-        result.put('错误', '没有提供必要的 account')
-        return result
-    }
-    String account = JSON.parseObject(arguments).getString('account')
+    String account = args.containsKey('account') ? args.getString('account') : ''
     //
     if (StrUtil.isBlankIfStr(account)) {
-        result.put('错误', '没有提供足够信息。要求用户提供域账号信息')
-        return result
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供域账号，要求用户提供域账号信息')
     }
     // init ldapAccountService
     LdapAccountService ldapAccountService = SpringUtil.getBean(LdapAccountService.class)
     // response
-    result = ldapAccountService.getUserByAccount(account)
-    return result
+    return ResponseVo.makeResponse(ldapAccountService.getUserByAccount(account))
 }
 
 /**
@@ -155,23 +147,16 @@ static def getUserByAccount(String arguments) {
  */
 static def enableUserAccount(String arguments) {
     // result init
-    JSONObject result = new JSONObject()
+    JSONObject args = JSON.parseObject(arguments)
+    String account = args.containsKey('account') ? args.getString('account') : ''
     // check account
-    if (!JSON.parseObject(arguments).containsKey('account')) {
-        result.put('错误', '没有提供必要的 account')
-        return result
-    }
-    String account = JSON.parseObject(arguments).getString('account')
-    //
     if (StrUtil.isBlankIfStr(account)) {
-        result.put('错误', '没有提供足够信息。要求用户提供域账号信息')
-        return result
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供域账号，要求用户提供域账号信息')
     }
     // init ldapAccountService
     LdapAccountService ldapAccountService = SpringUtil.getBean(LdapAccountService.class)
     // response
-    result = ldapAccountService.enableLdapAccount(account)
-    return result
+    return ResponseVo.makeResponse(ldapAccountService.enableLdapAccount(account))
 }
 
 /**
@@ -181,23 +166,17 @@ static def enableUserAccount(String arguments) {
  */
 static def getUserByName(String arguments) {
     // result init
-    JSONObject result = new JSONObject()
+    JSONObject args = JSON.parseObject(arguments)
     // check username
-    if (!JSON.parseObject(arguments).containsKey('username')) {
-        result.put('错误', '没有提供必要的 account')
-        return result
-    }
-    String username = JSON.parseObject(arguments).getString('username')
+    String username = args.containsKey('username') ? args.getString('username') : ''
     //
     if (StrUtil.isBlankIfStr(username)) {
-        result.put('错误', '没有提供足够信息。要求用户提供姓名')
-        return result
+        return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供足够信息。要求用户提供姓名')
     }
     // init ldapAccountService
     LdapAccountService ldapAccountService = SpringUtil.getBean(LdapAccountService.class)
     // response
-    result = ldapAccountService.getUserByName(username)
-    return result
+    return ResponseVo.makeResponse(ldapAccountService.getUserByName(username))
 }
 
 static def closeSalesAccount(String name, String ldapAccount) {
@@ -205,9 +184,9 @@ static def closeSalesAccount(String name, String ldapAccount) {
     String personId = ldapAccount.toUpperCase().replace('GEEX', '')
     AtomicReference<Boolean> close = new AtomicReference<>(false)
     //
-    def params = ['userName': name, 'status': '1', 'page': '1', 'rows': 50]
+    Map<String, Object> params = ['userName': name, 'status': '1', 'page': '1', 'rows': 50] as Map<String, Object>
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    def response = Alpha.doPostBodyWithLogin(qiguanUrl, getSalesListPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(qiguanUrl, getSalesListPath, params, requestAuth, 1)
     if (response == null) {
         logger.error('closeSalesAccount no response')
         return null
@@ -218,7 +197,7 @@ static def closeSalesAccount(String name, String ldapAccount) {
         for (int i = 0; i < rows.size(); i++) {
             String userId = rows.getJSONObject(i).get('userId')
             requestAuth = Alpha.setLoginRequestAuth()
-            def response1 = Alpha.doGetWithLogin(qiguanUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
+            HttpResponse response1 = Alpha.doGetWithLogin(qiguanUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
             if (response1 == null) {
                 logger.warn('getSalesDetailList no response')
                 continue
@@ -228,9 +207,9 @@ static def closeSalesAccount(String name, String ldapAccount) {
                 if (basicInfo.getString('personId') == personId) {
                     logger.info('close sales account basicInfo: {}', basicInfo)
                     basicInfo.put('status', 0)
-                    def closeMap = ['basicInfo': basicInfo, 'rolesList': new ArrayList<>(0), 'teamList': new ArrayList<>(0)]
+                    Map<String, Object> closeMap = ['basicInfo': basicInfo, 'rolesList': new ArrayList<>(0), 'teamList': new ArrayList<>(0)] as Map<String, Object>
                     requestAuth = Alpha.setLoginRequestAuth()
-                    def response2 = Alpha.doPostBodyWithLogin(qiguanUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
+                    HttpResponse response2 = Alpha.doPostBodyWithLogin(qiguanUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
                     if (response2 == null) {
                         logger.warn('updateSalesInfo no response')
                         continue

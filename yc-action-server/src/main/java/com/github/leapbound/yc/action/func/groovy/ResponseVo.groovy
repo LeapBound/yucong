@@ -52,4 +52,15 @@ class ResponseVo {
             }
         }
     }
+
+    static JSONObject makeResponse(com.github.leapbound.yc.action.model.vo.ResponseVo response) {
+        return new JSONObject() {
+            {
+                put('success', response.success)
+                put('code', response.code)
+                put('msg', response.msg)
+                put('data', response.data)
+            }
+        }
+    }
 }
