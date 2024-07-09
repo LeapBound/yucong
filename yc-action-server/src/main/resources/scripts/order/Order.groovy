@@ -22,11 +22,7 @@ import java.time.format.DateTimeFormatter
  *
  */
 // alpha 地址
-@Field static String gonggongUrl = ''
-@Field static String qiguanUrl = ''
-@Field static String zhangwuUrl = ''
-@Field static String dingdanUrl = ''
-@Field static String zijinUrl = ''
+@Field static String alphaUrl = ''
 // 通过订单号获取还款计划 yrl
 @Field static String getRepayPlanByOrderPath = '/geex-csorder/order/repayPlan/'
 // 查询订单放款状态 url
@@ -70,12 +66,8 @@ static def execOrderMethod(String method, String arguments) {
         return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     //
-    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
-    Alpha.alphaLoginUrl = gonggongUrl
-    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
-    zhangwuUrl = GeneralMethods.getExternal(arguments).get('zhangwuUrl')
-    dingdanUrl = GeneralMethods.getExternal(arguments).get('dingdanUrl')
-    zijinUrl = GeneralMethods.getExternal(arguments).get('zijinUrl')
+    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
+    Alpha.alphaLoginUrl = alphaUrl
     //
     switch (method) {
         case 'get_user_repayment_by_order': // 订单号查询用户还款计划
@@ -117,7 +109,7 @@ static def getUserRepaymentByOrder(String arguments) {
     }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doGetWithLogin(dingdanUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
+    HttpResponse response = Alpha.doGetWithLogin(alphaUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询用户的还款计划没有响应')
@@ -184,7 +176,7 @@ static def getUserLoanTimeByOrder(String arguments) {
     }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(zijinUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单的放款信息没有响应')
@@ -252,7 +244,7 @@ static def getLoanStatusByOrder(String arguments) {
     }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(zhangwuUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单借据状态信息没有响应')
@@ -304,7 +296,7 @@ static def tryOrderRepay(String arguments) {
     }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRepayPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRepayPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取还款试算结果没有响应')
@@ -354,7 +346,7 @@ static def tryOrderRefund(String arguments) {
     }
     // call
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(qiguanUrl, tryOrderRefundPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRefundPath, params, requestAuth, 1)
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取退款试算结果没有响应')

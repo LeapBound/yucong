@@ -22,7 +22,7 @@ import scripts.general.GeneralMethods
  */
 @Field static Logger logger = LoggerFactory.getLogger('scripts.bdqa.Bdqa');
 @Field static String gonggongUrl = ''
-@Field static String qiguanUrl = ''
+@Field static String alphaUrl = ''
 @Field static String getSmsRecordPath = '/geex-ops-web/task/getSmsRecord'
 @Field static String updateOrderResultPath = '/geex-ops-web/api/updOrderResult'
 @Field static String noticeHubGroupPath = '/geex-smart-robot/yc-hub/api/conversation/servicer/switch/group'
@@ -44,8 +44,8 @@ static def execBdqaMethod(String method, String arguments) {
     }
     // get external args
     gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
-    Alpha.alphaLoginUrl = gonggongUrl
-    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
+    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
+    Alpha.alphaLoginUrl = alphaUrl
 
     switch (method) {
         case 'start_ticket':
@@ -128,7 +128,7 @@ static def getSmsRecord(String arguments) {
     //
     try {
         RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-        HttpResponse response = Alpha.doGetWithLogin(qiguanUrl, getSmsRecordPath, params, requestAuth, 1)
+        HttpResponse response = Alpha.doGetWithLogin(alphaUrl, getSmsRecordPath, params, requestAuth, 1)
         if (response == null) {
             logger.error("[get_sms_record] no response")
             return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '取得短信记录没有响应，联系管理员')
@@ -225,7 +225,7 @@ static def updateOrderResult(String arguments) {
     //
     Map<String, Object> params = ['appId': appId, 'username': username, 'result': result] as Map<String, Object>
     RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doGetWithLogin(qiguanUrl, updateOrderResultPath, params, requestAuth, 1)
+    HttpResponse response = Alpha.doGetWithLogin(alphaUrl, updateOrderResultPath, params, requestAuth, 1)
     if (response == null) {
         logger.error('[update_order_result] no response')
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '[小工具]更改订单状态没有响应')
