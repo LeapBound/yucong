@@ -22,7 +22,7 @@ import java.time.LocalDateTime
 @Field static String REDIS_COOKIE_KEY = 'alpha.cookie.key'
 @Field static String EMPLOYEE_NO = 'bot002'
 @Field static String USER_NAME = 'bot002'
-@Field static String BOT_SALT = 'e77989ed21758e78331b20e477fc5582'
+@Field static String BOT_SALT = 'd6e4a9b6646c62fc48baa6dd6150d1f7'
 @Field static Logger logger = LoggerFactory.getLogger('scripts.alpha.Alpha');
 @Field static String alphaLoginUrl = ''
 
