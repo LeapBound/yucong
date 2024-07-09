@@ -1,14 +1,10 @@
 <h2 align="center">yucong</h2>
 
-<h4 align=center>*An AI Agents Collaboration Platform*</h4>
+<h4 align=center>An AI Agents Collaboration Platform</h4>
 
 ****
 
 ## [English Docs](https://leapbound.github.io/)
-
-## Contact
-
-We recommend you to contact us using [issues](https://github.com/LeapBound/yucong/issues).
 
 ## Details
 
@@ -17,6 +13,10 @@ A chat system that can be used in multiple scenarios. For example, orders and cu
 - yc-action-server (*Function-calling implementation and script execution*)
 - yc-hub (*integrate with openai*)
 - yc-process (*integrate with camunda*)
+
+## Contact
+
+We recommend you to contact us using [issues](https://github.com/LeapBound/yucong/issues).
 
 ## Contributors
 

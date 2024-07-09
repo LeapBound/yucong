@@ -1,9 +1,9 @@
 package com.github.leapbound.yc.hub.controller.api;
 
 import com.alibaba.fastjson.JSON;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.model.test.TestFlowDto;

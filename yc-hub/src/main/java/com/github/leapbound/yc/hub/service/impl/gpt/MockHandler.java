@@ -1,9 +1,9 @@
 package com.github.leapbound.yc.hub.service.impl.gpt;
 
-import com.github.leapbound.yc.hub.chat.dialog.MyChatCompletionResponse;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
-import com.github.leapbound.yc.hub.chat.func.MyFunctions;
+import com.github.leapbound.sdk.llm.chat.dialog.MyChatCompletionResponse;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.service.gpt.GptMockHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.util.List;
  * @date 2024/5/22 22:28
  */
 @Slf4j
-@Service
+@Service("mockHandler")
 @RequiredArgsConstructor
 public class MockHandler implements GptMockHandler {
 

@@ -1,4 +1,4 @@
-package com.github.leapbound.yc.hub.chat.dialog;
+package com.github.leapbound.sdk.llm.chat.dialog;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

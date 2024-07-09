@@ -1,6 +1,9 @@
 package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
-import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
+import com.github.leapbound.yc.hub.service.BotService;
+import com.github.leapbound.yc.hub.service.ConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -11,9 +14,6 @@ import me.chanjar.weixin.cp.bean.message.WxCpMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import org.springframework.stereotype.Component;
-import com.github.leapbound.yc.hub.model.SingleChatDto;
-import com.github.leapbound.yc.hub.service.BotService;
-import com.github.leapbound.yc.hub.service.ConversationService;
 
 import java.util.Map;
 

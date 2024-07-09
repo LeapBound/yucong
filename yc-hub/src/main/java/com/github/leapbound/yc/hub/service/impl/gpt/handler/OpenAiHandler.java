@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@Service("openaiHandler")
+@Service("openAiHandler")
 @RequiredArgsConstructor
 public class OpenAiHandler implements GptHandler {
 

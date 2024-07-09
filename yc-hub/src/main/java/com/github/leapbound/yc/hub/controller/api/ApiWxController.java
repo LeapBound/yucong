@@ -1,5 +1,8 @@
 package com.github.leapbound.yc.hub.controller.api;
 
+import com.github.leapbound.yc.hub.model.R;
+import com.github.leapbound.yc.hub.model.test.TestFlowDto;
+import com.github.leapbound.yc.hub.model.test.TestMessageDto;
 import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import com.github.leapbound.yc.hub.vendor.wx.mp.YcWxMpService;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +13,9 @@ import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlOutMessage;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.github.leapbound.yc.hub.model.R;
-import com.github.leapbound.yc.hub.service.ChannelService;
 
 @Slf4j
 @RestController
@@ -26,14 +27,12 @@ public class ApiWxController {
     private final YcWxMpService ycWxMpService;
 
     @PostMapping("/message/receive")
-    public R<String> dealMessage(@RequestParam String type,
-                                 @RequestParam String corpId,
-                                 @RequestParam(required = false) Integer agentId,
-                                 @RequestParam String username,
-                                 @RequestParam String content) {
-        return switch (type) {
-            case "mp" -> R.ok(this.goMp(corpId, username, content).toString());
-            case "cp" -> R.ok(this.goCp(corpId, agentId, username, content).toString());
+    public R<String> dealMessage(@RequestBody TestFlowDto testFlowDto) {
+        TestMessageDto testMessageDto = testFlowDto.getMessages().get(0);
+        return switch (testFlowDto.getChannel()) {
+            case "wxMp" -> R.ok(this.goMp(testFlowDto.getCorpId(), "username", testMessageDto.getContent()).toString());
+            case "wxCp" ->
+                    R.ok(this.goCp(testFlowDto.getCorpId(), null, "username", testMessageDto.getContent()).toString());
             default -> R.fail();
         };
     }

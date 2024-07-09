@@ -1,6 +1,7 @@
 package com.github.leapbound.yc.hub.service.gpt;
 
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 
 /**
  * @author Fred

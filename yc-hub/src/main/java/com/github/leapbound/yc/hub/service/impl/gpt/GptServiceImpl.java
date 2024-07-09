@@ -1,21 +1,19 @@
 package com.github.leapbound.yc.hub.service.impl.gpt;
 
 import com.alibaba.fastjson.JSON;
-import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.sdk.llm.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
+import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.gpt.FuncService;
 import com.github.leapbound.yc.hub.service.gpt.GptHandler;
-import com.github.leapbound.yc.hub.service.gpt.GptHandlerFactory;
 import com.github.leapbound.yc.hub.service.gpt.GptService;
 import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -71,6 +69,8 @@ public class GptServiceImpl implements GptService {
         assistantMsg.setRole(response.getMessage().getRole());
         if (StringUtils.hasText(remind)) {
             assistantMsg.setContent(remind);
+        } else if (functionExecuteResult != null && StringUtils.hasText(functionExecuteResult.getMsg())) {
+            assistantMsg.setContent(functionExecuteResult.getMsg());
         } else {
             assistantMsg.setContent(response.getMessage().getContent());
         }
