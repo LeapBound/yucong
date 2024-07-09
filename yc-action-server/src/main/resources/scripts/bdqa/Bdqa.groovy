@@ -142,7 +142,7 @@ static def getSmsRecord(String arguments) {
                     return ResponseVo.makeSuccess('短信已发送，但没有状态报告')
                 }
                 if (smsReport.getString('desc').contains('接收成功')) {
-                    return ResponseVo.makeSuccess(smsReport.getString('desc'))
+                    return ResponseVo.makeSuccess('短信发送结果:' + smsReport.getString('desc'))
                 } else {
                     return ResponseVo.makeSuccess('短信发送失败')
                 }
