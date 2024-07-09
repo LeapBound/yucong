@@ -80,6 +80,7 @@ static def loginAlpha() {
         logger.error('login alpha no response')
         return null
     }
+    logger.info('[login_alpha] response: {}, {}, {}', response.getStatus(), response.body(), response.getCookies())
     def cookieList = []
     if (response.isOk()) {
         for (HttpCookie cookie : response.getCookies()) {
