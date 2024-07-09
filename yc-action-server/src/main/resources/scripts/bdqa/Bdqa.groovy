@@ -128,13 +128,14 @@ static def getSmsRecord(String arguments) {
     //
     try {
         RequestAuth requestAuth = Alpha.setLoginRequestAuth()
+        logger.info('[get_sms_record] request auth:{}', requestAuth.headers)
         HttpResponse response = Alpha.doGetWithLogin(alphaUrl, getSmsRecordPath, params, requestAuth, 1)
         if (response == null) {
             logger.error("[get_sms_record] no response")
             return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '取得短信记录没有响应，联系管理员')
         }
+        logger.info("[get_sms_record] response status:{}, {}", response.getStatus(), response.body())
         if (response.isOk()) {
-            logger.info("[get_sms_record]请求结果: {}", response.body())
             JSONObject jsonObject = JSON.parseObject(response.body())
             if (jsonObject.containsKey('rows') && !jsonObject.getJSONArray('rows').isEmpty()) {
                 JSONObject smsReport = jsonObject.getJSONArray('rows').getJSONObject(0);
@@ -149,10 +150,8 @@ static def getSmsRecord(String arguments) {
             } else {
                 return ResponseVo.makeSuccess('没有查询到短信发送记录')
             }
-        } else {
-            logger.error('[get_sms_record] response status:{}, {}', response.getStatus(), response.body())
-            return ResponseVo.makeFail(response.getStatus(), response.body())
         }
+        return ResponseVo.makeFail(response.getStatus(), response.body())
     } finally {
         if (taskId != null) {
             GeneralMethods.doCompleteTask(args, taskId, null)
@@ -230,8 +229,8 @@ static def updateOrderResult(String arguments) {
         logger.error('[update_order_result] no response')
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '[小工具]更改订单状态没有响应')
     }
+    logger.info('[update_order_result] response status: {}, {}', response.getStatus(), response.body())
     if (response.isOk()) {
-        logger.info('[update_order_result] result: {}', response.body())
         JSONObject jsonObject = JSON.parseObject(response.body())
         boolean success = jsonObject.getBooleanValue('success')
         if (success) {
@@ -239,10 +238,8 @@ static def updateOrderResult(String arguments) {
         } else {
             return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_SERVER_FAILED, jsonObject.getString('errorMessage'))
         }
-    } else {
-        logger.error('[update_order_result] response status: {}, {}', response.getStatus(), response.body())
-        return ResponseVo.makeFail(response.getStatus(), response.body())
     }
+    return ResponseVo.makeFail(response.getStatus(), response.body())
 }
 
 /**

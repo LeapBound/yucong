@@ -8,6 +8,8 @@ import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import groovy.transform.Field
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import scripts.alpha.Alpha
 import scripts.general.GeneralCodes
 import scripts.general.GeneralMethods
@@ -21,6 +23,8 @@ import java.time.format.DateTimeFormatter
  * @since 2023/10/9 14:42
  *
  */
+
+@Field static Logger logger = LoggerFactory.getLogger('scripts.order.Order');
 // alpha 地址
 @Field static String alphaUrl = ''
 // 通过订单号获取还款计划 yrl
@@ -114,6 +118,7 @@ static def getUserRepaymentByOrder(String arguments) {
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询用户的还款计划没有响应')
     }
+//    logger.info('[get_user_repayment_by_order] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
@@ -181,12 +186,13 @@ static def getUserLoanTimeByOrder(String arguments) {
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单的放款信息没有响应')
     }
+//    logger.info('[get_user_loan_time_by_order] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
-        JSONObject jsonObject = JSON.parseObject(response.body()).getJSONArray('rows')[0]
-        if (jsonObject != null) {
-            JSONObject loanInfo = jsonObject.getJSONObject('data')
-            if (loanInfo != null) {
+        JSONObject loanInfo = JSON.parseObject(response.body()).getJSONArray('rows')[0]
+        if (loanInfo != null) {
+//            JSONObject loanInfo = jsonObject.getJSONObject('data')
+//            if (loanInfo != null) {
                 // check order status and loan time
                 if (loanInfo.containsKey('frozenStatus') && loanInfo.getIntValue('frozenStatus') > 0) {
                     return ResponseVo.makeSuccess('订单已冻结')
@@ -214,7 +220,7 @@ static def getUserLoanTimeByOrder(String arguments) {
                     rs += ' 消息：' + message
                 }
                 return ResponseVo.makeSuccess(rs)
-            }
+//            }
         }
         return ResponseVo.makeSuccess('没有查询到订单的放款信息')
     }
@@ -249,6 +255,7 @@ static def getLoanStatusByOrder(String arguments) {
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单借据状态信息没有响应')
     }
+//    logger.info('[get_loan_status_by_order] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONArray('rows')[0]
@@ -301,6 +308,7 @@ static def tryOrderRepay(String arguments) {
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取还款试算结果没有响应')
     }
+//    logger.info('[try_order_repay] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
@@ -351,6 +359,7 @@ static def tryOrderRefund(String arguments) {
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取退款试算结果没有响应')
     }
+//    logger.info('[try_order_refund] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')

@@ -82,8 +82,8 @@ static def loginAlpha() {
     }
     def cookieList = []
     if (response.isOk()) {
-        response.getCookies().each {
-            cookieList.add(it.name + '=' + it.value)
+        for (HttpCookie cookie : response.getCookies()) {
+            cookieList.add(cookie.name + '=' + cookie.value)
         }
     } else {
         logger.error('login alpha error: status: {}, {}', response.getStatus(), response.body())
@@ -99,6 +99,7 @@ static def loginAlpha() {
 static def setLoginRequestAuthWithoutRedis() {
     List<String> cookieList = loginAlpha()
     def addHeaders = ['Cookie': cookieList.join('; ')]
+    logger.info('login alpha cookie: {}', cookieList)
     RequestAuth requestAuth = new RequestAuth(null, null, null, addHeaders)
     return requestAuth
 }
@@ -110,6 +111,7 @@ static def setLoginRequestAuth() {
     }
     List<String> cookieList = stringRedisTemplate.opsForList().range(REDIS_COOKIE_KEY, 0, -1)
     def addHeaders = ['Cookie': cookieList.join('; ')]
+    logger.info('login alpha cookie: {}', cookieList)
     RequestAuth requestAuth = new RequestAuth(null, null, null, addHeaders)
     return requestAuth
 }
