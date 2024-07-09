@@ -81,7 +81,14 @@ static def startTicket(String arguments) {
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
     String externalId = args.containsKey('externalId') ? args.getString('externalId') : ''
     String botId = args.containsKey('botid') ? args.getString('botid') : ''
-    Map<String, Object> startFormVariables = ['accountId': userId, 'botId': botId, 'externalId': externalId, 'question': 'question_verification_code'] as Map<String, Object>
+    Map<String, Object> startFormVariables = new HashMap() {
+        {
+            put('accountId', userId)
+            put('botId', botId)
+            put('externalId', externalId)
+            put('question', 'question_verification_code')
+        }
+    }
     // process key = 'Process_bd_qa'
     String processInstanceId = CamundaService.startProcess('Process_bd_qa', userId, startFormVariables)
     //
@@ -104,10 +111,20 @@ static def getSmsRecord(String arguments) {
     // check task
     String taskId = checkTask(args)
     if (taskId == null) {
-        return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '当前没有任务')
+        logger.warn('[get_sms_record] no current task')
+//        return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '当前没有任务')
     }
     //
-    Map<String, Object> params = ['mobile': mobile, 'start': start, 'end': end, 'appId': appId, 'page': page, 'rows': rows] as Map<String, Object>
+    Map<String, Object> params = new HashMap() {
+        {
+            put('mobile', mobile)
+            put('start', start)
+            put('end', end)
+            put('appId', appId)
+            put('page', page)
+            put('rows', rows)
+        }
+    }
     //
     try {
         RequestAuth requestAuth = Alpha.setLoginRequestAuth()
@@ -137,7 +154,9 @@ static def getSmsRecord(String arguments) {
             return ResponseVo.makeFail(response.getStatus(), response.body())
         }
     } finally {
-        GeneralMethods.doCompleteTask(args, taskId, null)
+        if (taskId != null) {
+            GeneralMethods.doCompleteTask(args, taskId, null)
+        }
     }
 }
 
