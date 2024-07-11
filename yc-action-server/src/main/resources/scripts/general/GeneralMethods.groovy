@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
 
 @Field static Logger logger = LoggerFactory.getLogger('scripts.general.GeneralMethods');
 // 一些脚本中可能需要的外部参数 key
-@Field static List<String> externalKeys = ['frontUrl', 'hubUrl', 'alphaUrl', 'gonggongUrl', 'qiguanUrl', 'zhangwuUrl', 'zijinUrl', 'dingdanUrl']
+@Field static List<String> externalKeys = ['externalKey1', 'externalKey2']
 
 /**
  * 从传入的参数中提取需要的 external args
