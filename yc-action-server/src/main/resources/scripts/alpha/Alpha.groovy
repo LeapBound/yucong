@@ -3,6 +3,7 @@ package scripts.alpha
 import cn.hutool.crypto.digest.DigestUtil
 import cn.hutool.extra.spring.SpringUtil
 import cn.hutool.http.HttpResponse
+import com.github.leapbound.yc.action.func.groovy.CommonMethod
 import com.github.leapbound.yc.action.func.groovy.RequestAuth
 import com.github.leapbound.yc.action.func.groovy.RestClient
 import groovy.transform.Field
@@ -26,7 +27,19 @@ import java.time.LocalDateTime
 @Field static Logger logger = LoggerFactory.getLogger('scripts.alpha.Alpha');
 @Field static String alphaLoginUrl = ''
 
+/**
+ * POST request by params, with login
+ * @param url base url
+ * @param path request path
+ * @param params request params
+ * @param auth request auth such as user:password, token
+ * @param retry login retry times
+ * @return
+ */
 static def doPostParamsWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    if (auth == null) {
+        auth = setLoginRequestAuth()
+    }
     HttpResponse response = RestClient.doPostWithParams(url, path, params, auth)
     if (response != null) {
         if (response.status == 302 && retry > 0) {
@@ -37,7 +50,19 @@ static def doPostParamsWithLogin(String url, String path, Map<String, Object> pa
     return response
 }
 
+/**
+ * POST request by form, with login
+ * @param url base url
+ * @param path request path
+ * @param params request params
+ * @param auth request auth such as user:password, token
+ * @param retry login retry times
+ * @return
+ */
 static def doPostFormWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    if (auth == null) {
+        auth = setLoginRequestAuth()
+    }
     HttpResponse response = RestClient.doPostWithForm(url, path, params, auth)
     if (response != null) {
         if (response.status == 302 && retry > 0) {
@@ -48,7 +73,19 @@ static def doPostFormWithLogin(String url, String path, Map<String, Object> para
     return response
 }
 
+/**
+ * POST request by body, with login
+ * @param url base url
+ * @param path request path
+ * @param params request params
+ * @param auth request auth such as user:password, token
+ * @param retry login retry times
+ * @return
+ */
 static def doPostBodyWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    if (auth == null) {
+        auth = setLoginRequestAuth()
+    }
     HttpResponse response = RestClient.doPostWithBody(url, path, params, auth)
     if (response != null) {
         if (response.status == 302 && retry > 0) {
@@ -59,7 +96,19 @@ static def doPostBodyWithLogin(String url, String path, Map<String, Object> para
     return response
 }
 
+/**
+ * GET request with login
+ * @param url base url
+ * @param path request path
+ * @param params request params
+ * @param auth request auth such as user:password, token
+ * @param retry login retry times
+ * @return
+ */
 static def doGetWithLogin(String url, String path, Map<String, Object> params, RequestAuth auth, int retry) {
+    if (auth == null) {
+        auth = setLoginRequestAuth()
+    }
     HttpResponse response = RestClient.doGet(url, path, params, auth)
     if (response != null) {
         if (response.status == 302 && retry > 0) {
@@ -70,11 +119,16 @@ static def doGetWithLogin(String url, String path, Map<String, Object> params, R
     return response
 }
 
+/**
+ * login alpha++ to get cookie
+ * @return
+ */
 static def loginAlpha() {
     LocalDateTime nowDateTime = LocalDateTime.now()
     int dateHour = nowDateTime.getYear() + (nowDateTime.getMonthValue() - 1) + 5 + nowDateTime.getHour()
     String token = DigestUtil.md5Hex((EMPLOYEE_NO + USER_NAME + dateHour + BOT_SALT).getBytes())
     def params = ['employeeNo': EMPLOYEE_NO, 'username': USER_NAME, 'token': token]
+    alphaLoginUrl = CommonMethod.getExternalArgs().get('alphaUrl')
     def response = RestClient.doGet(alphaLoginUrl, botLoginPath, params, null)
     if (response == null) {
         logger.error('login alpha no response')
@@ -97,6 +151,10 @@ static def loginAlpha() {
     return cookieList
 }
 
+/**
+ * set requestAuth by login alpha++ to get cookie, and set to requestAuth
+ * @return
+ */
 static def setLoginRequestAuthWithoutRedis() {
     List<String> cookieList = loginAlpha()
     def addHeaders = ['Cookie': cookieList.join('; ')]
@@ -105,6 +163,10 @@ static def setLoginRequestAuthWithoutRedis() {
     return requestAuth
 }
 
+/**
+ * set requestAuth from redis, if not exist, login alpha++ to get cookie to set requestAuth
+ * @return
+ */
 static def setLoginRequestAuth() {
     StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class)
     if (!stringRedisTemplate.hasKey(REDIS_COOKIE_KEY)) {

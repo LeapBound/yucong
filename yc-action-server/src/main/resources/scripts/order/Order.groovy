@@ -5,14 +5,12 @@ import cn.hutool.http.HttpResponse
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
-import com.github.leapbound.yc.action.func.groovy.RequestAuth
+import com.github.leapbound.yc.action.func.groovy.CommonMethod
+import com.github.leapbound.yc.action.func.groovy.GeneralCodes
 import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import scripts.alpha.Alpha
-import scripts.general.GeneralCodes
-import scripts.general.GeneralMethods
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -53,6 +51,9 @@ import java.time.format.DateTimeFormatter
                                                                '逾期终止'    : 6,
                                                                '手动终止'    : 7,
                                                                '完成'        : 8]
+@Field static String ALPHA_GROOVY = 'Alpha.groovy'
+@Field static String METHOD_DO_GET_WITH_LOGIN = 'doGetWithLogin'
+@Field static String METHOD_DO_POST_BODY_WITH_LOGIN = 'doPostBodyWithLogin'
 
 execOrderMethod(method, arguments)
 
@@ -70,8 +71,8 @@ static def execOrderMethod(String method, String arguments) {
         return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     //
-    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
-    Alpha.alphaLoginUrl = alphaUrl
+    Map<String, String> externalArgs = CommonMethod.getExternalArgs()
+    alphaUrl = externalArgs.get('alphaUrl')
     //
     switch (method) {
         case 'get_user_repayment_by_order': // 订单号查询用户还款计划
@@ -112,13 +113,13 @@ static def getUserRepaymentByOrder(String arguments) {
         return ResponseVo.makeFail(GeneralCodes.LOGIC_FAILED_PARAMS_INVALID, '订单号 orderNo 为空或者是非正常订单，要求用户提供正确订单号')
     }
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doGetWithLogin(alphaUrl, getRepayPlanByOrderPath + orderNo, null, requestAuth, 1)
+    Object[] methodArgs = [alphaUrl, getRepayPlanByOrderPath + orderNo, null, null, 1]
+    // Alpha.doGetWithLogin
+    HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_GET_WITH_LOGIN, methodArgs) as HttpResponse
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询用户的还款计划没有响应')
     }
-//    logger.info('[get_user_repayment_by_order] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
@@ -146,7 +147,7 @@ static def getUserRepaymentByOrder(String arguments) {
                     break
                 }
                 // 返回结果
-                if (tenor > 0 && remain.compareTo(new BigDecimal('0.0')) > 0) {
+                if (tenor > 0 && remain > new BigDecimal('0.0')) {
                     return ResponseVo.makeSuccess(String.format('当前第 %d 期 %s 前还需还款 %.2f 元', tenor, date, remain))
                 } else {
                     return ResponseVo.makeSuccess('已还清')
@@ -180,46 +181,46 @@ static def getUserLoanTimeByOrder(String arguments) {
         }
     }
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanMakeInfoByOrderPath, params, requestAuth, 1)
+    Object[] methodArgs = [alphaUrl, getLoanMakeInfoByOrderPath, params, null, 1]
+    // Alpha.doPostBodyWithLogin
+    HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_POST_BODY_WITH_LOGIN, methodArgs) as HttpResponse
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单的放款信息没有响应')
     }
-//    logger.info('[get_user_loan_time_by_order] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject loanInfo = JSON.parseObject(response.body()).getJSONArray('rows')[0]
         if (loanInfo != null) {
 //            JSONObject loanInfo = jsonObject.getJSONObject('data')
 //            if (loanInfo != null) {
-                // check order status and loan time
-                if (loanInfo.containsKey('frozenStatus') && loanInfo.getIntValue('frozenStatus') > 0) {
-                    return ResponseVo.makeSuccess('订单已冻结')
+            // check order status and loan time
+            if (loanInfo.containsKey('frozenStatus') && loanInfo.getIntValue('frozenStatus') > 0) {
+                return ResponseVo.makeSuccess('订单已冻结')
+            }
+            //
+            if (!loanInfo.containsKey('orderStatus')
+                    || (loanInfo.containsKey('loanTime')
+                    && (null == loanInfo.getString('loanTime') || '' == loanInfo.getString('loanTime')))) {
+                return ResponseVo.makeSuccess('订单没有放款状态')
+            }
+            // init
+            String statusDesc = loanOrderStatusMap.get(loanInfo.getString('orderStatus'))
+            String loanTime = loanInfo.getString('loanTime')
+            String loanApplyTime = loanInfo.getString('loanApplyTime')
+            String message = loanInfo.getString('message')
+            String rs = ' 放款状态： ' + statusDesc
+            if (null == loanTime || '' == loanTime) {
+                if (null != loanApplyTime && '' != loanApplyTime) {
+                    rs += ' 申请时间：' + loanApplyTime
                 }
-                //
-                if (!loanInfo.containsKey('orderStatus')
-                        || (loanInfo.containsKey('loanTime')
-                        && (null == loanInfo.getString('loanTime') || '' == loanInfo.getString('loanTime')))) {
-                    return ResponseVo.makeSuccess('订单没有放款状态')
-                }
-                // init
-                String statusDesc = loanOrderStatusMap.get(loanInfo.getString('orderStatus'))
-                String loanTime = loanInfo.getString('loanTime')
-                String loanApplyTime = loanInfo.getString('loanApplyTime')
-                String message = loanInfo.getString('message')
-                String rs = ' 放款状态： ' + statusDesc
-                if (null == loanTime || '' == loanTime) {
-                    if (null != loanApplyTime && '' != loanApplyTime) {
-                        rs += ' 申请时间：' + loanApplyTime
-                    }
-                } else {
-                    rs += ' 放款时间：' + loanTime
-                }
-                if (null != message && '' != message) {
-                    rs += ' 消息：' + message
-                }
-                return ResponseVo.makeSuccess(rs)
+            } else {
+                rs += ' 放款时间：' + loanTime
+            }
+            if (null != message && '' != message) {
+                rs += ' 消息：' + message
+            }
+            return ResponseVo.makeSuccess(rs)
 //            }
         }
         return ResponseVo.makeSuccess('没有查询到订单的放款信息')
@@ -249,13 +250,13 @@ static def getLoanStatusByOrder(String arguments) {
         }
     }
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, getLoanStatusByOrderPath, params, requestAuth, 1)
+    Object[] methodArgs = [alphaUrl, getLoanStatusByOrderPath, params, null, 1]
+    // Alpha.doPostBodyWithLogin
+    HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_POST_BODY_WITH_LOGIN, methodArgs) as HttpResponse
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '查询订单借据状态信息没有响应')
     }
-//    logger.info('[get_loan_status_by_order] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONArray('rows')[0]
@@ -302,13 +303,13 @@ static def tryOrderRepay(String arguments) {
         }
     }
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRepayPath, params, requestAuth, 1)
+    Object[] methodArgs = [alphaUrl, tryOrderRepayPath, params, null, 1]
+    // Alpha.doPostBodyWithLogin
+    HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_POST_BODY_WITH_LOGIN, methodArgs) as HttpResponse
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取还款试算结果没有响应')
     }
-//    logger.info('[try_order_repay] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')
@@ -353,13 +354,13 @@ static def tryOrderRefund(String arguments) {
         }
     }
     // call
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(alphaUrl, tryOrderRefundPath, params, requestAuth, 1)
+    Object[] methodArgs = [alphaUrl, tryOrderRefundPath, params, null, 1]
+    // Alpha.doPostBodyWithLogin
+    HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_POST_BODY_WITH_LOGIN, methodArgs) as HttpResponse
     // no response
     if (response == null) {
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '获取退款试算结果没有响应')
     }
-//    logger.info('[try_order_refund] response: {}, {}', response.getStatus(), response.body())
     // response status = 200
     if (response.isOk()) {
         JSONObject jsonObject = JSON.parseObject(response.body()).getJSONObject('result')

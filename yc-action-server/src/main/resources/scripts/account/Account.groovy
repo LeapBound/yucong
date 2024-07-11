@@ -6,15 +6,13 @@ import cn.hutool.http.HttpResponse
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
-import com.github.leapbound.yc.action.func.groovy.RequestAuth
+import com.github.leapbound.yc.action.func.groovy.CommonMethod
+import com.github.leapbound.yc.action.func.groovy.GeneralCodes
 import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import com.github.leapbound.yc.action.utils.ldap.LdapAccountService
 import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import scripts.alpha.Alpha
-import scripts.general.GeneralCodes
-import scripts.general.GeneralMethods
 
 import java.util.concurrent.atomic.AtomicReference
 
@@ -24,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference
  * @since 2023/10/13 17:25
  */
 
-@Field static String gonggongUrl = ''
 @Field static String qiguanUrl = ''
 @Field static String getSalesListPath = '/geex-platform-web/management/user/getSalesList'
 @Field static String getSalesDetailListPath = '/geex-platform-web/management/user/getSalesDetailList'
@@ -47,9 +44,8 @@ static def execAccountMethod(String method, String arguments) {
         return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     //
-    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
-    Alpha.alphaLoginUrl = gonggongUrl
-    qiguanUrl = GeneralMethods.getExternal(arguments).get('qiguanUrl')
+    Map<String, String> externalArgs = CommonMethod.getExternalArgs()
+    qiguanUrl = externalArgs.get('qiguanUrl')
     //
     switch (method) {
         case 'close_user_account': // 关闭域账号和销售账号
@@ -185,8 +181,8 @@ static def closeSalesAccount(String name, String ldapAccount) {
     AtomicReference<Boolean> close = new AtomicReference<>(false)
     //
     Map<String, Object> params = ['userName': name, 'status': '1', 'page': '1', 'rows': 50] as Map<String, Object>
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doPostBodyWithLogin(qiguanUrl, getSalesListPath, params, requestAuth, 1)
+    Object[] methodArgs = [qiguanUrl, getSalesListPath, params, null, 1]
+    HttpResponse response = CommonMethod.execCommonMethod('Alpha.groovy', 'doPostBodyWithLogin', methodArgs) as HttpResponse
     if (response == null) {
         logger.error('closeSalesAccount no response')
         return null
@@ -196,8 +192,8 @@ static def closeSalesAccount(String name, String ldapAccount) {
         JSONArray rows = JSON.parseObject(response.body()).getJSONArray('rows')
         for (int i = 0; i < rows.size(); i++) {
             String userId = rows.getJSONObject(i).get('userId')
-            requestAuth = Alpha.setLoginRequestAuth()
-            HttpResponse response1 = Alpha.doGetWithLogin(qiguanUrl, getSalesDetailListPath, ['userId': userId], requestAuth, 1)
+            Object[] methodArgs1 = [qiguanUrl, getSalesDetailListPath, ['userId': userId], null, 1]
+            HttpResponse response1 = CommonMethod.execCommonMethod('Alpha.groovy', 'doGetWithLogin', methodArgs1) as HttpResponse
             if (response1 == null) {
                 logger.warn('getSalesDetailList no response')
                 continue
@@ -208,8 +204,9 @@ static def closeSalesAccount(String name, String ldapAccount) {
                     logger.info('close sales account basicInfo: {}', basicInfo)
                     basicInfo.put('status', 0)
                     Map<String, Object> closeMap = ['basicInfo': basicInfo, 'rolesList': new ArrayList<>(0), 'teamList': new ArrayList<>(0)] as Map<String, Object>
-                    requestAuth = Alpha.setLoginRequestAuth()
-                    HttpResponse response2 = Alpha.doPostBodyWithLogin(qiguanUrl, updateSalesInfoPath, closeMap, requestAuth, 1)
+                    Object[] methodArgs2 = [qiguanUrl, updateSalesInfoPath, closeMap, null, 1]
+                    // Alpha.doPostBodyWithLogin
+                    HttpResponse response2 = CommonMethod.execCommonMethod('Alpha.groovy', 'doPostBodyWithLogin', methodArgs2) as HttpResponse
                     if (response2 == null) {
                         logger.warn('updateSalesInfo no response')
                         continue

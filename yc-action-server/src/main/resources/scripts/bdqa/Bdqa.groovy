@@ -5,15 +5,13 @@ import cn.hutool.http.HttpResponse
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
 import com.github.leapbound.yc.action.func.groovy.CamundaService
-import com.github.leapbound.yc.action.func.groovy.RequestAuth
+import com.github.leapbound.yc.action.func.groovy.CommonMethod
+import com.github.leapbound.yc.action.func.groovy.GeneralCodes
 import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import com.github.leapbound.yc.camunda.model.vo.TaskReturn
 import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import scripts.alpha.Alpha
-import scripts.general.GeneralCodes
-import scripts.general.GeneralMethods
 
 /**
  *
@@ -33,6 +31,12 @@ import scripts.general.GeneralMethods
                                                      '审批中'  : 10,
                                                      '复合中'  : 11,
                                                      '已保存'  : 12]
+@Field static String ALPHA_GROOVY = 'Alpha.groovy'
+@Field static String GENERAL_METHODS_GROOVY = 'GeneralMethods.groovy'
+@Field static String METHOD_DO_GET_WITH_LOGIN = 'doGetWithLogin'
+@Field static String METHOD_DO_COMPLETE_TASK = 'doCompleteTask'
+@Field static String METHOD_NOTICE_HUB = 'noticeHubMethod'
+
 
 execBdqaMethod(method, arguments)
 
@@ -42,11 +46,10 @@ static def execBdqaMethod(String method, String arguments) {
     if (StrUtil.isEmptyIfStr(arguments)) {
         return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
-    // get external args
-    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
-    alphaUrl = GeneralMethods.getExternal(arguments).get('alphaUrl')
-    Alpha.alphaLoginUrl = alphaUrl
-
+    Map<String, String> externalArgs = CommonMethod.getExternalArgs()
+    gonggongUrl = externalArgs.get('gonggongUrl')
+    alphaUrl = externalArgs.get('alphaUrl')
+    //
     switch (method) {
         case 'start_ticket':
             result = startTicket(arguments)
@@ -64,7 +67,7 @@ static def execBdqaMethod(String method, String arguments) {
             result = updateOrderResult(arguments)
             break
         case 'notice_hub_method':
-            result = GeneralMethods.noticeHubMethod(arguments)
+            result = noticeHubMethod(arguments)
             break
         default:
             result = ResponseVo.makeFail(GeneralCodes.MISSING_EXEC_METHOD, '没有对应的执行方法')
@@ -73,9 +76,11 @@ static def execBdqaMethod(String method, String arguments) {
     return result
 }
 
-// Enum
-// question_verification_code
-
+/**
+ * 开启流程
+ * @param arguments
+ * @return
+ */
 static def startTicket(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String userId = args.containsKey('accountid') ? args.getString('accountid') : ''
@@ -96,6 +101,11 @@ static def startTicket(String arguments) {
     return ResponseVo.makeSuccess(null)
 }
 
+/**
+ * 获取发送短信记录
+ * @param arguments
+ * @return
+ */
 static def getSmsRecord(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String mobile = args.containsKey('mobile') ? args.getString('mobile') : ''
@@ -127,9 +137,9 @@ static def getSmsRecord(String arguments) {
     }
     //
     try {
-        RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-        logger.info('[get_sms_record] request auth:{}', requestAuth.headers)
-        HttpResponse response = Alpha.doGetWithLogin(alphaUrl, getSmsRecordPath, params, requestAuth, 1)
+        Object[] methodArgs = [alphaUrl, getSmsRecordPath, params, null, 1]
+        // Alpha.doGetWithLogin
+        HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_GET_WITH_LOGIN, methodArgs) as HttpResponse
         if (response == null) {
             logger.error("[get_sms_record] no response")
             return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '取得短信记录没有响应，联系管理员')
@@ -154,7 +164,8 @@ static def getSmsRecord(String arguments) {
         return ResponseVo.makeFail(response.getStatus(), response.body())
     } finally {
         if (taskId != null) {
-            GeneralMethods.doCompleteTask(args, taskId, null)
+            // GeneralMethods.doCompleteTask
+            CommonMethod.execCommonMethod(GENERAL_METHODS_GROOVY, METHOD_DO_COMPLETE_TASK, [args, taskId, null])
         }
     }
 }
@@ -165,7 +176,8 @@ static def checkProblemSolved(String arguments) {
     if (taskId == null) {
         return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '当前没有任务')
     }
-    GeneralMethods.doCompleteTask(args, taskId, ['solved'])
+    // GeneralMethods.doCompleteTask
+    CommonMethod.execCommonMethod(GENERAL_METHODS_GROOVY, METHOD_DO_COMPLETE_TASK, [args, taskId, ['solved']])
     return ResponseVo.makeSuccess(null)
 }
 
@@ -192,7 +204,11 @@ static def humanProcess(String arguments) {
             put('noticeHubPath', noticeHubGroupPath)
         }
     }
-    Map<String, Object> afterFunctionMap = GeneralMethods.noticeMap(noticeData)
+    Map<String, Object> afterFunctionMap = new HashMap<String, Object>() {
+        {
+            put('notice_hub_method', noticeData)
+        }
+    }
     return new JSONObject() {
         {
             put('afterFunction', afterFunctionMap)
@@ -223,8 +239,9 @@ static def updateOrderResult(String arguments) {
     }
     //
     Map<String, Object> params = ['appId': appId, 'username': username, 'result': result] as Map<String, Object>
-    RequestAuth requestAuth = Alpha.setLoginRequestAuth()
-    HttpResponse response = Alpha.doGetWithLogin(alphaUrl, updateOrderResultPath, params, requestAuth, 1)
+    Object[] methodArgs = [alphaUrl, updateOrderResultPath, params, null, 1]
+    // Alpha.doGetWithLogin
+    HttpResponse response = CommonMethod.execCommonMethod(ALPHA_GROOVY, METHOD_DO_GET_WITH_LOGIN, methodArgs) as HttpResponse
     if (response == null) {
         logger.error('[update_order_result] no response')
         return ResponseVo.makeFail(GeneralCodes.REST_CALL_FAILED_NO_RESPONSE, '[小工具]更改订单状态没有响应')
@@ -240,6 +257,11 @@ static def updateOrderResult(String arguments) {
         }
     }
     return ResponseVo.makeFail(response.getStatus(), response.body())
+}
+
+static def noticeHubMethod(String arguments) {
+    // GeneralMethods.noticeHubMethod
+    CommonMethod.execCommonMethod(GENERAL_METHODS_GROOVY, METHOD_NOTICE_HUB, arguments)
 }
 
 /**

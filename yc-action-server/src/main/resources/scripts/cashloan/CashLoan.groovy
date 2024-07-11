@@ -4,12 +4,10 @@ import cn.hutool.core.util.StrUtil
 import cn.hutool.http.HttpResponse
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
+import com.github.leapbound.yc.action.func.groovy.GeneralCodes
 import com.github.leapbound.yc.action.func.groovy.ResponseVo
 import com.github.leapbound.yc.action.func.groovy.RestClient
 import groovy.transform.Field
-import scripts.alpha.Alpha
-import scripts.general.GeneralCodes
-import scripts.general.GeneralMethods
 
 import java.math.RoundingMode
 
@@ -20,7 +18,6 @@ import java.math.RoundingMode
  */
 // geex-guts-hub 地址
 @Field static String gutsHubUrl = 'https://beta.geexfinance.com/geex-guts-hub'
-@Field static String gonggongUrl = ''
 // cash 申请贷款 url
 @Field static String applySubmitPath = '/cash/loan/apply/submit'
 // cash 查询贷款进度 url
@@ -48,9 +45,6 @@ static def execCashLoanMethod(String method, String arguments) {
     if (StrUtil.isEmptyIfStr(arguments)) {
         return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
-    // get external args
-    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
-    Alpha.alphaLoginUrl = gonggongUrl
     //
     switch (method) {
         case 'apply_loan': // 申请贷款

@@ -16,8 +16,14 @@ import org.slf4j.LoggerFactory
  */
 
 @Field static Logger logger = LoggerFactory.getLogger('scripts.general.GeneralMethods');
+// 一些脚本中可能需要的外部参数 key
 @Field static List<String> externalKeys = ['frontUrl', 'hubUrl', 'alphaUrl', 'gonggongUrl', 'qiguanUrl', 'zhangwuUrl', 'zijinUrl', 'dingdanUrl']
 
+/**
+ * 从传入的参数中提取需要的 external args
+ * @param arguments 传入的参数
+ * @return
+ */
 static def getExternal(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     JSONObject result = new JSONObject()
@@ -30,6 +36,12 @@ static def getExternal(String arguments) {
     return result
 }
 
+/**
+ * 从传入的参数中移除不需要的 external args
+ * @param args
+ * @param removeKeys
+ * @return
+ */
 static def removeExternal(JSONObject args, List<String> removeKeys) {
     JSONObject result = args
     for (String key : removeKeys) {
@@ -40,14 +52,11 @@ static def removeExternal(JSONObject args, List<String> removeKeys) {
     return result
 }
 
-static def noticeMap(JSONObject noticeData) {
-    return new HashMap<String, Object>() {
-        {
-            put('notice_hub_method', noticeData)
-        }
-    }
-}
-
+/**
+ * 通知 yc-hub 的通用方法
+ * @param arguments 传入的参数
+ * @return
+ */
 static def noticeHubMethod(String arguments) {
     JSONObject args = JSON.parseObject(arguments)
     String noticeHubPath = args.containsKey('noticeHubPath') ? args.getString('noticeHubPath') : ''
@@ -73,8 +82,8 @@ static def doCompleteTask(JSONObject args, String taskId, List<String> inputKeys
     Map<String, Object> map = new HashMap<>()
     if (inputKeys != null && !inputKeys.isEmpty()) {
         for (String inputKey : inputKeys) {
-            String inputValue = args.containsKey(inputKey) ? args.getString(inputKey) : ''
-            if (!StrUtil.isEmpty(inputValue)) {
+            Object inputValue = args.containsKey(inputKey) ? args.get(inputKey) : null
+            if (inputValue != null) {
                 map.put(inputKey, inputValue)
             }
         }

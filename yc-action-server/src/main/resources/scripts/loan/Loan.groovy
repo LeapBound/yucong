@@ -10,18 +10,12 @@ import cn.hutool.http.HttpUtil
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
-import com.github.leapbound.yc.action.func.groovy.CamundaService
-import com.github.leapbound.yc.action.func.groovy.RequestAuth
-import com.github.leapbound.yc.action.func.groovy.ResponseVo
-import com.github.leapbound.yc.action.func.groovy.RestClient
+import com.github.leapbound.yc.action.func.groovy.*
 import com.github.leapbound.yc.camunda.model.vo.TaskReturn
 import groovy.transform.Field
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.StringRedisTemplate
-import scripts.alpha.Alpha
-import scripts.general.GeneralCodes
-import scripts.general.GeneralMethods
 
 import java.util.concurrent.TimeUnit
 
@@ -64,9 +58,9 @@ static def execLoanMethod(String method, String arguments) {
         return ResponseVo.makeFail(GeneralCodes.MISSING_REQUEST_PARAMS, '没有提供必要的信息')
     }
     // get external args
-    gonggongUrl = GeneralMethods.getExternal(arguments).get('gonggongUrl')
-    Alpha.alphaLoginUrl = gonggongUrl
-    dingdanUrl = GeneralMethods.getExternal(arguments).get('dingdanUrl')
+    Map<String, String> externalArgs = CommonMethod.getExternalArgs();
+    gonggongUrl = externalArgs.get('gonggongUrl')
+    dingdanUrl = externalArgs.get('dingdanUrl')
     //
     switch (method) {
         case 'start_loan_process':
@@ -186,9 +180,7 @@ static def bindMobile(String arguments) {
         logger.error('bindMobile no current task, businessKey: {}', userId)
         return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[bind_mobile]获取流程失败，请联系管理员')
     } else {
-        String taskId = taskReturn.getTaskId()
-        Map<String, Object> inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
-        CamundaService.completeTask(taskId, inputForm)
+        CamundaService.completeTaskByArgs(taskReturn, args)
         return ResponseVo.makeSuccess(null)
     }
 }
@@ -232,7 +224,6 @@ static def verifyMobileCode(String arguments) {
             logger.error('verifyMobileCode no current task, businessKey: {}', userId)
             return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[verify_mobile_code]获取当前流程失败，联系管理员')
         } else {
-            String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
@@ -240,8 +231,7 @@ static def verifyMobileCode(String arguments) {
             String appToken = getAppToken(mobile, verifyCode, deviceId)
             if (!StrUtil.isEmptyIfStr(appToken)) {
                 args.put('z_userMobileVerify', true)
-                Map<String, Object> inputForm = CamundaService.fillCurrentForm(taskReturn.getCurrentInputForm(), args)
-                CamundaService.completeTask(taskId, inputForm)
+                CamundaService.completeTaskByArgs(taskReturn, args)
                 return ResponseVo.makeSuccess(null)
             }
             return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_COMPLETE_FAILED, '验证登录失败')
@@ -262,7 +252,6 @@ static def configByBdMobile(String arguments) {
             logger.error('configByBdMobile no current task, businessKey: {}', userId)
             return ResponseVo.makeFail(GeneralCodes.PROCESS_FAILED_PROCESS_MISSING, '[config_bd_mobile]获取当前流程失败，联系管理员')
         } else {
-            String taskId = taskReturn.getTaskId()
             String processInstanceId = taskReturn.getProcessInstanceId()
             JSONObject processVariable = CamundaService.getProcessVariable(processInstanceId)
             String mobile = processVariable.containsKey('mobile') ? processVariable.getString('mobile') : ''
@@ -281,6 +270,7 @@ static def configByBdMobile(String arguments) {
                     put('loanConfig', config)
                 }
             }
+            String taskId = taskReturn.getTaskId()
             CamundaService.completeTask(taskId, configForm)
             return ResponseVo.makeSuccess(null)
         }
@@ -606,7 +596,6 @@ static def checkBankCard(String arguments) {
 
     String appToken = getAppToken(mobile, null, null)
     //
-    JSONObject responseData = new JSONObject()
     JSONObject data = noticeData(args, '', '', '', new HashMap<String, Object>())
     // check bank card limit
     AppCommonResult appCommonResult = checkBankCardLimit(appToken, name, idNo, bankCard, amount)

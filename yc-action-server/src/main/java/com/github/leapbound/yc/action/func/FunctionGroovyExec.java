@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.leapbound.yc.action.model.dto.YcFunctionGroovyDto;
 import com.google.common.collect.Maps;
 import groovy.lang.Binding;
+import groovy.lang.Script;
 import groovy.util.GroovyScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,18 @@ public class FunctionGroovyExec {
                 return (JSONObject) JSON.toJSON(object);
             }
             return null;
+        } catch (Exception ex) {
+            logger.error("execute groovy script error,", ex);
+            throw new Exception(ex);
+        }
+    }
+
+    public static Object runScriptMethod(GroovyScriptEngine engine, String groovyName, String method, Object arguments) throws Exception {
+        try {
+            // common script has no bindings
+            Script script = engine.createScript(groovyName, new Binding());
+            // invoke method
+            return script.invokeMethod(method, arguments);
         } catch (Exception ex) {
             logger.error("execute groovy script error,", ex);
             throw new Exception(ex);

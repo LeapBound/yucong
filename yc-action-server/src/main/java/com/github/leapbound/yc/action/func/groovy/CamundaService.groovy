@@ -83,6 +83,12 @@ class CamundaService {
         }
     }
 
+    static def completeTaskByArgs(TaskReturn taskReturn, JSONObject arguments) {
+        String taskId = taskReturn.getTaskId();
+        Map<String, Object> inputForm = fillCurrentForm(taskReturn.getCurrentInputForm(), arguments)
+        completeTask(taskId, inputForm)
+    }
+
     static def completeTaskWithReturn(String processInstanceId, String taskId, Map<String, Object> taskInputVariable) {
         TaskCompleteRequest taskCompleteRequest = new TaskCompleteRequest()
         taskCompleteRequest.setProcessInstanceId(processInstanceId)
