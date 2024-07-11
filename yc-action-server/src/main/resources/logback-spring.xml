@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--debug: 当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。-->
+<configuration scan="false" scanPeriod="20 seconds" debug="false">
+    <property name="hostname" value="${HOSTNAME}"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!--Threshold和下面的filter属重复配置-->
+        <!--param name="Threshold" value="INFO"/-->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %message%n</pattern>
+            <charset>UTF8</charset>
+        </encoder>
+    </appender>
+
+    <springProperty scope="context" name="logName" source="spring.application.name" defaultValue="application"/>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>/var/log/tomcat/${logName}.log.%d{yyyy-MM-dd}.%i</fileNamePattern>
+            <maxHistory>7</maxHistory>
+            <maxFileSize>500MB</maxFileSize>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+        <!-- 设置是否在重新启动服务后，是否在原有日志文件的基础上追加新的日志 -->
+        <append>true</append>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%tid] %message%n</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- o. category, logger中的name用来设置域名限制，即该path及以下的class，不需要写成通配符的形式。
+         o. category或logger可以将各个包中的类日志输出到不同的日志文件中。
+         o. category, logger, root中可以设置多个appender-ref。
+         o. appender-ref中的ref与前面appender的name相对应。
+         o. 如果不设置appender-ref，则使用root中指定的appender-ref。
+         o. 对于category或logger中name指定的package，优先按logger，对于无logger或category定义的package，则按root。
+         o. 一般的做法是前面的logger或category中指定level(也叫priority)，在root中指定appender。-->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.hibernate.sql" level="INFO" additivity="true">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <!--设置hibernate打印SQL语句参数的值-->
+    <logger name="org.hibernate.type" level="INFO"/>
+    <!--设置hibernate打印SQL语句参数的值，具体来说是这个class-->
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="INFO" additivity="false"/>
+
+    <!--additivity指示是否遵循缺省的继承机制，也用来防止重复打印同一条log-->
+    <logger name="geex.*" level="INFO" additivity="false"/>
+
+    <!-- dubbo logger -->
+    <logger name="com.alibaba.dubbo" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+    <!-- 屏蔽该类下，dubbo服务端重连服务端日志重复刷新问题 -->
+    <logger name="com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol" level="WARN"/>
+
+</configuration>

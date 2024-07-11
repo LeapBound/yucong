@@ -110,6 +110,11 @@ public class YcFunctionGroovyServiceImpl
     }
 
     @Override
+    public YcFunctionGroovyDto getFunctionGroovyDtoByName(String groovyName) {
+        return baseMapper.selectFunctionGroovyDtoByGroovy(groovyName);
+    }
+
+    @Override
     public ResponseVo<Void> uploadFunctionGroovyScripts(MultipartFile file, String groovyUrl) {
         //
         groovyUrl = checkUrl(groovyUrl);
