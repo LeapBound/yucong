@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 /**
  *
  * @author yamath
- * @date 2024/3/28 14:26
+ * @since 2024/3/28 14:26
  *
  */
 class CamundaService {
@@ -97,6 +97,12 @@ class CamundaService {
         } else {
             logger.error('complete task error, {}', r.getMsg())
         }
+    }
+
+    static def completeTaskByArgs(TaskReturn taskReturn, JSONObject arguments) {
+        String taskId = taskReturn.getTaskId();
+        Map<String, Object> inputForm = fillCurrentForm(taskReturn.getCurrentInputForm(), arguments)
+        completeTask(taskId, inputForm)
     }
 
     /**
