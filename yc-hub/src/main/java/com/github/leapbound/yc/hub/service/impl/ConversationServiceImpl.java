@@ -50,7 +50,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final AmqpTemplate amqpTemplate;
 
     private final ObjectMapper mapper;
-    @Value("${yucong.conversation.expire:3600}")
+    @Value("${yucong.conversation.expire:300}")
     private int expires;
     private final Map<String, Boolean> notifyMap = new ConcurrentHashMap<>();
 

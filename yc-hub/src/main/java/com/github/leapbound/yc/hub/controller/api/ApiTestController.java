@@ -115,12 +115,14 @@ public class ApiTestController {
                 break;
             default:
                 SingleChatDto singleChatDto = new SingleChatDto();
+                singleChatDto.setBotId(botId);
+                singleChatDto.setAccountId(accountId);
                 for (TestMessageDto message : testFlowDto.getMessages()) {
                     log.info("*".repeat(100));
                     log.info("user content: {}", message.getContent());
 
                     singleChatDto.setContent(message.getContent());
-                    if (StringUtils.hasText(String.valueOf(message.getType()))) {
+                    if (message.getType() != null) {
                         singleChatDto.setType(message.getType());
                     } else {
                         singleChatDto.setType(MyMessageType.TEXT);

@@ -3,6 +3,7 @@ package com.github.leapbound.yc.hub.service.impl.gpt;
 import com.alibaba.fastjson.JSON;
 import com.github.leapbound.sdk.llm.chat.dialog.MyChatCompletionResponse;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
 import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
@@ -67,6 +68,7 @@ public class GptServiceImpl implements GptService {
         // 助理消息
         MyMessage assistantMsg = new MyMessage();
         assistantMsg.setRole(response.getMessage().getRole());
+        assistantMsg.setType(MyMessageType.TEXT);
         if (StringUtils.hasText(remind)) {
             assistantMsg.setContent(remind);
         } else if (functionExecuteResult != null && StringUtils.hasText(functionExecuteResult.getMsg())) {

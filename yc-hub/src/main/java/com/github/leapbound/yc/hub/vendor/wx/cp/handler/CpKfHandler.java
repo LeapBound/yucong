@@ -39,7 +39,7 @@ public class CpKfHandler extends AbstractHandler {
     private final ConversationService conversationService;
     private final UserService userService;
     private final ChannelService channelService;
-    @Value("${yucong.conversation.expire:3600}")
+    @Value("${yucong.conversation.expire:300}")
     private int expires;
 
     @Override
