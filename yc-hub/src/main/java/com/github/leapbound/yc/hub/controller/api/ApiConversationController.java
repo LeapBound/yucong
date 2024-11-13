@@ -46,10 +46,10 @@ public class ApiConversationController {
     @PostMapping("/notice")
     public void noticeUser(@RequestBody ProcessResponseDto<SingleChatDto> responseDto) {
         log.debug("noticeUser {}", responseDto);
-        SingleChatDto singleChatDto = new SingleChatDto();
+        SingleChatDto singleChatDto = responseDto.getData();
         singleChatDto.setBotId("B6aeff8084b134aaeba2d919270f8322a");
         singleChatDto.setAccountId("A95b28a1a41024b5ca1b8053996d24cb5");
-        NotifyUserRunnable notifyUserRunnable = new NotifyUserRunnable(this.conversationService, singleChatDto);
+        NotifyUserRunnable notifyUserRunnable = new NotifyUserRunnable(this.conversationService, responseDto.getData());
         this.executor.execute(notifyUserRunnable);
     }
 

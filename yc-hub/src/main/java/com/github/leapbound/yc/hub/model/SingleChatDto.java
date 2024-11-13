@@ -1,5 +1,6 @@
 package com.github.leapbound.yc.hub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
 import lombok.Data;
 

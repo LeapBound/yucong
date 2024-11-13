@@ -13,7 +13,9 @@ public enum MyMessageType {
 
     TEXT("text"),
     IMAGE("image"),
-    VIDEO("video");
+    VIDEO("video"),
+    CONTRACT("contract"),
+    REDIRECT("redirect");
 
     private final String name;
 }
