@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author yamath
- * @since 2023/7/4 17:06
+ * @date 2023/7/4 17:06
  */
 @Component
 public class SpringInjectService implements ApplicationContextAware {

@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * @author yamath
- * @since 2023/7/10 13:09
+ * @date 2023/7/10 13:09
  */
 public class EasySqlInjector extends DefaultSqlInjector {
 

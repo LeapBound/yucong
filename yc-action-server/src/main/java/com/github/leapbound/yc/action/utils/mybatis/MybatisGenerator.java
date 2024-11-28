@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * @author yamath
- * @since 2023/7/3 13:31
+ * @date 2023/7/3 13:31
  */
 public class MybatisGenerator {
 

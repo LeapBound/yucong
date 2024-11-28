@@ -6,6 +6,7 @@ import com.volcengine.ark.runtime.model.completion.chat.ChatMessageRole;
 import com.volcengine.ark.runtime.service.ArkService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -17,10 +18,14 @@ import java.util.List;
 @ActiveProfiles("dev")
 public class LLMSdkTest {
 
+    @Value("${doubao.api.key}")
+    private String apiKey;
+    @Value("${doubao.api.entry-id}")
+    private String entryId;
+
     @Test
     void doubaoTest() {
-        String apiKey = "";
-        ArkService service = ArkService.builder().apiKey(apiKey).build();
+        ArkService service = ArkService.builder().apiKey(this.apiKey).build();
 
         System.out.println("\n----- standard request -----");
         final List<ChatMessage> messages = new ArrayList<>();
@@ -30,7 +35,7 @@ public class LLMSdkTest {
         messages.add(userMessage);
 
         ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                .model("")
+                .model(this.entryId)
                 .messages(messages)
                 .build();
 
@@ -38,6 +43,6 @@ public class LLMSdkTest {
 
         // shutdown service
         service.shutdownExecutor();
-
     }
+
 }

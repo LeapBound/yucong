@@ -5,7 +5,7 @@ logging:
     org.camunda.bpm.client: info
 
 server:
-  # gzip compression
+  # 启用 gzip 压缩
   compression:
     mime-types: application/javascript,text/css,application/json,application/xml,text/html,text/xml,text/plain
     enabled: true
@@ -24,7 +24,6 @@ spring:
       host: 127.0.0.1
       port: 6379
       database: 0
-  # spring datasource
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/yucong?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true
@@ -45,14 +44,14 @@ spring:
     username: #
     password: #
 
-#  camunda bpm client configuration
+#  camunda配置
 camunda:
   bpm:
     client:
-      base-url: http://localhost:${server.port}${server.servlet.context-path}/engine-rest
+      base-url: #
       async-response-timeout: 120000
       disable-backoff-strategy: true
-    # admin/password for Camunda management client
+    # 配置账户密码来访问Camunda自带的管理界面
     admin-user:
       id: admin
       password: xxx
@@ -60,7 +59,6 @@ camunda:
     filter:
       create: All tasks
 
-# actuator configuration
 management:
   endpoints:
     web:
@@ -81,9 +79,3 @@ management:
       enabled: false
     redis:
       enabled: false
-
-# customize @Value("#{${}}") a map value
-yc:
-  action:
-    external:
-      args: "{}"

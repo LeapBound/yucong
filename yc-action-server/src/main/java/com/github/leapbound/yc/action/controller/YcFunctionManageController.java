@@ -7,8 +7,8 @@ import com.github.leapbound.yc.action.model.vo.request.FunctionTaskRequest;
 import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
 import com.github.leapbound.yc.action.service.YcFunctionMethodService;
 import com.github.leapbound.yc.action.service.YcFunctionTaskService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import groovy.util.logging.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,23 +16,16 @@ import org.springframework.web.multipart.MultipartFile;
  * @author yamath
  * @date 2023/7/11 10:05
  */
+@Slf4j
 @RestController
 @RequestMapping("/function")
+@RequiredArgsConstructor
 public class YcFunctionManageController {
 
-    private static final Logger logger = LoggerFactory.getLogger(YcFunctionManageController.class);
     private final YcFunctionMethodService ycFunctionMethodService;
     private final YcFunctionGroovyService ycFunctionGroovyService;
 
     private final YcFunctionTaskService ycFunctionTaskService;
-
-    public YcFunctionManageController(YcFunctionMethodService ycFunctionMethodService,
-                                      YcFunctionGroovyService ycFunctionGroovyService,
-                                      YcFunctionTaskService ycFunctionTaskService) {
-        this.ycFunctionMethodService = ycFunctionMethodService;
-        this.ycFunctionGroovyService = ycFunctionGroovyService;
-        this.ycFunctionTaskService = ycFunctionTaskService;
-    }
 
     @PostMapping("/method/save")
     public ResponseVo<Void> saveFunctionMethod(@RequestBody FunctionMethodSaveRequest request) {

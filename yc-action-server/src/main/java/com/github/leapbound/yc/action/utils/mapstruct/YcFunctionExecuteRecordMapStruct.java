@@ -8,7 +8,7 @@ import com.github.leapbound.yc.action.model.vo.request.FunctionExecuteRecordSave
 
 /**
  * @author yamath
- * @since 2023/7/14 9:52
+ * @date 2023/7/14 9:52
  */
 @Mapper
 public interface YcFunctionExecuteRecordMapStruct {
