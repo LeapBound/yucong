@@ -1,6 +1,5 @@
 package com.github.leapbound.yc.hub.controller.api;
 
-import com.alibaba.fastjson.JSON;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
@@ -10,7 +9,6 @@ import com.github.leapbound.yc.hub.model.test.TestFlowDto;
 import com.github.leapbound.yc.hub.model.test.TestMessageDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
-import com.github.leapbound.yc.hub.service.gpt.GptMockHandler;
 import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +39,6 @@ public class ApiTestController {
     private final ActionServerService actionServerService;
 
     private final YcWxCpService ycWxCpService;
-
-    private final GptMockHandler mockHandler;
 
     @PostMapping("/flow")
     public String testFlow(@RequestBody TestFlowDto testFlowDto) {
@@ -98,9 +94,8 @@ public class ApiTestController {
                         if (StringUtils.hasText(message.getFunction())) {
                             MyFunctionCall functionCall = MyFunctionCall.builder()
                                     .name(message.getFunction())
-                                    .arguments(message.getFunctionParam() == null ? "{}" : JSON.toJSONString(message.getFunctionParam()))
+                                    .arguments("{}")
                                     .build();
-                            this.mockHandler.setFunctionCall(functionCall);
                         }
                     }
 
@@ -135,9 +130,8 @@ public class ApiTestController {
                         if (StringUtils.hasText(message.getFunction())) {
                             MyFunctionCall functionCall = MyFunctionCall.builder()
                                     .name(message.getFunction())
-                                    .arguments(message.getFunctionParam() == null ? "{}" : JSON.toJSONString(message.getFunctionParam()))
+                                    .arguments("{}")
                                     .build();
-                            this.mockHandler.setFunctionCall(functionCall);
                         }
                         this.conversationService.chat(singleChatDto, true);
                     } else {

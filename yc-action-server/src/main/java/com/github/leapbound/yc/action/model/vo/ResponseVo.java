@@ -1,10 +1,12 @@
 package com.github.leapbound.yc.action.model.vo;
 
+import lombok.Data;
+
 import java.io.Serializable;
 
 /**
  * @author yamath
- * @since 2023/7/3 15:00
+ * @date 2023/7/3 15:00
  */
 public class ResponseVo<T> implements Serializable {
 

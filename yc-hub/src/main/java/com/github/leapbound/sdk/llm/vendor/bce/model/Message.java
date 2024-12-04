@@ -70,11 +70,6 @@ public class Message implements Serializable {
         public Builder() {
         }
 
-        public Message.Builder role(com.unfbx.chatgpt.entity.chat.Message.Role role) {
-            this.role = role.getName();
-            return this;
-        }
-
         public Message.Builder role(String role) {
             this.role = role;
             return this;

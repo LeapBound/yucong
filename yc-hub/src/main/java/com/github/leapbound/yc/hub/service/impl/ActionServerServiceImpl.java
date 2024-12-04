@@ -1,7 +1,5 @@
 package com.github.leapbound.yc.hub.service.impl;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.consts.ProcessConsts;
@@ -11,10 +9,8 @@ import com.github.leapbound.yc.hub.model.process.ProcessRequestDto;
 import com.github.leapbound.yc.hub.model.process.ProcessResponseDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
-import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -220,31 +216,6 @@ public class ActionServerServiceImpl implements ActionServerService {
     }
 
     @Override
-    public JSONObject loadProcessVariables(String processInstanceId) {
-        // 查询是否存在进行中的流程
-        JSONObject task = null;
-        try {
-            // 请求action server执行方法
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            ProcessRequestDto processRequestDto = new ProcessRequestDto();
-            processRequestDto.setProcessInstanceId(processInstanceId);
-            HttpEntity<ProcessRequestDto> requestEntity = new HttpEntity<>(processRequestDto, headers);
-            ResponseEntity<ProcessResponseDto<JSONObject>> entity = this.actionRestTemplate.exchange(
-                    "/business/process/variables", HttpMethod.POST, requestEntity,
-                    new ParameterizedTypeReference<>() {
-                    });
-
-            task = entity.getBody().getData();
-            log.debug("loadProcessVariables {}", task);
-        } catch (Exception e) {
-            log.error("loadProcessVariables error", e);
-        }
-
-        return task;
-    }
-
-    @Override
     public void deleteProcess(String processInstanceId) {
         // 请求action server执行方法
         try {
@@ -326,16 +297,11 @@ public class ActionServerServiceImpl implements ActionServerService {
         Map<String, String> showVariableMap = getTaskProperty(task, ProcessConsts.TASK_SHOW_VARIABLE);
         if (showVariableMap != null) {
             String showVariable = showVariableMap.get("name");
-            JSONObject config = loadProcessVariables(task.getProcessInstanceId());
 
             switch (showVariableMap.get("type")) {
                 case "set":
                 case "list":
-                    List<String> configList = (config.getObject(showVariable, List.class));
-                    return configList.stream().collect(Collectors.toSet());
                 case "map":
-                    Map<String, String> configMap = (config.getObject(showVariable, Map.class));
-                    return configMap.keySet().stream().collect(Collectors.toSet());
             }
         }
 

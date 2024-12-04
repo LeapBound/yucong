@@ -1,7 +1,6 @@
 package com.github.leapbound.component;
 
 import com.github.leapbound.yc.hub.consts.RedisConsts;
-import com.unfbx.chatgpt.entity.chat.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +25,7 @@ public class RedisTests {
         int i = 0;
         while (i < 1) {
             i++;
-            Message message = new Message();
-            message.setRole("role" + i);
-            message.setContent("content" + i);
-            this.redisTemplate.convertAndSend(MqConsts.MQ_CHAT_MESSAGE, List.of(message));
+            this.redisTemplate.convertAndSend(MqConsts.MQ_CHAT_MESSAGE, List.of(null));
             Thread.sleep(1000);
         }
     }

@@ -9,18 +9,14 @@ import com.github.leapbound.yc.hub.consts.MqConsts;
 import com.github.leapbound.yc.hub.consts.RedisConsts;
 import com.github.leapbound.yc.hub.entities.BotEntity;
 import com.github.leapbound.yc.hub.entities.MessageEntity;
-import com.github.leapbound.yc.hub.entities.MessageSummaryEntity;
 import com.github.leapbound.yc.hub.external.HubInteractiveService;
 import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
-import com.github.leapbound.yc.hub.mapper.MessageSummaryMapper;
 import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.service.ActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
-import com.github.leapbound.yc.hub.service.gpt.GptService;
-import com.github.leapbound.yc.hub.service.gpt.MilvusService;
-import com.unfbx.chatgpt.entity.chat.Message;
+import com.github.leapbound.yc.hub.service.TimService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -29,7 +25,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,12 +36,10 @@ public class ConversationServiceImpl implements ConversationService {
 
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
-    private final MessageSummaryMapper messageSummaryMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final GptService gptService;
     private final ActionServerService actionServerService;
-    private final MilvusService milvusService;
     private final HubInteractiveService hubInteractiveService;
+    private final TimService timService;
     private final AmqpTemplate amqpTemplate;
 
     private final ObjectMapper mapper;
@@ -104,29 +97,16 @@ public class ConversationServiceImpl implements ConversationService {
             }
         }
 
+        // 查询是否有进行中的流程
+
+
         // 判断是对人还是对AI
         Boolean isDealWithAI = isDealWithAI(botId, accountId);
+        isDealWithAI = false;
         if (isDealWithAI != null && isDealWithAI) {
-            // 匹配历史记忆
-            /*
-            List<BigDecimal> embedding = this.gptService.embedding(content);
-            List<Float> floatList = new ArrayList<>(embedding.size());
-            embedding.forEach(item -> floatList.add(item.floatValue()));
-            String summaryConversationId = this.milvusService.search(floatList, 0.4);
-            if (StringUtils.hasText(summaryConversationId)) {
-                LambdaQueryWrapper<MessageSummaryEntity> summaryLQW = new LambdaQueryWrapper<MessageSummaryEntity>()
-                        .eq(MessageSummaryEntity::getConversationId, summaryConversationId)
-                        .last("limit 1");
-                MessageSummaryEntity summaryEntity = this.messageSummaryMapper.selectOne(summaryLQW);
-                MyMessage botMemory = new MyMessage();
-                botMemory.setRole(Message.Role.SYSTEM.getName());
-                botMemory.setContent(summaryEntity.getContent());
-                addMessage(conversationId, botId, accountId, botMemory);
-            }
-            */
             // 客户消息
             MyMessage userMsg = new MyMessage();
-            userMsg.setRole(Message.Role.USER.getName());
+//            userMsg.setRole(Message.Role.USER.getName());
             switch (singleChatModel.getType()) {
                 case IMAGE, VIDEO:
                     userMsg.setContent(singleChatModel.getType().getName());
@@ -140,13 +120,15 @@ public class ConversationServiceImpl implements ConversationService {
 
             // 调用gpt服务
             List<MyMessage> messageList = getByConversationId(conversationId);
-            List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
+//            List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
+            List<MyMessage> gptMessageList = new ArrayList<>();
             String finalConversationId = conversationId;
             gptMessageList.forEach(myMessage -> addMessage(finalConversationId, botId, accountId, myMessage));
 
-            return gptMessageList.get(gptMessageList.size() - 1);
-        } else {
             return null;
+        } else {
+//            this.timService.sendMsg(null, "test01", "tangxu", content);
+            return new MyMessage();
         }
     }
 
@@ -166,7 +148,7 @@ public class ConversationServiceImpl implements ConversationService {
         singleChatModel.setContent(remind);
 
         MyMessage assistantMsg = new MyMessage();
-        assistantMsg.setRole(Message.Role.ASSISTANT.getName());
+//        assistantMsg.setRole(Message.Role.ASSISTANT.getName());
         assistantMsg.setContent(remind);
         assistantMsg.setType(singleChatModel.getType());
         addMessage(conversationId, botId, accountId, assistantMsg);
@@ -188,17 +170,17 @@ public class ConversationServiceImpl implements ConversationService {
         String dialogContent = findContentOfDialogByConversationId(conversationId);
 
         if (StringUtils.hasText(dialogContent)) {
-            String summaryContent = this.gptService.summary(dialogContent);
-            MessageSummaryEntity messageSummaryEntity = new MessageSummaryEntity();
-            messageSummaryEntity.setConversationId(conversationId);
-            messageSummaryEntity.setContent(summaryContent);
-            messageSummaryEntity.setCreateTime(new Date());
-            this.messageSummaryMapper.insert(messageSummaryEntity);
-
-            List<BigDecimal> embedding = this.gptService.embedding(dialogContent);
-            List<Float> floatList = new ArrayList<>(embedding.size());
-            embedding.forEach(item -> floatList.add(item.floatValue()));
-            this.milvusService.insertData(conversationId, floatList);
+//            String summaryContent = this.gptService.summary(dialogContent);
+//            MessageSummaryEntity messageSummaryEntity = new MessageSummaryEntity();
+//            messageSummaryEntity.setConversationId(conversationId);
+//            messageSummaryEntity.setContent(summaryContent);
+//            messageSummaryEntity.setCreateTime(new Date());
+//            this.messageSummaryMapper.insert(messageSummaryEntity);
+//
+//            List<BigDecimal> embedding = this.gptService.embedding(dialogContent);
+//            List<Float> floatList = new ArrayList<>(embedding.size());
+//            embedding.forEach(item -> floatList.add(item.floatValue()));
+//            this.milvusService.insertData(conversationId, floatList);
         }
     }
 
