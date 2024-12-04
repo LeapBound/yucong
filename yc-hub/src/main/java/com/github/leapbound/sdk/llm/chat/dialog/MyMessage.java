@@ -27,7 +27,8 @@ public class MyMessage implements Serializable {
         SYSTEM("system"),
         USER("user"),
         ASSISTANT("assistant"),
-        FUNCTION("function");
+        FUNCTION("function"),
+        TOOL("tool");
 
         private final String name;
     }

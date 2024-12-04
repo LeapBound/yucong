@@ -7,8 +7,9 @@ import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.model.test.TestFlowDto;
 import com.github.leapbound.yc.hub.model.test.TestMessageDto;
-import com.github.leapbound.yc.hub.service.ActionServerService;
+import com.github.leapbound.yc.hub.service.YcActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
+import com.github.leapbound.yc.hub.service.YcProcessService;
 import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,8 @@ import java.util.Random;
 public class ApiTestController {
 
     private final ConversationService conversationService;
-    private final ActionServerService actionServerService;
+    private final YcActionServerService actionServerService;
+    private final YcProcessService processService;
 
     private final YcWxCpService ycWxCpService;
 
@@ -164,9 +166,9 @@ public class ApiTestController {
     }
 
     private void deleteProcess(String accountId) {
-        ProcessTaskDto processTaskDto = this.actionServerService.queryNextTask(accountId);
+        ProcessTaskDto processTaskDto = this.processService.queryNextTask(accountId);
         if (processTaskDto != null && processTaskDto.getProcessInstanceId() != null) {
-            this.actionServerService.deleteProcess(processTaskDto.getProcessInstanceId());
+            this.processService.deleteProcess(processTaskDto.getProcessInstanceId());
         }
     }
 

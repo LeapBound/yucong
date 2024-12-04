@@ -14,9 +14,7 @@ import com.github.leapbound.yc.hub.mapper.BotMapper;
 import com.github.leapbound.yc.hub.mapper.MessageMapper;
 import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
-import com.github.leapbound.yc.hub.service.ActionServerService;
-import com.github.leapbound.yc.hub.service.ConversationService;
-import com.github.leapbound.yc.hub.service.TimService;
+import com.github.leapbound.yc.hub.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -37,7 +35,9 @@ public class ConversationServiceImpl implements ConversationService {
     private final BotMapper botMapper;
     private final MessageMapper messageMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final ActionServerService actionServerService;
+    private final YcProcessService processService;
+    private final YcActionServerService actionServerService;
+    private final AgentService agentService;
     private final HubInteractiveService hubInteractiveService;
     private final TimService timService;
     private final AmqpTemplate amqpTemplate;
@@ -97,35 +97,30 @@ public class ConversationServiceImpl implements ConversationService {
             }
         }
 
-        // 查询是否有进行中的流程
-
-
         // 判断是对人还是对AI
         Boolean isDealWithAI = isDealWithAI(botId, accountId);
-        isDealWithAI = false;
         if (isDealWithAI != null && isDealWithAI) {
             // 客户消息
             MyMessage userMsg = new MyMessage();
-//            userMsg.setRole(Message.Role.USER.getName());
+            userMsg.setRole(MyMessage.Role.USER.getName());
             switch (singleChatModel.getType()) {
-                case IMAGE, VIDEO:
-                    userMsg.setContent(singleChatModel.getType().getName());
-                    userMsg.setPicUrl(singleChatModel.getPicUrl());
-                    break;
+//                case IMAGE, VIDEO:
+//                    userMsg.setContent(singleChatModel.getType().getName());
+//                    userMsg.setPicUrl(singleChatModel.getPicUrl());
+//                    break;
                 default:
                     userMsg.setContent(content);
             }
             userMsg.setType(singleChatModel.getType());
             addMessage(conversationId, botId, accountId, userMsg);
 
-            // 调用gpt服务
+            // 调用agent服务
             List<MyMessage> messageList = getByConversationId(conversationId);
-//            List<MyMessage> gptMessageList = this.gptService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
-            List<MyMessage> gptMessageList = new ArrayList<>();
+            List<MyMessage> gptMessageList = this.agentService.completions(botId, accountId, singleChatModel.getParam(), messageList, isTest);
             String finalConversationId = conversationId;
             gptMessageList.forEach(myMessage -> addMessage(finalConversationId, botId, accountId, myMessage));
 
-            return null;
+            return gptMessageList.get(gptMessageList.size() - 1);
         } else {
 //            this.timService.sendMsg(null, "test01", "tangxu", content);
             return new MyMessage();
@@ -144,7 +139,7 @@ public class ConversationServiceImpl implements ConversationService {
         String conversationId = getConversationId(botId, accountId);
 
         FunctionExecResultDto functionExecResultDto = new FunctionExecResultDto(true, null);
-        String remind = this.actionServerService.getProcessTaskRemind(singleChatModel.getAccountId(), null, functionExecResultDto);
+        String remind = this.processService.getProcessTaskRemind(singleChatModel.getAccountId(), null, functionExecResultDto);
         singleChatModel.setContent(remind);
 
         MyMessage assistantMsg = new MyMessage();

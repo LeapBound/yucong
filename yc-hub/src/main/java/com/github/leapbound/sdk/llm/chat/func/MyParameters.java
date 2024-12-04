@@ -1,5 +1,6 @@
 package com.github.leapbound.sdk.llm.chat.func;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
 import java.util.List;
