@@ -42,6 +42,7 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
     private final YcFunctionGroovyService ycFunctionGroovyService;
     private final RedisTemplate redisTemplate;
     private final ConcurrentHashMap<String, GroovyScriptEngine> engineMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, GroovyScriptEngine> commonEngineMap = new ConcurrentHashMap<>();
 
     @Value("#{${yc.action.external.args:null}}")
     private Map<String, String> externalArgs;
@@ -177,9 +178,9 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
                 arguments = JSON.parseObject(request.getArguments());
             }
             // groovy external args
-            if (externalArgs != null && !externalArgs.isEmpty()) {
-                arguments.putAll(externalArgs);
-            }
+//            if (externalArgs != null && !externalArgs.isEmpty()) {
+//                arguments.putAll(externalArgs);
+//            }
             // execute
             JSONObject result = null;
             String engineKey = dto.getGroovyName();
@@ -206,9 +207,9 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             throw new Exception("no data found in [yc_function_groovy], function = " + name);
         }
         JSONObject args = JSON.parseObject(arguments);
-        if (externalArgs != null && !externalArgs.isEmpty()) {
-            args.putAll(externalArgs);
-        }
+//        if (externalArgs != null && !externalArgs.isEmpty()) {
+//            args.putAll(externalArgs);
+//        }
         String engineKey = dto.getGroovyName();
         if (engineMap.containsKey(engineKey)) {
             GroovyScriptEngine engine = engineMap.get(engineKey);
@@ -226,6 +227,70 @@ public class YcFunctionOpenaiServiceImpl implements YcFunctionOpenaiService {
             return;
         }
         engineMap.remove(key);
+    }
+
+    @Override
+    public Object executeCommonScript(String scriptName, String method, Object arguments) {
+        YcFunctionGroovyDto dto = this.ycFunctionGroovyService.getFunctionGroovyDtoByName(scriptName);
+        if (dto == null) {
+            logger.warn("no data found in [yc_function_groovy], groovyName = {}", scriptName);
+            return null;
+        }
+        String scriptPath = dto.getGroovyUrl();
+        try {
+            GroovyScriptEngine engine = null;
+            if (commonEngineMap.containsKey(scriptName)) {
+                // get script engine from concurrent map
+                engine = commonEngineMap.get(scriptName);
+            } else {
+                // create script engine
+                engine = FunctionGroovyExec.createGroovyEngine(scriptPath);
+                commonEngineMap.put(scriptName, engine);
+            }
+            if (engine == null) {
+                logger.warn("no script engine created, scriptName = {}", scriptName);
+                return null;
+            }
+            // run script
+            return FunctionGroovyExec.runScriptMethod(engine, scriptName, method, arguments);
+        } catch (Exception ex) {
+            logger.error("execute common script error, scriptName = {}, method = {}, arguments = {}", scriptName, method, arguments, ex);
+        }
+        return null;
+    }
+
+    @Override
+    public void checkCommonEngineMap(String groovyName) {
+        try {
+            // check commonEnginMap exist or not
+            // if existed, clean and create and then set
+            // if not exist, create and set
+            resetCommonEngineMap(groovyName);
+            //
+            YcFunctionGroovyDto dto = this.ycFunctionGroovyService.getFunctionGroovyDtoByName(groovyName);
+            if (dto == null) {
+                return;
+            }
+            String scriptPath = dto.getGroovyUrl();
+            GroovyScriptEngine engine = FunctionGroovyExec.createGroovyEngine(scriptPath);
+            commonEngineMap.put(groovyName, engine);
+        } catch (Exception ex) {
+            logger.error("check common engine map error, groovyName = {}", groovyName, ex);
+        }
+    }
+
+    @Override
+    public void resetCommonEngineMap(String key) {
+        if (StrUtil.isEmptyIfStr(key)) {
+            commonEngineMap.clear();
+            return;
+        }
+        commonEngineMap.remove(key);
+    }
+
+    @Override
+    public Map<String, String> getExternalArgs() {
+        return externalArgs;
     }
 
     private void saveFunctionExecuteRecord(FunctionExecuteRequest request, LocalDateTime startTime, String result) {

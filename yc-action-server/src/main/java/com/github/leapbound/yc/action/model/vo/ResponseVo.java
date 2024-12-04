@@ -12,7 +12,7 @@ public class ResponseVo<T> implements Serializable {
 
     private boolean success;
 
-    private String code;
+    private Integer code;
 
     private String msg;
 
@@ -21,7 +21,7 @@ public class ResponseVo<T> implements Serializable {
     public ResponseVo() {
     }
 
-    public ResponseVo(boolean success, String code, String msg, T data) {
+    public ResponseVo(boolean success, Integer code, String msg, T data) {
         this.success = success;
         this.code = code;
         this.msg = msg;
@@ -32,15 +32,15 @@ public class ResponseVo<T> implements Serializable {
         return new ResponseVo<>(true, null, null, data);
     }
 
-    public static <T> ResponseVo<T> success(String code, String msg, T data) {
+    public static <T> ResponseVo<T> success(Integer code, String msg, T data) {
         return new ResponseVo<>(true, code, msg, data);
     }
 
-    public static <T> ResponseVo<T> fail(String code, String msg) {
+    public static <T> ResponseVo<T> fail(Integer code, String msg) {
         return new ResponseVo<>(false, code, msg, null);
     }
 
-    public static <T> ResponseVo<T> fail(String code, String msg, T data) {
+    public static <T> ResponseVo<T> fail(Integer code, String msg, T data) {
         return new ResponseVo<>(false, code, msg, data);
     }
 
@@ -52,11 +52,11 @@ public class ResponseVo<T> implements Serializable {
         this.success = success;
     }
 
-    public String getCode() {
+    public Integer getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Integer code) {
         this.code = code;
     }
 

@@ -22,6 +22,8 @@ public interface YcFunctionGroovyService extends IService<YcFunctionGroovy> {
 
     YcFunctionGroovyDto getFunctionGroovyDto(String functionName);
 
+    YcFunctionGroovyDto getFunctionGroovyDtoByName(String groovyName);
+
     ResponseVo<Void> uploadFunctionGroovyScripts(MultipartFile file,
                                                  String groovyUrl);
 

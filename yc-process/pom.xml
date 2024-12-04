@@ -20,7 +20,7 @@
         <java.version>17</java.version>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.source>${java.version}</maven.compiler.source>
-        <camunda.version>7.21.0-alpha4</camunda.version>
+        <camunda.version>7.21.0</camunda.version>
         <mybatis.baomidou.version>3.5.5</mybatis.baomidou.version>
     </properties>
 
