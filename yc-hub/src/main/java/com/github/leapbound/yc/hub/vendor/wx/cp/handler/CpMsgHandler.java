@@ -1,6 +1,9 @@
 package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
-import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
+import com.github.leapbound.yc.hub.model.SingleChatDto;
+import com.github.leapbound.yc.hub.service.BotService;
+import com.github.leapbound.yc.hub.service.ConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
@@ -11,9 +14,7 @@ import me.chanjar.weixin.cp.bean.message.WxCpMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlMessage;
 import me.chanjar.weixin.cp.bean.message.WxCpXmlOutMessage;
 import org.springframework.stereotype.Component;
-import com.github.leapbound.yc.hub.model.SingleChatDto;
-import com.github.leapbound.yc.hub.service.BotService;
-import com.github.leapbound.yc.hub.service.ConversationService;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -40,18 +41,20 @@ public class CpMsgHandler extends AbstractHandler {
         singleChatModel.setType(MyMessageType.TEXT);
         String msg = this.conversationService.chat(singleChatModel).getContent();
 
-        try {
-            WxCpMessage message = WxCpMessage
-                    .TEXT()
-                    .agentId(Integer.valueOf(wxMessage.getAgentId()))
-                    .toUser(username)
-                    .content(msg)
-                    .build();
+        if (StringUtils.hasText(msg)) {
+            try {
+                WxCpMessage message = WxCpMessage
+                        .TEXT()
+                        .agentId(Integer.valueOf(wxMessage.getAgentId()))
+                        .toUser(username)
+                        .content(msg)
+                        .build();
 
-            WxCpMessageServiceImpl wxCpMessageService = new WxCpMessageServiceImpl(wxCpService);
-            wxCpMessageService.send(message);
-        } catch (WxErrorException e) {
-            log.error("CpMsgHandler send error", e);
+                WxCpMessageServiceImpl wxCpMessageService = new WxCpMessageServiceImpl(wxCpService);
+                wxCpMessageService.send(message);
+            } catch (WxErrorException e) {
+                log.error("CpMsgHandler send error", e);
+            }
         }
 
         return null;

@@ -8,9 +8,9 @@
 		<version>3.1.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>yzg-gy</groupId>
+	<groupId>com.github.leapbound</groupId>
 	<artifactId>yc-action-server-example</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>yc-action-server-example</name>
 	<description>yc-action-server-example</description>
 	<properties>
@@ -44,20 +44,9 @@
 		<dependency>
 			<groupId>com.github.leapbound</groupId>
 			<artifactId>yc-action-server</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>0.0.2-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
-
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.apache.groovy</groupId>
-				<artifactId>groovy-bom</artifactId>
-				<version>4.0.15</version>
-				<type>pom</type>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
 
 	<build>
 		<plugins>

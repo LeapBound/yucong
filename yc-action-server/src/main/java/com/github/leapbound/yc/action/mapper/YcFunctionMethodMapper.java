@@ -13,7 +13,7 @@ import com.github.leapbound.yc.action.utils.mybatis.EasyBaseMapper;
  * </p>
  *
  * @author yamath
- * @since 2023-07-11
+ * @date 2023-07-11
  */
 @Mapper
 public interface YcFunctionMethodMapper extends EasyBaseMapper<YcFunctionMethod> {

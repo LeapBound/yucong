@@ -9,7 +9,6 @@ import com.github.leapbound.yc.hub.model.ChannelDto;
  */
 public class ChannelBeanMapper {
 
-
     public static ChannelDto mapEntityToModel(ChannelEntity entity) {
         ChannelDto dto = new ChannelDto();
 

@@ -9,7 +9,7 @@ import com.github.leapbound.yc.action.model.vo.request.FunctionGroovySaveRequest
 
 /**
  * @author yamath
- * @since 2023/10/12 10:50
+ * @date 2023/10/12 10:50
  */
 public interface YcFunctionGroovyService extends IService<YcFunctionGroovy> {
 

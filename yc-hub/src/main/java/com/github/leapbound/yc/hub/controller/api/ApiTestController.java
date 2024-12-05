@@ -1,16 +1,15 @@
 package com.github.leapbound.yc.hub.controller.api;
 
-import com.alibaba.fastjson.JSON;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessage;
-import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
-import com.github.leapbound.yc.hub.chat.func.MyFunctionCall;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
+import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.model.test.TestFlowDto;
 import com.github.leapbound.yc.hub.model.test.TestMessageDto;
-import com.github.leapbound.yc.hub.service.ActionServerService;
+import com.github.leapbound.yc.hub.service.YcActionServerService;
 import com.github.leapbound.yc.hub.service.ConversationService;
-import com.github.leapbound.yc.hub.service.gpt.GptMockHandler;
+import com.github.leapbound.yc.hub.service.YcProcessService;
 import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,11 +37,10 @@ import java.util.Random;
 public class ApiTestController {
 
     private final ConversationService conversationService;
-    private final ActionServerService actionServerService;
+    private final YcActionServerService actionServerService;
+    private final YcProcessService processService;
 
     private final YcWxCpService ycWxCpService;
-
-    private final GptMockHandler mockHandler;
 
     @PostMapping("/flow")
     public String testFlow(@RequestBody TestFlowDto testFlowDto) {
@@ -98,9 +96,8 @@ public class ApiTestController {
                         if (StringUtils.hasText(message.getFunction())) {
                             MyFunctionCall functionCall = MyFunctionCall.builder()
                                     .name(message.getFunction())
-                                    .arguments(message.getFunctionParam() == null ? "{}" : JSON.toJSONString(message.getFunctionParam()))
+                                    .arguments("{}")
                                     .build();
-                            this.mockHandler.setFunctionCall(functionCall);
                         }
                     }
 
@@ -115,12 +112,14 @@ public class ApiTestController {
                 break;
             default:
                 SingleChatDto singleChatDto = new SingleChatDto();
+                singleChatDto.setBotId(botId);
+                singleChatDto.setAccountId(accountId);
                 for (TestMessageDto message : testFlowDto.getMessages()) {
                     log.info("*".repeat(100));
                     log.info("user content: {}", message.getContent());
 
                     singleChatDto.setContent(message.getContent());
-                    if (StringUtils.hasText(String.valueOf(message.getType()))) {
+                    if (message.getType() != null) {
                         singleChatDto.setType(message.getType());
                     } else {
                         singleChatDto.setType(MyMessageType.TEXT);
@@ -133,9 +132,8 @@ public class ApiTestController {
                         if (StringUtils.hasText(message.getFunction())) {
                             MyFunctionCall functionCall = MyFunctionCall.builder()
                                     .name(message.getFunction())
-                                    .arguments(message.getFunctionParam() == null ? "{}" : JSON.toJSONString(message.getFunctionParam()))
+                                    .arguments("{}")
                                     .build();
-                            this.mockHandler.setFunctionCall(functionCall);
                         }
                         this.conversationService.chat(singleChatDto, true);
                     } else {
@@ -168,9 +166,9 @@ public class ApiTestController {
     }
 
     private void deleteProcess(String accountId) {
-        ProcessTaskDto processTaskDto = this.actionServerService.queryNextTask(accountId);
+        ProcessTaskDto processTaskDto = this.processService.queryNextTask(accountId);
         if (processTaskDto != null && processTaskDto.getProcessInstanceId() != null) {
-            this.actionServerService.deleteProcess(processTaskDto.getProcessInstanceId());
+            this.processService.deleteProcess(processTaskDto.getProcessInstanceId());
         }
     }
 

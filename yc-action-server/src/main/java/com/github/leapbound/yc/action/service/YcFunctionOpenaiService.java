@@ -9,7 +9,7 @@ import java.util.Map;
 
 /**
  * @author yamath
- * @since 2023/7/12 9:52
+ * @date 2023/7/12 9:52
  */
 public interface YcFunctionOpenaiService {
 

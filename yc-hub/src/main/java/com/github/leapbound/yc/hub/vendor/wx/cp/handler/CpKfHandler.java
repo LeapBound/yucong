@@ -1,6 +1,6 @@
 package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
-import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
 import com.github.leapbound.yc.hub.consts.RedisConsts;
 import com.github.leapbound.yc.hub.model.ChannelDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;
@@ -39,7 +39,7 @@ public class CpKfHandler extends AbstractHandler {
     private final ConversationService conversationService;
     private final UserService userService;
     private final ChannelService channelService;
-    @Value("${yucong.conversation.expire:3600}")
+    @Value("${yucong.conversation.expire:300}")
     private int expires;
 
     @Override

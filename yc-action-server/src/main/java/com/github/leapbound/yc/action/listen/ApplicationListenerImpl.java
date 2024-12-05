@@ -9,7 +9,7 @@ import com.github.leapbound.yc.action.service.YcFunctionGroovyService;
 
 /**
  * @author yamath
- * @since 2023/7/12 14:18
+ * @date 2023/7/12 14:18
  */
 @Component
 public class ApplicationListenerImpl implements ApplicationListener<ApplicationStartedEvent> {

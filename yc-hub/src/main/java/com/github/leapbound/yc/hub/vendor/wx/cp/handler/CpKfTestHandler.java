@@ -1,6 +1,6 @@
 package com.github.leapbound.yc.hub.vendor.wx.cp.handler;
 
-import com.github.leapbound.yc.hub.chat.dialog.MyMessageType;
+import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
 import com.github.leapbound.yc.hub.model.AccountDto;
 import com.github.leapbound.yc.hub.model.ChannelDto;
 import com.github.leapbound.yc.hub.model.SingleChatDto;

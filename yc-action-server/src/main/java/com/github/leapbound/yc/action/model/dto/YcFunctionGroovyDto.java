@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 /**
  * @author yamath
- * @since 2023/10/12 10:48
+ * @date 2023/10/12 10:48
  */
 public class YcFunctionGroovyDto implements Serializable {
 

@@ -13,11 +13,21 @@ public class RestTemplateConfig {
 
     @Value("${yucong.action.rest.url}")
     private String yucongActionUrl;
+    @Value("${yucong.process.rest.url}")
+    private String yucongProcessUrl;
 
     @Bean
     public RestTemplate actionRestTemplate(RestTemplateBuilder builder) {
         return builder
                 .rootUri(this.yucongActionUrl)
+                .setConnectTimeout(Duration.ofSeconds(1))
+                .build();
+    }
+
+    @Bean
+    public RestTemplate processRestTemplate(RestTemplateBuilder builder) {
+        return builder
+                .rootUri(this.yucongProcessUrl)
                 .setConnectTimeout(Duration.ofSeconds(1))
                 .build();
     }
