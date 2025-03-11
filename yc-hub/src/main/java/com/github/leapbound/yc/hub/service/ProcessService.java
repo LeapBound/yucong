@@ -1,6 +1,5 @@
 package com.github.leapbound.yc.hub.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 
@@ -11,7 +10,7 @@ import java.util.Set;
  * @author Fred Gu
  * @date 2024-12-04 10:26
  */
-public interface YcProcessService {
+public interface ProcessService {
 
     String startProcess(String processKey, String userId, Map<String, Object> startFormVariables);
 

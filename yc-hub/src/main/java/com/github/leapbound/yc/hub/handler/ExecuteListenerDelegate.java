@@ -1,12 +1,11 @@
-package com.github.leapbound.yc.camunda.handler;
+package com.github.leapbound.yc.hub.handler;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.delegate.Expression;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,10 +16,9 @@ import java.util.Map;
  * @author yamath
  * @date 2024/4/12 11:25
  */
+@Slf4j
 @Component
 public class ExecuteListenerDelegate implements ExecutionListener {
-
-    private static final Logger logger = LoggerFactory.getLogger(ServiceTaskDelegate.class);
 
     private final ServiceTaskSubService subService;
 
@@ -38,7 +36,7 @@ public class ExecuteListenerDelegate implements ExecutionListener {
             try {
                 Map<String, Object> arguments = execution.getVariables();
                 JSONObject result = subService.execute(method, JSON.toJSONString(arguments));
-                logger.info("subService function [{}]  execute completed ", method);
+                log.info("subService function [{}]  execute completed ", method);
                 if (result != null && !result.isEmpty()) {
                     //
                     Map<String, Object> afterArgs = new HashMap<>();
@@ -66,7 +64,7 @@ public class ExecuteListenerDelegate implements ExecutionListener {
                     }
                 }
             } catch (Exception ex) {
-                logger.error("subService function [{}]  execute failed ", function, ex);
+                log.error("subService function [{}]  execute failed ", function, ex);
 //                    throw new BpmnError("subService function [" + function + "] execute failed", ex);
             }
         }

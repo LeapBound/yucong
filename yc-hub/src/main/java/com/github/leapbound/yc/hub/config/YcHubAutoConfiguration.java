@@ -2,6 +2,7 @@ package com.github.leapbound.yc.hub.config;
 
 import com.github.leapbound.yc.hub.external.HubInteractiveService;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.bpm.spring.boot.starter.annotation.EnableProcessApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.ComponentScan;
  * @date 2024/2/22 10:40
  */
 @Slf4j
+@EnableProcessApplication
 @ComponentScan(basePackages = {"com.github.leapbound.yc.hub"})
 public class YcHubAutoConfiguration {
 
