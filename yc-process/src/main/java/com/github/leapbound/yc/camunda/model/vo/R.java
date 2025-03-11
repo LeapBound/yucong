@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * @author yamath
- * @since 2023/11/16 11:38
+ * @date 2023/11/16 11:38
  */
 public class R<T> {
 

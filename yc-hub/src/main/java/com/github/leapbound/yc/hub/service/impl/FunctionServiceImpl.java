@@ -5,19 +5,23 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
+import com.github.leapbound.sdk.llm.chat.func.MyParameters;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
 import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
-import com.github.leapbound.yc.hub.service.YcActionServerService;
 import com.github.leapbound.yc.hub.service.FuncService;
+import com.github.leapbound.yc.hub.service.YcActionServerService;
 import com.github.leapbound.yc.hub.service.YcProcessService;
+import com.github.leapbound.yc.hub.service.impl.function.common.ProcessFunction;
+import com.github.leapbound.yc.hub.utils.bean.FunctionBeanMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Fred Gu
@@ -31,7 +35,7 @@ public class FunctionServiceImpl implements FuncService {
     private final YcActionServerService actionServerService;
     private final YcProcessService ycProcessService;
     private final FunctionMapper functionMapper;
-    private final ObjectMapper mapper;
+    private final ProcessFunction processFunction;
 
     @Override
     public List<MyFunctions> getListByAccountIdAndBotId(String accountId, String botId, ProcessTaskDto currentTask) {
@@ -49,19 +53,13 @@ public class FunctionServiceImpl implements FuncService {
             return null;
         }
 
-        List<MyFunctions> functions = new ArrayList<>(functionList.size());
-        functionList.forEach(entity -> {
-            try {
-                MyFunctions myFunctions = this.mapper.readValue(entity.getFunctionJson(), MyFunctions.class);
-                myFunctions = fillFunctionEnum(myFunctions, currentTask);
-                log.info("可以执行的function: {}", myFunctions);
-                functions.add(myFunctions);
-            } catch (JsonProcessingException e) {
-                log.error("getListByAccountIdAndBotId error", e);
-            }
-        });
-
-        return functions;
+        return functionList.stream()
+                .map(f -> {
+                    MyFunctions myFunctions = FunctionBeanMapper.mapFunctionEntityToMyFunction(f);
+                    return fillFunctionEnum(myFunctions, currentTask);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private MyFunctions fillFunctionEnum(MyFunctions myFunctions, ProcessTaskDto currentTask) {
@@ -92,7 +90,20 @@ public class FunctionServiceImpl implements FuncService {
 
     @Override
     public FunctionExecResultDto invokeFunc(String botId, String accountId, MyFunctionCall functionCall) {
-        return this.actionServerService.invokeFunc(botId, accountId, functionCall);
-    }
+        // 判断是内置function，还是扩展的
+        LambdaQueryWrapper<FunctionEntity> lqw = new LambdaQueryWrapper<FunctionEntity>()
+                .eq(FunctionEntity::getFunctionName, functionCall.getName());
+        FunctionEntity functionEntity = this.functionMapper.selectOne(lqw);
 
+        if (functionEntity.isExtend()) {
+            return this.actionServerService.invokeFunc(botId, accountId, functionCall);
+        } else {
+            switch (functionCall.getName()) {
+                case "start_loan_process":
+                case "start_ticket":
+                default:
+                    return this.processFunction.exec(botId, accountId, functionCall);
+            }
+        }
+    }
 }

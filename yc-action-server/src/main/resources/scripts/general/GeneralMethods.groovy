@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 /**
  *
  * @author yamath
- * @since 2024/6/20 11:26
+ * @date 2024/6/20 11:26
  */
 
 @Field static Logger logger = LoggerFactory.getLogger('scripts.general.GeneralMethods');

@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AgentConfig {
 
-    @Value("${ark.doubao.apiKey}")
+    @Value("${yucong.llm.doubao.apiKey}")
     private String doubaoApiKey;
 
     @Bean
