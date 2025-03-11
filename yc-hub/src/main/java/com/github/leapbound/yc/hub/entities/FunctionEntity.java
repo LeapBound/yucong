@@ -17,7 +17,13 @@ public class FunctionEntity {
     @TableField("function_uuid")
     private String functionUuid;
     private String functionName;
+    @TableField("function_params")
+    private String functionParams;
+    @TableField("function_description")
+    private String functionDescription;
     private String functionJson;
+    @TableField("is_extend")
+    private boolean extend;
     private Date createTime;
     private Date updateTime;
 }

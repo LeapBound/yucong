@@ -31,7 +31,4 @@ public class TimTests {
         this.timService.sendGroupMsg("administrator", "@TGS#34FDIHTPT", String.valueOf(new Date()));
     }
 
-    @Test
-    void clientSdkLogin() {
-    }
 }

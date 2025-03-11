@@ -6,6 +6,7 @@ import com.github.leapbound.yc.camunda.model.bo.TaskCompleteRequest;
 import com.github.leapbound.yc.camunda.model.bo.TaskFindRequest;
 import com.github.leapbound.yc.camunda.model.vo.R;
 import com.github.leapbound.yc.camunda.service.BusinessCamundaService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,13 +17,10 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/business")
+@RequiredArgsConstructor
 public class BusinessController {
 
     private final BusinessCamundaService businessCamundaService;
-
-    public BusinessController(BusinessCamundaService businessCamundaService) {
-        this.businessCamundaService = businessCamundaService;
-    }
 
     @PostMapping("/process/start")
     public R<?> processStart(@RequestBody ProcessStartRequest processStartRequest) {

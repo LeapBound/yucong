@@ -16,10 +16,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- *
  * @author yamath
- * @since 2024/3/28 14:26
- *
+ * @date 2024/3/28 14:26
  */
 class CamundaService {
 
@@ -29,6 +27,7 @@ class CamundaService {
 
     /**
      * start process and return processInstanceId
+     *
      * @param userId
      * @return String processInstanceId
      */
@@ -52,6 +51,7 @@ class CamundaService {
 
     /**
      * delete process, get processInstanceId by query current task by businessKey
+     *
      * @param userId
      * @return
      */
@@ -65,6 +65,7 @@ class CamundaService {
 
     /**
      * query current task by businessKey
+     *
      * @param userId
      * @return
      */
@@ -83,6 +84,7 @@ class CamundaService {
 
     /**
      * complete task with input variables by taskId
+     *
      * @param taskId
      * @param taskInputVariable
      * @return
@@ -107,6 +109,7 @@ class CamundaService {
 
     /**
      * complete task with input variables by processInstanceId and taskId, and return result data
+     *
      * @param processInstanceId
      * @param taskId
      * @param taskInputVariable
@@ -128,6 +131,7 @@ class CamundaService {
 
     /**
      * query current task when preview task completed
+     *
      * @param userId
      * @return
      */
@@ -142,6 +146,7 @@ class CamundaService {
 
     /**
      * fill task variables
+     *
      * @param inputFormList
      * @param arguments
      * @return
@@ -176,6 +181,7 @@ class CamundaService {
 
     /**
      * get process variable by processInstanceId
+     *
      * @param processInstanceId
      * @return
      */
@@ -192,6 +198,7 @@ class CamundaService {
 
     /**
      * get task local variable by processInstanceId and taskId
+     *
      * @param processInstanceId
      * @param taskId
      * @return
@@ -210,6 +217,7 @@ class CamundaService {
 
     /**
      * set task local variable
+     *
      * @param variablesLocal
      * @param processInstanceId
      * @param taskId

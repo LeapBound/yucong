@@ -32,9 +32,10 @@ public class ApiWxController {
     public R<String> dealMessage(@RequestBody TestFlowDto testFlowDto) {
         TestMessageDto testMessageDto = testFlowDto.getMessages().get(0);
         return switch (testFlowDto.getChannel()) {
-            case "wxMp" -> R.ok(this.goMp(testFlowDto.getCorpId(), "username", testMessageDto.getContent()).toString());
+            case "wxMp" ->
+                    R.ok(this.goMp(testFlowDto.getCorpId(), testFlowDto.getAccountId(), testMessageDto.getContent()).toString());
             case "wxCp" ->
-                    R.ok(this.goCp(testFlowDto.getCorpId(), testFlowDto.getAgentId(), "username", testMessageDto.getContent()).toString());
+                    R.ok(this.goCp(testFlowDto.getCorpId(), testFlowDto.getAgentId(), testFlowDto.getAccountId(), testMessageDto.getContent()).toString());
             default -> R.fail();
         };
     }

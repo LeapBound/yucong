@@ -37,7 +37,9 @@ public class MessageBeanMapper {
         MyMessage myMessage = new MyMessage();
         myMessage.setRole(chatMessage.getRole().value());
         myMessage.setContent((String) chatMessage.getContent());
-        myMessage.setFunctionCall(FunctionBeanMapper.mapChatToolCallToMyFunctionCall(chatMessage.getToolCalls().get(0)));
+        if (chatMessage.getToolCalls() != null && !chatMessage.getToolCalls().isEmpty()) {
+            myMessage.setFunctionCall(FunctionBeanMapper.mapChatToolCallToMyFunctionCall(chatMessage.getToolCalls().get(0)));
+        }
         return myMessage;
     }
 }

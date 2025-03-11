@@ -141,3 +141,20 @@ alter table yc_channel_config
     add open_kf_id varchar(64) null after agent_id;
 
 -- 20240702
+
+alter table yc_function_manage
+    add is_extend tinyint default 1 null comment '0 built-in, 1 extend' after del_flag;
+
+alter table yc_function_manage
+    add constraint yc_function_manage_pk
+        unique (function_name);
+
+-- 20241205
+
+alter table yc_function_manage
+    add function_description varchar(512) null after function_name;
+
+alter table yc_function_manage
+    add function_params text null after function_description;
+
+-- 20241209

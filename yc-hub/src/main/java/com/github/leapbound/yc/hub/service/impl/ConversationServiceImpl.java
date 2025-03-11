@@ -36,7 +36,6 @@ public class ConversationServiceImpl implements ConversationService {
     private final MessageMapper messageMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final YcProcessService processService;
-    private final YcActionServerService actionServerService;
     private final AgentService agentService;
     private final HubInteractiveService hubInteractiveService;
     private final TimService timService;

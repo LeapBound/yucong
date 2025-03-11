@@ -8,9 +8,9 @@ import com.github.leapbound.yc.camunda.model.vo.R;
 
 /**
  * @author yamath
- * @since 2023/11/16 14:54
+ * @date 2023/11/16 14:54
  */
-public interface BusinessCamundaService {
+public interface  BusinessCamundaService {
 
     /**
      * 发起一个流程

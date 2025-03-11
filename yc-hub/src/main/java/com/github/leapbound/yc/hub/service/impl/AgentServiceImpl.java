@@ -1,5 +1,6 @@
 package com.github.leapbound.yc.hub.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessage;
 import com.github.leapbound.sdk.llm.chat.dialog.MyMessageType;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
@@ -39,7 +40,7 @@ public class AgentServiceImpl implements AgentService {
     private final FuncService funcService;
     private final ArkService arkService;
 
-    @Value("${ark.doubao.endpointId}")
+    @Value("${yucong.llm.doubao.endpointId}")
     private String endpointId;
 
     @Override
@@ -67,6 +68,12 @@ public class AgentServiceImpl implements AgentService {
         if (response.getFunctionCall() != null) {
             // 执行function
             functionExecuteResult = this.funcService.invokeFunc(botId, accountId, response.getFunctionCall());
+
+            // 根据任务状态完成任务
+            if (currentTask != null) {
+                // todo
+                this.ycProcessService.completeTask(currentTask.getTaskId(), (Map<String, Object>) JSON.parse(response.getFunctionCall().getArguments()));
+            }
         }
         String remind = this.ycProcessService.getProcessTaskRemind(accountId, currentTask, functionExecuteResult);
         log.debug("remind {}", remind);
@@ -132,6 +139,7 @@ public class AgentServiceImpl implements AgentService {
                 .messages(chatMessageList)
                 .tools(chatToolList)
                 .build();
+        log.debug("sendToChatServer chatCompletionRequest: {}", chatCompletionRequest);
 
         ChatCompletionChoice chatCompletionChoice = this.arkService.createChatCompletion(chatCompletionRequest).getChoices().get(0);
         log.debug("sendToChatServer chatCompletionChoice: {}", chatCompletionChoice);
