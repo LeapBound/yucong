@@ -8,7 +8,7 @@ import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.AgentService;
 import com.github.leapbound.yc.hub.service.FuncService;
-import com.github.leapbound.yc.hub.service.YcProcessService;
+import com.github.leapbound.yc.hub.service.ProcessService;
 import com.github.leapbound.yc.hub.utils.bean.FunctionBeanMapper;
 import com.github.leapbound.yc.hub.utils.bean.MessageBeanMapper;
 import com.volcengine.ark.runtime.model.completion.chat.ChatCompletionChoice;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AgentServiceImpl implements AgentService {
 
-    private final YcProcessService ycProcessService;
+    private final ProcessService ycProcessService;
     private final FuncService funcService;
     private final ArkService arkService;
 

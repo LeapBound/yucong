@@ -8,7 +8,7 @@ import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.model.test.TestFlowDto;
 import com.github.leapbound.yc.hub.model.test.TestMessageDto;
 import com.github.leapbound.yc.hub.service.ConversationService;
-import com.github.leapbound.yc.hub.service.YcProcessService;
+import com.github.leapbound.yc.hub.service.ProcessService;
 import com.github.leapbound.yc.hub.vendor.wx.cp.YcWxCpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import java.util.Random;
 public class ApiTestController {
 
     private final ConversationService conversationService;
-    private final YcProcessService processService;
+    private final ProcessService processService;
 
     private final YcWxCpService ycWxCpService;
 

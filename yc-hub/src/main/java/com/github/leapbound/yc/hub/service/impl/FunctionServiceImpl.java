@@ -1,18 +1,15 @@
 package com.github.leapbound.yc.hub.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctionCall;
 import com.github.leapbound.sdk.llm.chat.func.MyFunctions;
-import com.github.leapbound.sdk.llm.chat.func.MyParameters;
 import com.github.leapbound.yc.hub.entities.FunctionEntity;
 import com.github.leapbound.yc.hub.mapper.FunctionMapper;
 import com.github.leapbound.yc.hub.model.FunctionExecResultDto;
 import com.github.leapbound.yc.hub.model.process.ProcessTaskDto;
 import com.github.leapbound.yc.hub.service.FuncService;
 import com.github.leapbound.yc.hub.service.YcActionServerService;
-import com.github.leapbound.yc.hub.service.YcProcessService;
+import com.github.leapbound.yc.hub.service.ProcessService;
 import com.github.leapbound.yc.hub.service.impl.function.common.ProcessFunction;
 import com.github.leapbound.yc.hub.utils.bean.FunctionBeanMapper;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +30,7 @@ import java.util.stream.Collectors;
 public class FunctionServiceImpl implements FuncService {
 
     private final YcActionServerService actionServerService;
-    private final YcProcessService ycProcessService;
+    private final ProcessService ycProcessService;
     private final FunctionMapper functionMapper;
     private final ProcessFunction processFunction;
 
